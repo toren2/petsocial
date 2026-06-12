@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Save } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { posts } from '../data'
 
-const SPECIES = ['Perro', 'Gato', 'Conejo', 'Ave', 'Otro']
-const SIZES   = ['Pequeño', 'Mediano', 'Grande']
-const SEXES   = ['Macho', 'Hembra']
+const SPECIES  = ['Perro', 'Gato', 'Conejo', 'Ave', 'Otro']
+const SIZES    = ['Pequeño', 'Mediano', 'Grande']
+const SEXES    = ['Macho', 'Hembra']
 const ENERGIES = ['Tranquilo', 'Activo', 'Hiperactivo']
-const EMOJIS  = ['🐕', '🐩', '🦮', '🐕‍🦺', '🦊', '🐈', '🐇', '🦜']
+const EMOJIS   = ['🐕', '🐩', '🦮', '🐕‍🦺', '🦊', '🐈', '🐇', '🦜']
 
 export default function Perfil({ onSignOut }) {
   const { user } = useAuth()
@@ -16,11 +16,13 @@ export default function Perfil({ onSignOut }) {
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const fileInputRef = useRef(null)
   const [form, setForm] = useState({
     pet_name: '', breed: '', species: 'Perro', age: '',
     size: 'Mediano', sex: 'Macho', energy: 'Activo',
     good_with: 'Perros y personas', purpose: 'Amigos',
-    location: '', about: '', emoji: '🐕',
+    location: '', about: '', emoji: '🐕', avatar_url: '',
   })
 
   useEffect(() => { fetchProfile() }, [])
@@ -35,23 +37,41 @@ export default function Perfil({ onSignOut }) {
     if (data) {
       setProfile(data)
       setForm({
-        pet_name:  data.pet_name  || '',
-        breed:     data.breed     || '',
-        species:   data.species   || 'Perro',
-        age:       data.age       || '',
-        size:      data.size      || 'Mediano',
-        sex:       data.sex       || 'Macho',
-        energy:    data.energy    || 'Activo',
-        good_with: data.good_with || 'Perros y personas',
-        purpose:   data.purpose   || 'Amigos',
-        location:  data.location  || '',
-        about:     data.about     || '',
-        emoji:     data.emoji     || '🐕',
+        pet_name:   data.pet_name   || '',
+        breed:      data.breed      || '',
+        species:    data.species    || 'Perro',
+        age:        data.age        || '',
+        size:       data.size       || 'Mediano',
+        sex:        data.sex        || 'Macho',
+        energy:     data.energy     || 'Activo',
+        good_with:  data.good_with  || 'Perros y personas',
+        purpose:    data.purpose    || 'Amigos',
+        location:   data.location   || '',
+        about:      data.about      || '',
+        emoji:      data.emoji      || '🐕',
+        avatar_url: data.avatar_url || '',
       })
     } else {
       setEditing(true)
     }
     setLoading(false)
+  }
+
+  async function uploadPhoto(file) {
+    setUploadingPhoto(true)
+    const ext = file.name.split('.').pop()
+    const path = `${user.id}/avatar.${ext}`
+    const { error } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true })
+    if (!error) {
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+      const url = `${data.publicUrl}?t=${Date.now()}`
+      setForm(f => ({ ...f, avatar_url: url }))
+      await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id)
+      setProfile(p => ({ ...p, avatar_url: url }))
+    }
+    setUploadingPhoto(false)
   }
 
   async function saveProfile() {
@@ -72,6 +92,40 @@ export default function Perfil({ onSignOut }) {
   }
 
   function handle(k, v) { setForm(f => ({ ...f, [k]: v })) }
+
+  function Avatar({ size = 80, url, emoji, onPress }) {
+    return (
+      <div
+        className="relative flex-shrink-0"
+        style={{ width: size, height: size }}
+        onClick={onPress}
+      >
+        {url ? (
+          <img
+            src={url}
+            alt="avatar"
+            className="rounded-full object-cover w-full h-full"
+            style={{ border: '3px solid rgba(255,255,255,0.4)' }}
+          />
+        ) : (
+          <div
+            className="rounded-full flex items-center justify-center w-full h-full"
+            style={{ background: 'rgba(255,255,255,0.2)', border: '3px solid rgba(255,255,255,0.4)', fontSize: size * 0.45 }}
+          >
+            {emoji}
+          </div>
+        )}
+        {onPress && (
+          <div
+            className="absolute bottom-0 right-0 flex items-center justify-center rounded-full border-2 border-white text-white"
+            style={{ width: 26, height: 26, background: '#7C3AED' }}
+          >
+            {uploadingPhoto ? '...' : <Camera size={12} />}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   if (loading) return (
     <div className="flex flex-col flex-1 items-center justify-center gap-3 text-gray-400">
@@ -94,6 +148,33 @@ export default function Perfil({ onSignOut }) {
       </div>
 
       <div className="flex-1 overflow-y-auto bg-ps-bg px-4 py-4 flex flex-col gap-4">
+        <div className="bg-white rounded-2xl p-4 border border-gray-100 flex flex-col items-center gap-3">
+          <h3 className="text-sm font-semibold text-gray-900 self-start">Foto de tu mascota</h3>
+          <div
+            className="relative cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {form.avatar_url ? (
+              <img src={form.avatar_url} alt="avatar" className="w-24 h-24 rounded-full object-cover border-4 border-ps-purple-light" />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-ps-purple-light flex items-center justify-center text-5xl border-4 border-ps-purple-light">
+                {form.emoji}
+              </div>
+            )}
+            <div className="absolute bottom-0 right-0 w-8 h-8 bg-ps-purple rounded-full flex items-center justify-center border-2 border-white">
+              {uploadingPhoto ? <span className="text-white text-xs">...</span> : <Camera size={14} color="white" />}
+            </div>
+          </div>
+          <p className="text-xs text-gray-400">Toca para subir una foto</p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={e => e.target.files?.[0] && uploadPhoto(e.target.files[0])}
+          />
+        </div>
+
         <div className="bg-white rounded-2xl p-4 border border-gray-100">
           <h3 className="text-sm font-semibold text-gray-900 mb-3">Elige un emoji</h3>
           <div className="flex gap-2 flex-wrap">
@@ -112,17 +193,14 @@ export default function Perfil({ onSignOut }) {
 
         <div className="bg-white rounded-2xl p-4 border border-gray-100 flex flex-col gap-3">
           <h3 className="text-sm font-semibold text-gray-900">Información básica</h3>
-
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">Nombre de tu mascota</label>
             <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg" placeholder="ej. Hoshi" value={form.pet_name} onChange={e => handle('pet_name', e.target.value)} />
           </div>
-
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">Raza</label>
             <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg" placeholder="ej. Shih Tzu" value={form.breed} onChange={e => handle('breed', e.target.value)} />
           </div>
-
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="text-xs font-medium text-gray-500 mb-1 block">Especie</label>
@@ -135,7 +213,6 @@ export default function Perfil({ onSignOut }) {
               <input type="number" min="0" max="30" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none bg-ps-bg" placeholder="2" value={form.age} onChange={e => handle('age', e.target.value)} />
             </div>
           </div>
-
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="text-xs font-medium text-gray-500 mb-1 block">Tamaño</label>
@@ -150,7 +227,6 @@ export default function Perfil({ onSignOut }) {
               </select>
             </div>
           </div>
-
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">Nivel de energía</label>
             <div className="flex gap-2">
@@ -164,12 +240,10 @@ export default function Perfil({ onSignOut }) {
               ))}
             </div>
           </div>
-
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">Ubicación</label>
             <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg" placeholder="ej. Bella Vista, Ciudad de Panamá" value={form.location} onChange={e => handle('location', e.target.value)} />
           </div>
-
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">Sobre tu mascota</label>
             <textarea className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg resize-none" placeholder="Cuéntanos sobre tu mascota..." rows={3} value={form.about} onChange={e => handle('about', e.target.value)} />
@@ -185,7 +259,6 @@ export default function Perfil({ onSignOut }) {
           <Save size={16} />
           {saving ? 'Guardando...' : 'Guardar perfil'}
         </button>
-
         <button onClick={onSignOut} className="w-full py-3 rounded-full text-sm text-gray-400 border border-gray-200 bg-white cursor-pointer">
           Cerrar sesión
         </button>
@@ -199,10 +272,27 @@ export default function Perfil({ onSignOut }) {
         className="flex items-center gap-4 px-5 py-6 flex-shrink-0"
         style={{ background: 'linear-gradient(160deg, #6D28D9, #7C3AED)' }}
       >
-        <div className="flex items-center justify-center rounded-full text-5xl flex-shrink-0"
-          style={{ width: 80, height: 80, background: 'rgba(255,255,255,0.2)', border: '3px solid rgba(255,255,255,0.4)' }}
+        <div
+          className="relative cursor-pointer flex-shrink-0"
+          onClick={() => fileInputRef.current?.click()}
         >
-          {profile.emoji}
+          {profile.avatar_url ? (
+            <img src={profile.avatar_url} alt="avatar" className="w-20 h-20 rounded-full object-cover" style={{ border: '3px solid rgba(255,255,255,0.4)' }} />
+          ) : (
+            <div className="w-20 h-20 rounded-full flex items-center justify-center text-5xl" style={{ background: 'rgba(255,255,255,0.2)', border: '3px solid rgba(255,255,255,0.4)' }}>
+              {profile.emoji}
+            </div>
+          )}
+          <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center border-2 border-white" style={{ background: '#7C3AED' }}>
+            {uploadingPhoto ? <span className="text-white text-xs">...</span> : <Camera size={13} color="white" />}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={e => e.target.files?.[0] && uploadPhoto(e.target.files[0])}
+          />
         </div>
         <div>
           <h2 className="text-2xl font-bold text-white">{profile.pet_name}</h2>

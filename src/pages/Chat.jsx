@@ -22,7 +22,7 @@ function ConversationList({ onOpen }) {
       const otherIds = data.map(m => m.user1_id === user.id ? m.user2_id : m.user1_id)
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, pet_name, emoji, breed, location')
+        .select('id, pet_name, emoji, breed, location, avatar_url')
         .in('id', otherIds)
 
       const matchesWithProfiles = data.map(m => {
@@ -60,9 +60,13 @@ function ConversationList({ onOpen }) {
               className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100 bg-white cursor-pointer active:bg-gray-50"
             >
               <div className="relative flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-ps-purple-light flex items-center justify-center text-2xl">
-                  {match.profile?.emoji || '🐕'}
-                </div>
+                <div className="w-12 h-12 rounded-full bg-ps-purple-light flex items-center justify-center text-2xl overflow-hidden">
+  {match.profile?.avatar_url ? (
+    <img src={match.profile.avatar_url} alt={match.profile.pet_name} className="w-full h-full object-cover" />
+  ) : (
+    match.profile?.emoji || '🐕'
+  )}
+</div>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm text-gray-900">{match.profile?.pet_name || 'Mascota'}</div>
@@ -140,9 +144,13 @@ function Conversation({ match, onBack }) {
         <button onClick={onBack} className="border-0 bg-transparent cursor-pointer text-ps-purple">
           <ArrowLeft size={22} />
         </button>
-        <div className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center text-xl flex-shrink-0">
-          {match.profile?.emoji || '🐕'}
-        </div>
+        <div className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center text-xl flex-shrink-0 overflow-hidden">
+  {match.profile?.avatar_url ? (
+    <img src={match.profile.avatar_url} alt={match.profile.pet_name} className="w-full h-full object-cover" />
+  ) : (
+    match.profile?.emoji || '🐕'
+  )}
+</div>
         <div className="flex-1">
           <div className="font-semibold text-gray-900 text-base">{match.profile?.pet_name || 'Mascota'}</div>
           <div className="text-xs text-gray-400">{match.profile?.breed}</div>

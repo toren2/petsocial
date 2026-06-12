@@ -51,6 +51,7 @@ export default function Match({ onMatch }) {
         energy: p.energy,
         location: p.location,
         emoji: p.emoji,
+        avatar_url: p.avatar_url || null,
         tags: [p.energy, p.size, 'Busca amigos'].filter(Boolean),
         distance: (Math.random() * 5).toFixed(1),
         online: Math.random() > 0.5,
@@ -139,8 +140,12 @@ const matchedIds = existingMatches?.map(m =>
       <div className="flex-1 overflow-y-auto px-4 py-3 bg-ps-bg">
         {pet ? (
           <div className="rounded-2xl overflow-hidden bg-white border border-gray-200" style={cardStyle}>
-            <div className="relative flex items-center justify-center" style={{ height: 280, background: pet.bg || '#EDE9FE', fontSize: 110 }}>
-              {pet.emoji}
+           <div className="relative flex items-center justify-center overflow-hidden" style={{ height: 280, background: pet.bg || '#EDE9FE', fontSize: 110 }}>
+  {pet.avatar_url ? (
+    <img src={pet.avatar_url} alt={pet.name} className="w-full h-full object-cover" />
+  ) : (
+    pet.emoji
+  )}
               {pet.online && (
                 <span className="absolute top-3 left-3 bg-green-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full">
                   ● Activo
