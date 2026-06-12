@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Plus, MapPin, Clock, Users, X } from 'lucide-react'
 import { supabase } from '../supabase'
+import InviteModal from '../components/InviteModal'
 
 const types = [
   { id: 'all',        label: 'Todos',      emoji: '📅' },
@@ -17,7 +18,7 @@ const typeColors = {
   cumpleanos: { bg: '#FEF9C3', color: '#CA8A04', label: 'Cumpleaños' },
 }
 
-function EventCard({ event, onToggle }) {
+function EventCard({ event, onToggle, onInvite }) {
   const tc = typeColors[event.type] || { bg: '#EDE9FE', color: '#7C3AED', label: event.type }
   const maxAttendees = event.max_attendees || event.maxAttendees || 10
   const pct = Math.round((event.attendees / maxAttendees) * 100)
@@ -52,6 +53,13 @@ function EventCard({ event, onToggle }) {
         <div className="w-full bg-gray-100 rounded-full h-1.5 mb-3">
           <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, background: tc.color }} />
         </div>
+        <button
+          onClick={() => onInvite(event)}
+          className="w-full py-2.5 rounded-full text-sm font-semibold border-0 cursor-pointer mb-2"
+          style={{ background: '#EDE9FE', color: '#7C3AED' }}
+        >
+          🐾 Invitar amigos
+        </button>
         <button
           onClick={() => onToggle(event.id)}
           className="w-full py-2.5 rounded-full text-sm font-semibold border-0 cursor-pointer transition-all"
@@ -164,6 +172,7 @@ export default function Eventos() {
   const [loading, setLoading] = useState(true)
   const [activeType, setActiveType] = useState('all')
   const [showCreate, setShowCreate] = useState(false)
+  const [inviteEvent, setInviteEvent] = useState(null)
 
   useEffect(() => { fetchEvents() }, [])
 
@@ -230,10 +239,11 @@ export default function Eventos() {
             <p className="text-sm">No hay eventos todavía — ¡crea el primero!</p>
           </div>
         ) : (
-          filtered.map(e => <EventCard key={e.id} event={e} onToggle={toggleAttend} />)
+          filtered.map(e => <EventCard key={e.id} event={e} onToggle={toggleAttend} onInvite={setInviteEvent} />)
         )}
       </div>
-      {showCreate && <CreateEventModal onClose={() => setShowCreate(false)} onCreate={createEvent} />}
+     {showCreate && <CreateEventModal onClose={() => setShowCreate(false)} onCreate={createEvent} />}
+      {inviteEvent && <InviteModal event={inviteEvent} onClose={() => setInviteEvent(null)} />}
     </div>
   )
 }
