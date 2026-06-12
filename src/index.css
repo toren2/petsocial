@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #e5e7eb;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .phone-shell {
+    width: 375px;
+    min-height: 812px;
+    background: #F8F7FF;
+    border-radius: 44px;
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.3), 0 0 0 2px #D1D5DB;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .btn-purple {
+    @apply w-full py-3.5 rounded-full bg-ps-purple text-white font-semibold text-base border-0 cursor-pointer;
+  }
+  .btn-outline-white {
+    @apply w-full py-3.5 rounded-full border-2 border-white/50 text-white font-medium text-base bg-transparent cursor-pointer;
+  }
+  .bottom-nav-item {
+    @apply flex-1 flex flex-col items-center gap-0.5 py-2 cursor-pointer text-gray-400 text-[10px] border-0 bg-transparent;
+  }
+  .bottom-nav-item.active { @apply text-ps-purple; }
+  .tag { @apply text-xs px-3 py-1 rounded-full font-medium; }
+}
