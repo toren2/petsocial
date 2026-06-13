@@ -84,7 +84,7 @@ export default function Lugares() {
     `
 
     try {
-     const res = await fetch('https://overpass.openstreetmap.ru/api/interpreter', {
+    const res = await fetch('/api/overpass', {
         method: 'POST',
         body: query,
       })
