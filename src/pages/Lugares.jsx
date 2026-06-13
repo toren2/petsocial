@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Map, MapPin, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Search } from 'lucide-react'
 import { supabase } from '../supabase'
 import LugarDetalle from './LugarDetalle'
+import MapaLugares from '../components/MapaLugares'
 
 const categories = [
   { id: 'all',   label: 'Todos',        Icon: MapPin,      bg: '#EDE9FE', color: '#7C3AED' },
@@ -38,6 +39,7 @@ export default function Lugares() {
   const [search, setSearch] = useState('')
   const [selectedPlace, setSelectedPlace] = useState(null)
   const [userLocation, setUserLocation] = useState(null)
+  const [showMap, setShowMap] = useState(false)
 
   useEffect(() => { fetchPlaces() }, [])
 
@@ -113,6 +115,8 @@ export default function Lugares() {
                 : 'Panamá',
               open: true,
               hours: 'Ver horario en Google Maps',
+              lat: el.lat,
+              lng: el.lon,
             }
           })
           .sort((a, b) => a.distance - b.distance)
@@ -128,6 +132,20 @@ export default function Lugares() {
     }
   }
 
+  function refreshLocation() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const newLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+          setUserLocation(newLocation)
+          setPlaces([])
+          fetchPlaces()
+        },
+        () => console.log('No se pudo obtener ubicación')
+      )
+    }
+  }
+
   if (selectedPlace) return <LugarDetalle place={selectedPlace} onBack={() => setSelectedPlace(null)} />
 
   const filtered = places.filter(p => {
@@ -138,10 +156,10 @@ export default function Lugares() {
   })
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
         <h2 className="text-xl font-bold text-gray-900">Lugares</h2>
-        <button className="border-0 bg-transparent cursor-pointer text-ps-purple" aria-label="Ver mapa">
+        <button onClick={() => setShowMap(true)} className="border-0 bg-transparent cursor-pointer text-ps-purple" aria-label="Ver mapa">
           <Map size={22} />
         </button>
       </div>
@@ -183,15 +201,27 @@ export default function Lugares() {
         </div>
 
         {userLocation && (
-          <div className="px-4 py-2 bg-ps-teal-light border-b border-gray-100 flex items-center gap-2">
-            <MapPin size={13} className="text-ps-teal flex-shrink-0" />
-            <span className="text-xs text-ps-teal font-medium">
-              Mostrando lugares cerca de tu ubicación
-            </span>
+          <div className="px-4 py-2 bg-ps-teal-light border-b border-gray-100 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <MapPin size={13} className="text-ps-teal flex-shrink-0" />
+              <span className="text-xs text-ps-teal font-medium">
+                Mostrando lugares cerca de ti
+              </span>
+            </div>
+            <button
+              onClick={refreshLocation}
+              className="text-xs font-semibold border-0 cursor-pointer px-2.5 py-1 rounded-full"
+              style={{ background: '#0F9B8E', color: 'white' }}
+            >
+              Actualizar
+            </button>
           </div>
         )}
 
-        <div style={{ height: 160, background: 'linear-gradient(135deg, #DBEAFE, #EDE9FE)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '0.5px solid #E5E7EB' }}>
+        <div
+          onClick={() => setShowMap(true)}
+          style={{ height: 160, background: 'linear-gradient(135deg, #DBEAFE, #EDE9FE)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '0.5px solid #E5E7EB', cursor: 'pointer' }}
+        >
           <span style={{ position: 'absolute', fontSize: 24, top: 30, left: 60 }}>📍</span>
           <span style={{ position: 'absolute', fontSize: 24, top: 50, right: 70 }}>📍</span>
           <span style={{ position: 'absolute', fontSize: 24, bottom: 25, left: 130 }}>📍</span>
@@ -229,8 +259,17 @@ export default function Lugares() {
                     <span className="text-xs text-gray-400">({place.reviews})</span>
                   </div>
                   <div className="text-xs text-gray-400 mt-0.5 truncate">{place.address}</div>
-                  <div className="text-xs mt-0.5" style={{ color: place.open ? '#16A34A' : '#DC2626' }}>
-                    {place.hours}
+                  <div className="text-xs mt-0.5">
+                    {place.hours === 'Ver horario en Google Maps' ? (
+                      <button
+                        onClick={e => { e.stopPropagation(); window.open(`https://www.google.com/maps/search/${encodeURIComponent(place.name)}`, '_blank') }}
+                        style={{ color: '#7C3AED', fontWeight: 500, border: 0, background: 'transparent', cursor: 'pointer', padding: 0, fontSize: 12 }}
+                      >
+                        Ver en Google Maps
+                      </button>
+                    ) : (
+                      <span style={{ color: place.open ? '#16A34A' : '#DC2626' }}>{place.hours}</span>
+                    )}
                   </div>
                 </div>
                 <div className="text-sm text-gray-400 font-medium flex-shrink-0">{place.distance} km</div>
@@ -239,6 +278,15 @@ export default function Lugares() {
           })
         )}
       </div>
+
+      {showMap && (
+        <MapaLugares
+          places={places}
+          userLocation={userLocation}
+          onPlaceSelect={place => { setShowMap(false); setSelectedPlace(place) }}
+          onClose={() => setShowMap(false)}
+        />
+      )}
     </div>
   )
 }

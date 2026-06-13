@@ -120,7 +120,7 @@ export default function LugarDetalle({ place, onBack }) {
       .insert([{
         place_id: place.id,
         user_id: user.id,
-        user_name: userProfile?.pet_name || 'Anónimo',
+        user_name: userProfile?.pet_name || 'Anonimo',
         user_emoji: userProfile?.emoji || '🐕',
         rating,
         text,
@@ -132,6 +132,8 @@ export default function LugarDetalle({ place, onBack }) {
   const avgRating = reviews.length
     ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
     : place.rating
+
+  const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(place.name)}+${encodeURIComponent(place.address)}`
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -168,7 +170,16 @@ export default function LugarDetalle({ place, onBack }) {
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Clock size={14} className="text-ps-purple flex-shrink-0" />
-              <span style={{ color: place.open ? '#16A34A' : '#DC2626' }}>{place.hours}</span>
+           {place.hours === 'Ver horario en Google Maps' ? (
+  <button
+    onClick={() => window.open(mapsUrl, '_blank')}
+    style={{ color: '#7C3AED', fontWeight: 500, fontSize: 14, border: 0, background: 'transparent', cursor: 'pointer', padding: 0 }}
+  >
+    Ver en Google Maps
+  </button>
+) : (
+  <span style={{ color: place.open ? '#16A34A' : '#DC2626' }}>{place.hours}</span>
+)}
             </div>
           </div>
         </div>
@@ -213,7 +224,7 @@ export default function LugarDetalle({ place, onBack }) {
             <div className="text-center text-sm text-gray-400 py-4">Cargando reviews...</div>
           ) : reviews.length === 0 ? (
             <div className="text-center text-sm text-gray-400 py-4">
-              Sé el primero en dejar una review 🐾
+              Se el primero en dejar una review 🐾
             </div>
           ) : (
             <div className="flex flex-col gap-4">
