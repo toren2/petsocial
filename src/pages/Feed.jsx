@@ -3,35 +3,9 @@ import { Search, Bell, Plus, Heart, MessageCircle, Share2, Bookmark, MoreHorizon
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import CreatePostModal from '../components/CreatePostModal'
+import StoriesBar from '../components/StoriesBar'
 
-function StoryCircle({ name, avatarUrl, emoji, color, bg, mine, onPress }) {
-  return (
-    <div className="flex flex-col items-center gap-1 flex-shrink-0" onClick={onPress}>
-      <div
-        className="rounded-full p-0.5"
-        style={{ border: mine ? '2px dashed #D1D5DB' : `2px solid ${color || '#7C3AED'}` }}
-      >
-        <div
-          className="w-12 h-12 rounded-full flex items-center justify-center text-2xl overflow-hidden"
-          style={{ background: bg || '#EDE9FE' }}
-        >
-          {mine ? (
-            <Plus size={22} className="text-gray-400" />
-          ) : avatarUrl ? (
-            <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
-          ) : (
-            emoji || '🐕'
-          )}
-        </div>
-      </div>
-      <span className="text-[10px] text-gray-500 max-w-[52px] text-center truncate">
-        {mine ? 'Tu historia' : name}
-      </span>
-    </div>
-  )
-}
-
-function Post({ post, currentUserId, onLike }) {
+function Post({ post, currentUserId }) {
   const [liked, setLiked] = useState(post.liked)
   const [likes, setLikes] = useState(post.likes)
 
@@ -69,13 +43,11 @@ function Post({ post, currentUserId, onLike }) {
         </button>
       </div>
 
-      {post.image_url && (
+      {post.image_url ? (
         <div className="w-full" style={{ height: 300 }}>
           <img src={post.image_url} alt="post" className="w-full h-full object-cover" />
         </div>
-      )}
-
-      {!post.image_url && (
+      ) : (
         <div className="w-full flex items-center justify-center" style={{ height: 200, background: '#EDE9FE', fontSize: 80 }}>
           {post.pet_emoji || '🐕'}
         </div>
@@ -117,14 +89,12 @@ export default function Feed() {
   const { user } = useAuth()
   const [posts, setPosts] = useState([])
   const [profile, setProfile] = useState(null)
-  const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
 
   useEffect(() => {
     fetchPosts()
     fetchProfile()
-    fetchMatches()
   }, [])
 
   async function fetchProfile() {
@@ -134,23 +104,6 @@ export default function Feed() {
       .eq('id', user.id)
       .single()
     if (data) setProfile(data)
-  }
-
-  async function fetchMatches() {
-    const { data } = await supabase
-      .from('matches')
-      .select('*')
-      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-      .limit(5)
-
-    if (data && data.length > 0) {
-      const otherIds = data.map(m => m.user1_id === user.id ? m.user2_id : m.user1_id)
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, pet_name, emoji, avatar_url')
-        .in('id', otherIds)
-      if (profiles) setMatches(profiles)
-    }
   }
 
   async function fetchPosts() {
@@ -165,7 +118,6 @@ export default function Feed() {
         .from('post_likes')
         .select('post_id')
         .eq('user_id', user.id)
-
       const likedIds = likes?.map(l => l.post_id) || []
       setPosts(data.map(p => ({ ...p, liked: likedIds.includes(p.id) })))
     }
@@ -195,26 +147,8 @@ export default function Feed() {
       </div>
 
       <div className="flex-1 overflow-y-auto bg-ps-bg">
-        {/* Stories */}
-        <div className="flex gap-3 px-4 py-3 bg-white border-b border-gray-100 overflow-x-auto">
-          <StoryCircle
-            mine
-            name="Tu historia"
-            onPress={() => setShowCreate(true)}
-          />
-          {matches.map(m => (
-            <StoryCircle
-              key={m.id}
-              name={m.pet_name}
-              avatarUrl={m.avatar_url}
-              emoji={m.emoji}
-              color="#7C3AED"
-              bg="#EDE9FE"
-            />
-          ))}
-        </div>
+        <StoriesBar profile={profile} />
 
-        {/* Botón crear post */}
         <div className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center overflow-hidden flex-shrink-0">
             {profile?.avatar_url ? (
@@ -256,9 +190,7 @@ export default function Feed() {
             </button>
           </div>
         ) : (
-          posts.map(p => (
-            <Post key={p.id} post={p} currentUserId={user.id} />
-          ))
+          posts.map(p => <Post key={p.id} post={p} currentUserId={user.id} />)
         )}
       </div>
 
