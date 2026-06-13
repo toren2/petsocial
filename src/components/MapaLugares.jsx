@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet'
-import 'leaflet/dist/leaflet.css'
-import L from 'leaflet'
+const L = window.L
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
