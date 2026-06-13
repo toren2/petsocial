@@ -22,12 +22,12 @@ const categoryColors = {
 function createEmojiIcon(category) {
   const emoji = categoryEmojis[category] || '📍'
   const color = categoryColors[category] || '#7C3AED'
-  return L.divIcon({
-    html: `<div style="font-size:28px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">${emoji}</div>`,
-    className: '',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32],
+  return new L.DivIcon({
+    html: `<div style="background:${color};width:34px;height:34px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;">${emoji}</div>`,
+    className: 'custom-div-icon',
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -20],
   })
 }
 
