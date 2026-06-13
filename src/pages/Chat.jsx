@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { ArrowLeft, MoreVertical, Send, Image, Smile } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import { notifyMessage } from '../notifications'
 
 function ConversationList({ onOpen }) {
   const { user } = useAuth()
@@ -127,15 +128,23 @@ function Conversation({ match, onBack }) {
     const text = input.trim()
     if (!text) return
     setInput('')
-    const { data, error } = await supabase
-      .from('messages')
-      .insert([{
-        sender_id: user.id,
-        receiver_id: match.otherId,
-        text,
-      }])
-      .select()
-    if (!error && data) setMsgs(prev => [...prev, data[0]])
+   const { data, error } = await supabase
+  .from('messages')
+  .insert([{
+    sender_id: user.id,
+    receiver_id: match.otherId,
+    text,
+  }])
+  .select()
+if (!error && data) {
+  setMsgs(prev => [...prev, data[0]])
+  const { data: myProfile } = await supabase
+    .from('profiles')
+    .select('pet_name')
+    .eq('id', user.id)
+    .single()
+  await notifyMessage(match.otherId, myProfile?.pet_name || 'Una mascota')
+}
   }
 
   return (

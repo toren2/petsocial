@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import CreatePostModal from '../components/CreatePostModal'
 import StoriesBar from '../components/StoriesBar'
+import Notifications from '../components/Notifications'
 
 function Post({ post, currentUserId }) {
   const [liked, setLiked] = useState(post.liked)
@@ -91,10 +92,13 @@ export default function Feed() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     fetchPosts()
     fetchProfile()
+    fetchUnreadCount()
   }, [])
 
   async function fetchProfile() {
@@ -104,6 +108,15 @@ export default function Feed() {
       .eq('id', user.id)
       .single()
     if (data) setProfile(data)
+  }
+
+  async function fetchUnreadCount() {
+    const { count } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('read', false)
+    setUnreadCount(count || 0)
   }
 
   async function fetchPosts() {
@@ -139,14 +152,22 @@ export default function Feed() {
           <button className="border-0 bg-transparent cursor-pointer text-gray-500" aria-label="Buscar">
             <Search size={22} />
           </button>
-          <button className="border-0 bg-transparent cursor-pointer text-gray-500 relative" aria-label="Notificaciones">
+          <button
+            onClick={() => { setShowNotifications(true); setUnreadCount(0) }}
+            className="border-0 bg-transparent cursor-pointer text-gray-500 relative"
+            aria-label="Notificaciones"
+          >
             <Bell size={22} />
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-ps-pink rounded-full border border-white" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-ps-pink rounded-full border border-white flex items-center justify-center text-white text-[9px] font-bold">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-ps-bg">
+      <div className="flex-1 overflow-y-auto bg-ps-bg relative">
         <StoriesBar profile={profile} />
 
         <div className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
@@ -191,6 +212,10 @@ export default function Feed() {
           </div>
         ) : (
           posts.map(p => <Post key={p.id} post={p} currentUserId={user.id} />)
+        )}
+
+        {showNotifications && (
+          <Notifications onClose={() => setShowNotifications(false)} />
         )}
       </div>
 

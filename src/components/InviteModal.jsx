@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { X, Send, Check } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import { notifyEventInvite } from '../notifications.js'
 
 export default function InviteModal({ event, onClose }) {
   const { user } = useAuth()
@@ -41,7 +42,15 @@ export default function InviteModal({ event, onClose }) {
         status: 'pending',
       }], { onConflict: 'event_id,receiver_id', ignoreDuplicates: true })
     setSending(s => ({ ...s, [receiverId]: false }))
-    if (!error) setSent(s => ({ ...s, [receiverId]: true }))
+    if (!error) {
+  setSent(s => ({ ...s, [receiverId]: true }))
+  const { data: myProfile } = await supabase
+    .from('profiles')
+    .select('pet_name')
+    .eq('id', user.id)
+    .single()
+  await notifyEventInvite(receiverId, myProfile?.pet_name || 'Una mascota', event.title)
+}
   }
 
   return (

@@ -3,6 +3,7 @@ import { MapPin, SlidersHorizontal, X, Heart, Star } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { discoverPets } from '../data'
+import { notifyMatch } from '../notifications'
 
 const tagColors = {
   'Muy activo':      'bg-green-100 text-green-800',
@@ -82,14 +83,20 @@ const matchedIds = existingMatches?.map(m =>
       if (dir === 'like' || dir === 'super') {
         if (pet?.realUser) {
           const { error } = await supabase
-            .from('matches')
-            .upsert([{
-              user1_id: user.id,
-              user2_id: pet.id,
-            }], { onConflict: 'user1_id,user2_id', ignoreDuplicates: true })
-          if (!error) onMatch(pet)
-        } else {
-          onMatch(pet)
+  .from('matches')
+  .upsert([{
+    user1_id: user.id,
+    user2_id: pet.id,
+  }], { onConflict: 'user1_id,user2_id', ignoreDuplicates: true })
+if (!error) {
+  onMatch(pet)
+  const { data: myProfile } = await supabase
+    .from('profiles')
+    .select('pet_name')
+    .eq('id', user.id)
+    .single()
+  await notifyMatch(user.id, pet.id, myProfile?.pet_name || 'Una mascota', pet.name)
+}
         }
       }
       setIndex(i => Math.min(i + 1, candidates.length - 1))

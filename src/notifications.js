@@ -1,0 +1,42 @@
+import { supabase } from './supabase'
+
+export async function createNotification(userId, type, title, body, data = {}) {
+  await supabase.from('notifications').insert([{
+    user_id: userId,
+    type,
+    title,
+    body,
+    data,
+    read: false,
+  }])
+}
+
+export async function notifyMatch(myId, theirId, myPetName, theirPetName) {
+  await createNotification(
+    theirId,
+    'match',
+    '¡Nuevo match! 🐾',
+    `${myPetName} y ${theirPetName} se han gustado`,
+    { matchUserId: myId }
+  )
+}
+
+export async function notifyMessage(receiverId, senderPetName) {
+  await createNotification(
+    receiverId,
+    'message',
+    'Nuevo mensaje 💬',
+    `${senderPetName} te ha enviado un mensaje`,
+    {}
+  )
+}
+
+export async function notifyEventInvite(receiverId, senderPetName, eventTitle) {
+  await createNotification(
+    receiverId,
+    'event_invite',
+    'Te invitaron a un evento 🎉',
+    `${senderPetName} te invitó a: ${eventTitle}`,
+    {}
+  )
+}
