@@ -4,7 +4,7 @@ import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import CreatePostModal from '../components/CreatePostModal'
 import StoriesBar from '../components/StoriesBar'
-import Notifications from '../components/Notifications'
+import Notifications from '../Notifications'
 
 function Post({ post, currentUserId }) {
   const [liked, setLiked] = useState(post.liked)
