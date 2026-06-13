@@ -3,7 +3,6 @@ import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-le
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 
-// Fix iconos de leaflet
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -86,13 +85,13 @@ export default function MapaLugares({ places, userLocation, onPlaceSelect, onClo
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
         <h2 className="text-lg font-bold text-gray-900">Mapa de lugares</h2>
-        <button
-          onClick={onClose}
-          className="text-sm font-medium border-0 bg-transparent cursor-pointer px-3 py-1.5 rounded-full"
-          style={{ background: '#EDE9FE', color: '#7C3AED' }}
-        >
-          Cerrar
-        </button>
+       <button
+  onClick={e => { e.preventDefault(); e.stopPropagation(); onClose() }}
+  className="text-sm font-medium border-0 cursor-pointer px-3 py-1.5 rounded-full"
+  style={{ background: '#EDE9FE', color: '#7C3AED' }}
+>
+  Cerrar
+</button>
       </div>
 
       {/* Leyenda */}
