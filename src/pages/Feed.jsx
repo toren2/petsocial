@@ -5,8 +5,9 @@ import { useAuth } from '../AuthContext'
 import CreatePostModal from '../components/CreatePostModal'
 import StoriesBar from '../components/StoriesBar'
 import Notifications from '../components/Notifications'
+import PerfilPublico from './PerfilPublico'
 
-function Post({ post, currentUserId }) {
+function Post({ post, currentUserId, onViewProfile }) {
   const [liked, setLiked] = useState(post.liked)
   const [likes, setLikes] = useState(post.likes)
 
@@ -26,14 +27,17 @@ function Post({ post, currentUserId }) {
   return (
     <div className="bg-white border-b border-gray-100">
       <div className="flex items-center gap-2.5 px-4 py-3">
-        <div className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center text-xl flex-shrink-0 overflow-hidden">
+        <div
+          className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center text-xl flex-shrink-0 overflow-hidden cursor-pointer"
+          onClick={() => onViewProfile(post.user_id)}
+        >
           {post.avatar_url ? (
             <img src={post.avatar_url} alt={post.pet_name} className="w-full h-full object-cover" />
           ) : (
             post.pet_emoji || '🐕'
           )}
         </div>
-        <div className="flex-1">
+        <div className="flex-1 cursor-pointer" onClick={() => onViewProfile(post.user_id)}>
           <div className="font-semibold text-sm text-gray-900">{post.pet_name}</div>
           <div className="text-xs text-gray-400">
             {post.pet_breed} · {new Date(post.created_at).toLocaleDateString('es', { day: 'numeric', month: 'short' })}
@@ -93,6 +97,7 @@ export default function Feed() {
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [viewingProfile, setViewingProfile] = useState(null)
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
@@ -125,7 +130,6 @@ export default function Feed() {
       .from('posts')
       .select('*')
       .order('created_at', { ascending: false })
-
     if (data) {
       const { data: likes } = await supabase
         .from('post_likes')
@@ -142,7 +146,7 @@ export default function Feed() {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🐾</span>
@@ -167,7 +171,7 @@ export default function Feed() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-ps-bg relative">
+      <div className="flex-1 overflow-y-auto bg-ps-bg">
         <StoriesBar profile={profile} />
 
         <div className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
@@ -211,13 +215,22 @@ export default function Feed() {
             </button>
           </div>
         ) : (
-          posts.map(p => <Post key={p.id} post={p} currentUserId={user.id} />)
-        )}
-
-        {showNotifications && (
-          <Notifications onClose={() => setShowNotifications(false)} />
+          posts.map(p => <Post key={p.id} post={p} currentUserId={user.id} onViewProfile={setViewingProfile} />)
         )}
       </div>
+
+      {viewingProfile && viewingProfile !== user.id && (
+        <div className="absolute inset-0 z-40 bg-ps-bg flex flex-col">
+          <PerfilPublico
+            userId={viewingProfile}
+            onBack={() => setViewingProfile(null)}
+          />
+        </div>
+      )}
+
+      {showNotifications && (
+        <Notifications onClose={() => setShowNotifications(false)} />
+      )}
 
       {showCreate && (
         <CreatePostModal
