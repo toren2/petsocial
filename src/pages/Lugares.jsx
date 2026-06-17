@@ -5,26 +5,27 @@ import LugarDetalle from './LugarDetalle'
 import MapaLugares from '../components/MapaLugares'
 
 const categories = [
-  { id: 'all',   label: 'Todos',        Icon: MapPin,      bg: '#EDE9FE', color: '#7C3AED' },
-  { id: 'vet',   label: 'Veterinarias', Icon: Stethoscope, bg: '#EDE9FE', color: '#7C3AED' },
-  { id: 'groom', label: 'Grooming',     Icon: Scissors,    bg: '#FCE7F3', color: '#EC4899' },
-  { id: 'park',  label: 'Parques',      Icon: Trees,       bg: '#DCFCE7', color: '#16A34A' },
-  { id: 'shop',  label: 'Pet Shops',    Icon: ShoppingBag, bg: '#FEF3C7', color: '#D97706' },
-  { id: 'hotel', label: 'Hoteles',      Icon: Building2,   bg: '#E0F7F4', color: '#0F9B8E' },
+  { id: 'all',        label: 'Todos',        Icon: MapPin,      bg: '#EDE9FE', color: '#7C3AED' },
+  { id: 'vet',        label: 'Veterinarias', Icon: Stethoscope, bg: '#EDE9FE', color: '#7C3AED' },
+  { id: 'groom',      label: 'Grooming',     Icon: Scissors,    bg: '#FCE7F3', color: '#EC4899' },
+  { id: 'park',       label: 'Parques',      Icon: Trees,       bg: '#DCFCE7', color: '#16A34A' },
+  { id: 'shop',       label: 'Pet Shops',    Icon: ShoppingBag, bg: '#FEF3C7', color: '#D97706' },
+  { id: 'hotel',      label: 'Hoteles',      Icon: Building2,   bg: '#E0F7F4', color: '#0F9B8E' },
+  { id: 'restaurant', label: 'Restaurantes', Icon: MapPin,      bg: '#FEE2E2', color: '#DC2626' },
 ]
 
-const catIcons  = { vet: Stethoscope, groom: Scissors, park: Trees, shop: ShoppingBag, hotel: Building2 }
-const catColors = {
-  vet:   { bg: '#EDE9FE', color: '#7C3AED' },
-  groom: { bg: '#FCE7F3', color: '#EC4899' },
-  park:  { bg: '#DCFCE7', color: '#16A34A' },
-  shop:  { bg: '#FEF3C7', color: '#D97706' },
-  hotel: { bg: '#E0F7F4', color: '#0F9B8E' },
-}
+const catIcons = { vet: Stethoscope, groom: Scissors, park: Trees, shop: ShoppingBag, hotel: Building2, restaurant: MapPin }
 
+const catColors = {
+  vet:        { bg: '#EDE9FE', color: '#7C3AED' },
+  groom:      { bg: '#FCE7F3', color: '#EC4899' },
+  park:       { bg: '#DCFCE7', color: '#16A34A' },
+  shop:       { bg: '#FEF3C7', color: '#D97706' },
+  hotel:      { bg: '#E0F7F4', color: '#0F9B8E' },
+  restaurant: { bg: '#FEE2E2', color: '#DC2626' },
+}
 function getDistance(lat1, lng1, lat2, lng2) {
   const R = 6371
-  
   const dLat = (lat2 - lat1) * Math.PI / 180
   const dLng = (lng2 - lng1) * Math.PI / 180
   const a = Math.sin(dLat/2) ** 2 +
@@ -37,6 +38,7 @@ export default function Lugares() {
   const [places, setPlaces] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState('all')
+  const [activeTab, setActiveTab] = useState('cerca')
   const [search, setSearch] = useState('')
   const [selectedPlace, setSelectedPlace] = useState(null)
   const [userLocation, setUserLocation] = useState(null)
@@ -71,7 +73,6 @@ export default function Lugares() {
     if (!userLocation) return
     const { lat, lng } = userLocation
     const radius = 5000
-
     const query = `
       [out:json][timeout:25];
       (
@@ -83,14 +84,9 @@ export default function Lugares() {
       );
       out body;
     `
-
     try {
-    const res = await fetch('/api/overpass', {
-        method: 'POST',
-        body: query,
-      })
+      const res = await fetch('/api/overpass', { method: 'POST', body: query })
       const data = await res.json()
-
       if (data.elements && data.elements.length > 0) {
         const mapped = data.elements
           .filter(el => el.tags?.name)
@@ -99,7 +95,6 @@ export default function Lugares() {
               : el.tags.shop === 'pet' ? 'shop'
               : el.tags.amenity === 'grooming' ? 'groom'
               : 'park'
-
             return {
               id: `osm-${el.id}`,
               name: el.tags.name,
@@ -121,7 +116,6 @@ export default function Lugares() {
             }
           })
           .sort((a, b) => a.distance - b.distance)
-
         setPlaces(prev => {
           const existingNames = prev.map(p => p.name.toLowerCase())
           const newPlaces = mapped.filter(p => !existingNames.includes(p.name.toLowerCase()))
@@ -149,7 +143,10 @@ export default function Lugares() {
 
   if (selectedPlace) return <LugarDetalle place={selectedPlace} onBack={() => setSelectedPlace(null)} />
 
-  const filtered = places.filter(p => {
+  const supabasePlaces = places.filter(p => !String(p.id).startsWith('osm-'))
+  const sourcePlaces = activeTab === 'todos' ? supabasePlaces : places
+
+  const filtered = sourcePlaces.filter(p => {
     const matchCat    = activeCategory === 'all' || p.category === activeCategory
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
                         p.type.toLowerCase().includes(search.toLowerCase())
@@ -162,6 +159,24 @@ export default function Lugares() {
         <h2 className="text-xl font-bold text-gray-900">Lugares</h2>
         <button onClick={() => setShowMap(true)} className="border-0 bg-transparent cursor-pointer text-ps-purple" aria-label="Ver mapa">
           <Map size={22} />
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex bg-white border-b border-gray-100 flex-shrink-0">
+        <button
+          onClick={() => setActiveTab('cerca')}
+          className="flex-1 py-2.5 text-sm font-medium border-0 bg-transparent cursor-pointer border-b-2 transition-colors"
+          style={{ color: activeTab === 'cerca' ? '#7C3AED' : '#9CA3AF', borderBottomColor: activeTab === 'cerca' ? '#7C3AED' : 'transparent' }}
+        >
+          Cerca de mí
+        </button>
+        <button
+          onClick={() => setActiveTab('todos')}
+          className="flex-1 py-2.5 text-sm font-medium border-0 bg-transparent cursor-pointer border-b-2 transition-colors"
+          style={{ color: activeTab === 'todos' ? '#7C3AED' : '#9CA3AF', borderBottomColor: activeTab === 'todos' ? '#7C3AED' : 'transparent' }}
+        >
+          Directorio
         </button>
       </div>
 
@@ -201,13 +216,11 @@ export default function Lugares() {
           ))}
         </div>
 
-        {userLocation && (
+        {activeTab === 'cerca' && userLocation && (
           <div className="px-4 py-2 bg-ps-teal-light border-b border-gray-100 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <MapPin size={13} className="text-ps-teal flex-shrink-0" />
-              <span className="text-xs text-ps-teal font-medium">
-                Mostrando lugares cerca de ti
-              </span>
+              <span className="text-xs text-ps-teal font-medium">Mostrando lugares cerca de ti</span>
             </div>
             <button
               onClick={refreshLocation}
@@ -219,21 +232,23 @@ export default function Lugares() {
           </div>
         )}
 
-        <div
-          onClick={() => setShowMap(true)}
-          style={{ height: 160, background: 'linear-gradient(135deg, #DBEAFE, #EDE9FE)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '0.5px solid #E5E7EB', cursor: 'pointer' }}
-        >
-          <span style={{ position: 'absolute', fontSize: 24, top: 30, left: 60 }}>📍</span>
-          <span style={{ position: 'absolute', fontSize: 24, top: 50, right: 70 }}>📍</span>
-          <span style={{ position: 'absolute', fontSize: 24, bottom: 25, left: 130 }}>📍</span>
-          <button className="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 text-sm font-medium text-gray-700 cursor-pointer z-10">
-            <MapPin size={14} className="text-ps-purple" /> Ver mapa completo
-          </button>
-        </div>
+        {activeTab === 'cerca' && (
+          <div
+            onClick={() => setShowMap(true)}
+            style={{ height: 160, background: 'linear-gradient(135deg, #DBEAFE, #EDE9FE)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '0.5px solid #E5E7EB', cursor: 'pointer' }}
+          >
+            <span style={{ position: 'absolute', fontSize: 24, top: 30, left: 60 }}>📍</span>
+            <span style={{ position: 'absolute', fontSize: 24, top: 50, right: 70 }}>📍</span>
+            <span style={{ position: 'absolute', fontSize: 24, bottom: 25, left: 130 }}>📍</span>
+            <button className="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 text-sm font-medium text-gray-700 cursor-pointer z-10">
+              <MapPin size={14} className="text-ps-purple" /> Ver mapa completo
+            </button>
+          </div>
+        )}
 
         <div className="px-4 py-3 bg-white border-b border-gray-100">
           <span className="font-semibold text-sm text-gray-900">
-            {loading ? 'Cargando...' : `${filtered.length} lugar${filtered.length !== 1 ? 'es' : ''} cerca de ti`}
+            {loading ? 'Cargando...' : `${filtered.length} lugar${filtered.length !== 1 ? 'es' : ''} ${activeTab === 'todos' ? 'en el directorio' : 'cerca de ti'}`}
           </span>
         </div>
 
@@ -241,6 +256,11 @@ export default function Lugares() {
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
             <span className="text-4xl">🐾</span>
             <p className="text-sm">Cargando lugares...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
+            <span className="text-4xl">📍</span>
+            <p className="text-sm">No hay lugares en esta categoría</p>
           </div>
         ) : (
           filtered.map(place => {
@@ -273,7 +293,9 @@ export default function Lugares() {
                     )}
                   </div>
                 </div>
-                <div className="text-sm text-gray-400 font-medium flex-shrink-0">{place.distance} km</div>
+                {place.distance && (
+                  <div className="text-sm text-gray-400 font-medium flex-shrink-0">{place.distance} km</div>
+                )}
               </div>
             )
           })
