@@ -12,16 +12,15 @@ function Post({ post, currentUserId, onViewProfile }) {
   const [likes, setLikes] = useState(post.likes)
 
   async function toggleLike() {
-    if (liked) {
-      await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', currentUserId)
-      await supabase.from('posts').update({ likes: likes - 1 }).eq('id', post.id)
-      setLikes(l => l - 1)
-    } else {
+    const newLiked = !liked
+    const newLikes = newLiked ? likes + 1 : likes - 1
+    setLiked(newLiked)
+    setLikes(newLikes)
+    if (newLiked) {
       await supabase.from('post_likes').insert([{ post_id: post.id, user_id: currentUserId }])
-      await supabase.from('posts').update({ likes: likes + 1 }).eq('id', post.id)
-      setLikes(l => l + 1)
+    } else {
+      await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', currentUserId)
     }
-    setLiked(l => !l)
   }
 
   return (
@@ -107,11 +106,7 @@ export default function Feed() {
   }, [])
 
   async function fetchProfile() {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     if (data) setProfile(data)
   }
 
@@ -126,17 +121,14 @@ export default function Feed() {
 
   async function fetchPosts() {
     setLoading(true)
-    const { data } = await supabase
-      .from('posts')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const { data } = await supabase.from('posts').select('*').order('created_at', { ascending: false })
     if (data) {
-      const { data: likes } = await supabase
-        .from('post_likes')
-        .select('post_id')
-        .eq('user_id', user.id)
+      const { data: likes } = await supabase.from('post_likes').select('post_id').eq('user_id', user.id)
+      const { data: allLikes } = await supabase.from('post_likes').select('post_id')
       const likedIds = likes?.map(l => l.post_id) || []
-      setPosts(data.map(p => ({ ...p, liked: likedIds.includes(p.id) })))
+      const countMap = {}
+      allLikes?.forEach(l => { countMap[l.post_id] = (countMap[l.post_id] || 0) + 1 })
+      setPosts(data.map(p => ({ ...p, liked: likedIds.includes(p.id), likes: countMap[p.id] || 0 })))
     }
     setLoading(false)
   }
@@ -173,7 +165,6 @@ export default function Feed() {
 
       <div className="flex-1 overflow-y-auto bg-ps-bg">
         <StoriesBar profile={profile} />
-
         <div className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center overflow-hidden flex-shrink-0">
             {profile?.avatar_url ? (
@@ -221,10 +212,7 @@ export default function Feed() {
 
       {viewingProfile && viewingProfile !== user.id && (
         <div className="absolute inset-0 z-40 bg-ps-bg flex flex-col">
-          <PerfilPublico
-            userId={viewingProfile}
-            onBack={() => setViewingProfile(null)}
-          />
+          <PerfilPublico userId={viewingProfile} onBack={() => setViewingProfile(null)} />
         </div>
       )}
 
@@ -233,11 +221,7 @@ export default function Feed() {
       )}
 
       {showCreate && (
-        <CreatePostModal
-          profile={profile}
-          onClose={() => setShowCreate(false)}
-          onCreate={handleNewPost}
-        />
+        <CreatePostModal profile={profile} onClose={() => setShowCreate(false)} onCreate={handleNewPost} />
       )}
     </div>
   )
