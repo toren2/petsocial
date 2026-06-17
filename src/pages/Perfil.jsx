@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Save } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
-import { posts } from '../data'
 
 const SPECIES  = ['Perro', 'Gato', 'Conejo', 'Ave', 'Otro']
 const SIZES    = ['Pequeño', 'Mediano', 'Grande']
@@ -17,6 +16,8 @@ export default function Perfil({ onSignOut }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [stats, setStats] = useState({ posts: 0, matches: 0, reviews: 0 })
+  const [myPosts, setMyPosts] = useState([])
   const fileInputRef = useRef(null)
   const [form, setForm] = useState({
     pet_name: '', breed: '', species: 'Perro', age: '',
@@ -25,7 +26,7 @@ export default function Perfil({ onSignOut }) {
     location: '', about: '', emoji: '🐕', avatar_url: '',
   })
 
-  useEffect(() => { fetchProfile() }, [])
+  useEffect(() => { fetchProfile(); fetchStats(); fetchMyPosts() }, [])
 
   async function fetchProfile() {
     setLoading(true)
@@ -55,6 +56,24 @@ export default function Perfil({ onSignOut }) {
       setEditing(true)
     }
     setLoading(false)
+  }
+
+  async function fetchStats() {
+    const [{ count: posts }, { count: matches }, { count: reviews }] = await Promise.all([
+      supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+      supabase.from('matches').select('*', { count: 'exact', head: true }).or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`),
+      supabase.from('reviews').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+    ])
+    setStats({ posts: posts || 0, matches: matches || 0, reviews: reviews || 0 })
+  }
+
+  async function fetchMyPosts() {
+    const { data } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    if (data) setMyPosts(data)
   }
 
   async function uploadPhoto(file) {
@@ -93,40 +112,6 @@ export default function Perfil({ onSignOut }) {
 
   function handle(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
-  function Avatar({ size = 80, url, emoji, onPress }) {
-    return (
-      <div
-        className="relative flex-shrink-0"
-        style={{ width: size, height: size }}
-        onClick={onPress}
-      >
-        {url ? (
-          <img
-            src={url}
-            alt="avatar"
-            className="rounded-full object-cover w-full h-full"
-            style={{ border: '3px solid rgba(255,255,255,0.4)' }}
-          />
-        ) : (
-          <div
-            className="rounded-full flex items-center justify-center w-full h-full"
-            style={{ background: 'rgba(255,255,255,0.2)', border: '3px solid rgba(255,255,255,0.4)', fontSize: size * 0.45 }}
-          >
-            {emoji}
-          </div>
-        )}
-        {onPress && (
-          <div
-            className="absolute bottom-0 right-0 flex items-center justify-center rounded-full border-2 border-white text-white"
-            style={{ width: 26, height: 26, background: '#7C3AED' }}
-          >
-            {uploadingPhoto ? '...' : <Camera size={12} />}
-          </div>
-        )}
-      </div>
-    )
-  }
-
   if (loading) return (
     <div className="flex flex-col flex-1 items-center justify-center gap-3 text-gray-400">
       <span className="text-4xl">🐾</span>
@@ -150,10 +135,7 @@ export default function Perfil({ onSignOut }) {
       <div className="flex-1 overflow-y-auto bg-ps-bg px-4 py-4 flex flex-col gap-4">
         <div className="bg-white rounded-2xl p-4 border border-gray-100 flex flex-col items-center gap-3">
           <h3 className="text-sm font-semibold text-gray-900 self-start">Foto de tu mascota</h3>
-          <div
-            className="relative cursor-pointer"
-            onClick={() => fileInputRef.current?.click()}
-          >
+          <div className="relative cursor-pointer" onClick={() => fileInputRef.current?.click()}>
             {form.avatar_url ? (
               <img src={form.avatar_url} alt="avatar" className="w-24 h-24 rounded-full object-cover border-4 border-ps-purple-light" />
             ) : (
@@ -166,22 +148,14 @@ export default function Perfil({ onSignOut }) {
             </div>
           </div>
           <p className="text-xs text-gray-400">Toca para subir una foto</p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={e => e.target.files?.[0] && uploadPhoto(e.target.files[0])}
-          />
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadPhoto(e.target.files[0])} />
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-gray-100">
           <h3 className="text-sm font-semibold text-gray-900 mb-3">Elige un emoji</h3>
           <div className="flex gap-2 flex-wrap">
             {EMOJIS.map(e => (
-              <button
-                key={e}
-                onClick={() => handle('emoji', e)}
+              <button key={e} onClick={() => handle('emoji', e)}
                 className="text-2xl w-12 h-12 rounded-xl border-0 cursor-pointer flex items-center justify-center"
                 style={{ background: form.emoji === e ? '#EDE9FE' : '#F9F7FF', border: form.emoji === e ? '2px solid #7C3AED' : '2px solid transparent' }}
               >
@@ -272,10 +246,7 @@ export default function Perfil({ onSignOut }) {
         className="flex items-center gap-4 px-5 py-6 flex-shrink-0"
         style={{ background: 'linear-gradient(160deg, #6D28D9, #7C3AED)' }}
       >
-        <div
-          className="relative cursor-pointer flex-shrink-0"
-          onClick={() => fileInputRef.current?.click()}
-        >
+        <div className="relative cursor-pointer flex-shrink-0" onClick={() => fileInputRef.current?.click()}>
           {profile.avatar_url ? (
             <img src={profile.avatar_url} alt="avatar" className="w-20 h-20 rounded-full object-cover" style={{ border: '3px solid rgba(255,255,255,0.4)' }} />
           ) : (
@@ -286,13 +257,7 @@ export default function Perfil({ onSignOut }) {
           <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center border-2 border-white" style={{ background: '#7C3AED' }}>
             {uploadingPhoto ? <span className="text-white text-xs">...</span> : <Camera size={13} color="white" />}
           </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={e => e.target.files?.[0] && uploadPhoto(e.target.files[0])}
-          />
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadPhoto(e.target.files[0])} />
         </div>
         <div>
           <h2 className="text-2xl font-bold text-white">{profile.pet_name}</h2>
@@ -304,7 +269,11 @@ export default function Perfil({ onSignOut }) {
       </div>
 
       <div className="flex bg-white border-b border-gray-100 flex-shrink-0">
-        {[['48', 'Posts'], ['312', 'Seguidores'], ['14', 'Matches']].map(([n, label]) => (
+        {[
+          [stats.posts,   'Posts'],
+          [stats.matches, 'Matches'],
+          [stats.reviews, 'Reviews'],
+        ].map(([n, label]) => (
           <div key={label} className="flex-1 py-3.5 text-center border-r border-gray-100 last:border-r-0">
             <div className="text-lg font-bold text-gray-900">{n}</div>
             <div className="text-xs text-gray-400">{label}</div>
@@ -347,13 +316,23 @@ export default function Perfil({ onSignOut }) {
             <h3 className="text-sm font-semibold text-gray-900">Posts recientes</h3>
             <Grid3x3 size={18} className="text-gray-400" />
           </div>
-          <div className="grid grid-cols-3 gap-1">
-            {posts.map(p => (
-              <div key={p.id} className="aspect-square rounded-lg flex items-center justify-center text-3xl" style={{ background: p.imgBg }}>
-                {p.emoji}
-              </div>
-            ))}
-          </div>
+          {myPosts.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-4">Aún no has publicado nada</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-1">
+              {myPosts.map(p => (
+                <div key={p.id} className="aspect-square rounded-lg overflow-hidden" style={{ background: '#EDE9FE' }}>
+                  {p.image_url ? (
+                    <img src={p.image_url} alt="post" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-3xl">
+                      {p.pet_emoji || '🐕'}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="px-4 py-4 flex flex-col gap-3">
