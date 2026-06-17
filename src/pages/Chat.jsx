@@ -3,11 +3,13 @@ import { ArrowLeft, MoreVertical, Send, Image, Smile } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { notifyMessage } from '../notifications'
+import PerfilPublico from './PerfilPublico'
 
 function ConversationList({ onOpen }) {
   const { user } = useAuth()
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
+  const [viewingProfile, setViewingProfile] = useState(null)
 
   useEffect(() => { fetchMatches() }, [])
 
@@ -153,17 +155,20 @@ if (!error && data) {
         <button onClick={onBack} className="border-0 bg-transparent cursor-pointer text-ps-purple">
           <ArrowLeft size={22} />
         </button>
-        <div className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center text-xl flex-shrink-0 overflow-hidden">
+     <div
+  className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center text-xl flex-shrink-0 overflow-hidden cursor-pointer"
+  onClick={() => setViewingProfile(match.otherId)}
+>
   {match.profile?.avatar_url ? (
     <img src={match.profile.avatar_url} alt={match.profile.pet_name} className="w-full h-full object-cover" />
   ) : (
     match.profile?.emoji || '🐕'
   )}
 </div>
-        <div className="flex-1">
-          <div className="font-semibold text-gray-900 text-base">{match.profile?.pet_name || 'Mascota'}</div>
-          <div className="text-xs text-gray-400">{match.profile?.breed}</div>
-        </div>
+<div className="flex-1 cursor-pointer" onClick={() => setViewingProfile(match.otherId)}>
+  <div className="font-semibold text-gray-900 text-base">{match.profile?.pet_name || 'Mascota'}</div>
+  <div className="text-xs text-gray-400">{match.profile?.breed}</div>
+</div>
         <button className="border-0 bg-transparent cursor-pointer text-gray-400">
           <MoreVertical size={20} />
         </button>
@@ -231,6 +236,14 @@ if (!error && data) {
           <Send size={16} />
         </button>
       </div>
+      {viewingProfile && (
+  <div className="absolute inset-0 z-40 bg-ps-bg flex flex-col">
+    <PerfilPublico
+      userId={viewingProfile}
+      onBack={() => setViewingProfile(null)}
+    />
+  </div>
+)}
     </div>
   )
 }
