@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Save } from 'lucide-react'
+import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Save, X, ChevronLeft, ChevronRight, Heart } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 
@@ -8,6 +8,54 @@ const SIZES    = ['Pequeño', 'Mediano', 'Grande']
 const SEXES    = ['Macho', 'Hembra']
 const ENERGIES = ['Tranquilo', 'Activo', 'Hiperactivo']
 const EMOJIS   = ['🐕', '🐩', '🦮', '🐕‍🦺', '🦊', '🐈', '🐇', '🦜']
+
+function PhotoViewer({ posts, startIndex, onClose }) {
+  const [index, setIndex] = useState(startIndex)
+  const post = posts[index]
+
+  function prev() { if (index > 0) setIndex(i => i - 1) }
+  function next() { if (index < posts.length - 1) setIndex(i => i + 1) }
+
+  if (!post) return null
+
+  return (
+    <div className="absolute inset-0 bg-black z-50 flex flex-col">
+      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0">
+        <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-white">
+          <X size={24} />
+        </button>
+        <span className="text-white text-sm font-medium">{index + 1} / {posts.length}</span>
+        <div style={{ width: 24 }} />
+      </div>
+      <div className="flex-1 relative flex items-center justify-center">
+        {post.image_url ? (
+          <img src={post.image_url} alt="post" className="w-full h-full object-contain" />
+        ) : (
+          <div className="text-8xl">{post.pet_emoji || '🐕'}</div>
+        )}
+        {index > 0 && (
+          <button onClick={prev} className="absolute left-3 border-0 bg-black/40 rounded-full p-2 cursor-pointer text-white">
+            <ChevronLeft size={22} />
+          </button>
+        )}
+        {index < posts.length - 1 && (
+          <button onClick={next} className="absolute right-3 border-0 bg-black/40 rounded-full p-2 cursor-pointer text-white">
+            <ChevronRight size={22} />
+          </button>
+        )}
+      </div>
+      {post.caption && (
+        <div className="px-4 py-3 bg-black/60 flex-shrink-0">
+          <p className="text-white text-sm leading-relaxed">{post.caption}</p>
+          <div className="flex items-center gap-1 mt-2 text-white/70 text-xs">
+            <Heart size={13} />
+            <span>{post.likes} me gusta</span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function Perfil({ onSignOut }) {
   const { user } = useAuth()
@@ -18,6 +66,8 @@ export default function Perfil({ onSignOut }) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [stats, setStats] = useState({ posts: 0, matches: 0, reviews: 0 })
   const [myPosts, setMyPosts] = useState([])
+  const [viewingPhoto, setViewingPhoto] = useState(null)
+  const [showInfo, setShowInfo] = useState(false)
   const fileInputRef = useRef(null)
   const [form, setForm] = useState({
     pet_name: '', breed: '', species: 'Perro', age: '',
@@ -106,6 +156,8 @@ export default function Perfil({ onSignOut }) {
     if (!error) {
       setProfile({ ...form, id: user.id })
       setEditing(false)
+      fetchStats()
+      fetchMyPosts()
     }
     setSaving(false)
   }
@@ -131,7 +183,6 @@ export default function Perfil({ onSignOut }) {
           </button>
         )}
       </div>
-
       <div className="flex-1 overflow-y-auto bg-ps-bg px-4 py-4 flex flex-col gap-4">
         <div className="bg-white rounded-2xl p-4 border border-gray-100 flex flex-col items-center gap-3">
           <h3 className="text-sm font-semibold text-gray-900 self-start">Foto de tu mascota</h3>
@@ -241,107 +292,136 @@ export default function Perfil({ onSignOut }) {
   )
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <div
-        className="flex items-center gap-4 px-5 py-6 flex-shrink-0"
-        style={{ background: 'linear-gradient(160deg, #6D28D9, #7C3AED)' }}
-      >
-        <div className="relative cursor-pointer flex-shrink-0" onClick={() => fileInputRef.current?.click()}>
-          {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt="avatar" className="w-20 h-20 rounded-full object-cover" style={{ border: '3px solid rgba(255,255,255,0.4)' }} />
-          ) : (
-            <div className="w-20 h-20 rounded-full flex items-center justify-center text-5xl" style={{ background: 'rgba(255,255,255,0.2)', border: '3px solid rgba(255,255,255,0.4)' }}>
-              {profile.emoji}
+    <div className="flex flex-col flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-y-auto bg-white">
+        {/* Header estilo Instagram */}
+        <div className="flex items-center gap-4 px-4 py-4">
+          <div className="relative flex-shrink-0 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt="avatar" className="w-20 h-20 rounded-full object-cover border-2 border-ps-purple-light" />
+            ) : (
+              <div className="w-20 h-20 rounded-full flex items-center justify-center text-4xl" style={{ background: '#EDE9FE' }}>
+                {profile.emoji}
+              </div>
+            )}
+            <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center border-2 border-white" style={{ background: '#7C3AED' }}>
+              {uploadingPhoto ? <span className="text-white text-xs">...</span> : <Camera size={13} color="white" />}
             </div>
-          )}
-          <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center border-2 border-white" style={{ background: '#7C3AED' }}>
-            {uploadingPhoto ? <span className="text-white text-xs">...</span> : <Camera size={13} color="white" />}
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadPhoto(e.target.files[0])} />
           </div>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadPhoto(e.target.files[0])} />
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold text-white">{profile.pet_name}</h2>
-          <p className="text-white/75 text-sm mt-0.5">{profile.breed} · {profile.age} años · {profile.sex}</p>
-          <p className="text-white/60 text-xs mt-0.5 flex items-center gap-1">
-            <MapPin size={11} /> {profile.location}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex bg-white border-b border-gray-100 flex-shrink-0">
-        {[
-          [stats.posts,   'Posts'],
-          [stats.matches, 'Matches'],
-          [stats.reviews, 'Reviews'],
-        ].map(([n, label]) => (
-          <div key={label} className="flex-1 py-3.5 text-center border-r border-gray-100 last:border-r-0">
-            <div className="text-lg font-bold text-gray-900">{n}</div>
-            <div className="text-xs text-gray-400">{label}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex-1 overflow-y-auto bg-ps-bg">
-        <div className="bg-white mx-4 mt-3 rounded-2xl p-4 border border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Información</h3>
-          {[
-            [User,     'Nombre',      profile.pet_name],
-            [Calendar, 'Edad',        `${profile.age} años`],
-            ['🐾',     'Raza',        profile.breed],
-            ['🐕',     'Especie',     profile.species],
-            [Maximize2,'Tamaño',      profile.size],
-            [Zap,      'Energía',     profile.energy],
-            [Users,    'Se lleva con',profile.good_with],
-            [MapPin,   'Ubicación',   profile.location],
-          ].map(([Icon, label, value]) => (
-            <div key={label} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0 text-sm">
-              <span className="text-gray-400 flex items-center gap-2">
-                {typeof Icon === 'string' ? <span>{Icon}</span> : <Icon size={15} />}
-                {label}
-              </span>
-              <span className="font-medium text-gray-800 text-right max-w-[55%]">{value}</span>
+          <div className="flex-1">
+            <div className="font-bold text-gray-900 text-lg">{profile.pet_name}</div>
+            <div className="text-sm text-gray-500">{profile.breed} · {profile.age} años · {profile.sex}</div>
+            {profile.location && (
+              <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                <MapPin size={11} /> {profile.location}
+              </div>
+            )}
+            <div className="flex gap-4 mt-2">
+              <div className="text-center">
+                <div className="font-bold text-gray-900 text-sm">{stats.posts}</div>
+                <div className="text-xs text-gray-400">Posts</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-gray-900 text-sm">{stats.matches}</div>
+                <div className="text-xs text-gray-400">Matches</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-gray-900 text-sm">{stats.reviews}</div>
+                <div className="text-xs text-gray-400">Reviews</div>
+              </div>
             </div>
-          ))}
+          </div>
         </div>
 
         {profile.about && (
-          <div className="bg-white mx-4 mt-3 rounded-2xl p-4 border border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">Sobre {profile.pet_name}</h3>
-            <p className="text-sm text-gray-500 leading-relaxed">{profile.about}</p>
+          <div className="px-4 pb-3">
+            <p className="text-sm text-gray-700 leading-relaxed">{profile.about}</p>
           </div>
         )}
 
-        <div className="bg-white mx-4 mt-3 rounded-2xl p-4 border border-gray-100">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-900">Posts recientes</h3>
-            <Grid3x3 size={18} className="text-gray-400" />
-          </div>
-          {myPosts.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">Aún no has publicado nada</p>
-          ) : (
-            <div className="grid grid-cols-3 gap-1">
-              {myPosts.map(p => (
-                <div key={p.id} className="aspect-square rounded-lg overflow-hidden" style={{ background: '#EDE9FE' }}>
-                  {p.image_url ? (
-                    <img src={p.image_url} alt="post" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-3xl">
-                      {p.pet_emoji || '🐕'}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="px-4 py-4 flex flex-col gap-3">
-          <button onClick={() => setEditing(true)} className="btn-purple">Editar perfil</button>
-          <button onClick={onSignOut} className="w-full py-3 rounded-full text-sm text-gray-400 border border-gray-200 bg-white cursor-pointer">
-            Cerrar sesión
+        <div className="px-4 pb-3 flex gap-2">
+          <button
+            onClick={() => setEditing(true)}
+            className="flex-1 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-gray-50 cursor-pointer text-gray-700"
+          >
+            Editar perfil
+          </button>
+          <button
+            onClick={() => setShowInfo(s => !s)}
+            className="flex-1 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-gray-50 cursor-pointer text-gray-700"
+          >
+            {showInfo ? 'Ocultar info' : 'Ver info'}
+          </button>
+          <button
+            onClick={onSignOut}
+            className="py-2 px-3 rounded-xl text-xs font-semibold border border-gray-200 bg-gray-50 cursor-pointer text-gray-500"
+          >
+            Salir
           </button>
         </div>
+
+        {showInfo && (
+          <div className="mx-4 mb-3 rounded-2xl border border-gray-100 overflow-hidden">
+            {[
+              [User,     'Nombre',      profile.pet_name],
+              [Calendar, 'Edad',        `${profile.age} años`],
+              ['🐾',     'Raza',        profile.breed],
+              ['🐕',     'Especie',     profile.species],
+              [Maximize2,'Tamaño',      profile.size],
+              [Zap,      'Energía',     profile.energy],
+              [Users,    'Se lleva con',profile.good_with],
+              [MapPin,   'Ubicación',   profile.location],
+            ].map(([Icon, label, value]) => (
+              <div key={label} className="flex justify-between items-center px-4 py-2.5 border-b border-gray-100 last:border-0 text-sm bg-white">
+                <span className="text-gray-400 flex items-center gap-2">
+                  {typeof Icon === 'string' ? <span>{Icon}</span> : <Icon size={15} />}
+                  {label}
+                </span>
+                <span className="font-medium text-gray-800 text-right max-w-[55%]">{value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="border-t border-gray-100 flex items-center justify-center py-2 mb-1">
+          <Grid3x3 size={16} className="text-gray-400" />
+        </div>
+
+        {myPosts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
+            <span className="text-4xl">📸</span>
+            <p className="text-sm">Aún no has publicado nada</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-0.5">
+            {myPosts.map((p, i) => (
+              <div
+                key={p.id}
+                className="aspect-square cursor-pointer overflow-hidden"
+                style={{ background: '#EDE9FE' }}
+                onClick={() => setViewingPhoto(i)}
+              >
+                {p.image_url ? (
+                  <img src={p.image_url} alt="post" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-4xl">
+                    {p.pet_emoji || '🐕'}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {viewingPhoto !== null && (
+        <PhotoViewer
+          posts={myPosts}
+          startIndex={viewingPhoto}
+          onClose={() => setViewingPhoto(null)}
+        />
+      )}
     </div>
   )
 }
