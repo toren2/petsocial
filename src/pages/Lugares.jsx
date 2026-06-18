@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from 'react'
-import { Map, MapPin, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Search } from 'lucide-react'
+import { Map, MapPin, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Search, Heart, UtensilsCrossed } from 'lucide-react'
 import { supabase } from '../supabase'
 import LugarDetalle from './LugarDetalle'
 import MapaLugares from '../components/MapaLugares'
 
 const categories = [
-  { id: 'all',        label: 'Todos',        Icon: MapPin,      bg: '#EDE9FE', color: '#7C3AED' },
-  { id: 'vet',        label: 'Veterinarias', Icon: Stethoscope, bg: '#EDE9FE', color: '#7C3AED' },
-  { id: 'groom',      label: 'Grooming',     Icon: Scissors,    bg: '#FCE7F3', color: '#EC4899' },
-  { id: 'park',       label: 'Parques',      Icon: Trees,       bg: '#DCFCE7', color: '#16A34A' },
-  { id: 'shop',       label: 'Pet Shops',    Icon: ShoppingBag, bg: '#FEF3C7', color: '#D97706' },
-  { id: 'hotel',      label: 'Hoteles',      Icon: Building2,   bg: '#E0F7F4', color: '#0F9B8E' },
-  { id: 'restaurant', label: 'Restaurantes', Icon: MapPin,      bg: '#FEE2E2', color: '#DC2626' },
+  { id: 'all',        label: 'Todos',        Icon: MapPin,         bg: '#EDE9FE', color: '#7C3AED' },
+  { id: 'vet',        label: 'Veterinarias', Icon: Stethoscope,    bg: '#EDE9FE', color: '#7C3AED' },
+  { id: 'groom',      label: 'Grooming',     Icon: Scissors,       bg: '#FCE7F3', color: '#EC4899' },
+  { id: 'park',       label: 'Parques',      Icon: Trees,          bg: '#DCFCE7', color: '#16A34A' },
+  { id: 'shop',       label: 'Pet Shops',    Icon: ShoppingBag,    bg: '#FEF3C7', color: '#D97706' },
+  { id: 'hotel',      label: 'Hoteles',      Icon: Building2,      bg: '#E0F7F4', color: '#0F9B8E' },
+  { id: 'restaurant', label: 'Restaurantes', Icon: UtensilsCrossed, bg: '#FEE2E2', color: '#DC2626' },
 ]
 
-const catIcons = { vet: Stethoscope, groom: Scissors, park: Trees, shop: ShoppingBag, hotel: Building2, restaurant: MapPin }
-
+const catIcons  = { vet: Stethoscope, groom: Scissors, park: Trees, shop: ShoppingBag, hotel: Building2, restaurant: UtensilsCrossed }
 const catColors = {
   vet:        { bg: '#EDE9FE', color: '#7C3AED' },
   groom:      { bg: '#FCE7F3', color: '#EC4899' },
@@ -24,6 +23,7 @@ const catColors = {
   hotel:      { bg: '#E0F7F4', color: '#0F9B8E' },
   restaurant: { bg: '#FEE2E2', color: '#DC2626' },
 }
+
 function getDistance(lat1, lng1, lat2, lng2) {
   const R = 6371
   const dLat = (lat2 - lat1) * Math.PI / 180
@@ -61,10 +61,7 @@ export default function Lugares() {
 
   async function fetchPlaces() {
     setLoading(true)
-    const { data } = await supabase
-      .from('places')
-      .select('*')
-      .order('rating', { ascending: false })
+    const { data } = await supabase.from('places').select('*').order('rating', { ascending: false })
     if (data) setPlaces(data)
     setLoading(false)
   }
@@ -98,17 +95,12 @@ export default function Lugares() {
             return {
               id: `osm-${el.id}`,
               name: el.tags.name,
-              type: category === 'vet' ? 'Veterinaria'
-                : category === 'shop' ? 'Pet Shop'
-                : category === 'groom' ? 'Grooming'
-                : 'Parque pet-friendly',
+              type: category === 'vet' ? 'Veterinaria' : category === 'shop' ? 'Pet Shop' : category === 'groom' ? 'Grooming' : 'Parque pet-friendly',
               category,
               rating: (Math.random() * 1.5 + 3.5).toFixed(1),
               reviews: Math.floor(Math.random() * 100 + 10),
               distance: getDistance(lat, lng, el.lat, el.lon),
-              address: el.tags['addr:street']
-                ? `${el.tags['addr:street']} ${el.tags['addr:housenumber'] || ''}`.trim()
-                : 'Panamá',
+              address: el.tags['addr:street'] ? `${el.tags['addr:street']} ${el.tags['addr:housenumber'] || ''}`.trim() : 'Panamá',
               open: true,
               hours: 'Ver horario en Google Maps',
               lat: el.lat,
@@ -118,8 +110,7 @@ export default function Lugares() {
           .sort((a, b) => a.distance - b.distance)
         setPlaces(prev => {
           const existingNames = prev.map(p => p.name.toLowerCase())
-          const newPlaces = mapped.filter(p => !existingNames.includes(p.name.toLowerCase()))
-          return [...prev, ...newPlaces]
+          return [...prev, ...mapped.filter(p => !existingNames.includes(p.name.toLowerCase()))]
         })
       }
     } catch (err) {
@@ -130,12 +121,7 @@ export default function Lugares() {
   function refreshLocation() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        pos => {
-          const newLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude }
-          setUserLocation(newLocation)
-          setPlaces([])
-          fetchPlaces()
-        },
+        pos => { setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setPlaces([]); fetchPlaces() },
         () => console.log('No se pudo obtener ubicación')
       )
     }
@@ -145,18 +131,20 @@ export default function Lugares() {
 
   const supabasePlaces = places.filter(p => !String(p.id).startsWith('osm-'))
   const sourcePlaces = activeTab === 'todos' ? supabasePlaces : places
-
   const filtered = sourcePlaces.filter(p => {
     const matchCat    = activeCategory === 'all' || p.category === activeCategory
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
-                        p.type.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.type.toLowerCase().includes(search.toLowerCase())
     return matchCat && matchSearch
   })
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
-        <h2 className="text-xl font-bold text-gray-900">Lugares</h2>
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">Lugares 🐾</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Descubre los mejores lugares para tu mascota</p>
+        </div>
         <button onClick={() => setShowMap(true)} className="border-0 bg-transparent cursor-pointer text-ps-purple" aria-label="Ver mapa">
           <Map size={22} />
         </button>
@@ -180,126 +168,156 @@ export default function Lugares() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-ps-bg">
-        <div className="px-4 py-3 bg-white border-b border-gray-100">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar veterinarias, parques..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full bg-ps-bg border border-gray-200 rounded-xl py-2.5 pl-9 pr-4 text-sm outline-none"
-            />
-          </div>
+      {/* Search */}
+      <div className="px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar veterinarias, parques, pet shops..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full bg-ps-bg border border-gray-200 rounded-xl py-2.5 pl-9 pr-4 text-sm outline-none"
+          />
         </div>
+      </div>
 
-        <div className="flex gap-3 px-4 py-3 bg-white border-b border-gray-100 overflow-x-auto">
+      {/* Main layout - dos columnas */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* Columna izquierda - categorías vertical */}
+        <div className="flex flex-col bg-white border-r border-gray-100 overflow-y-auto flex-shrink-0" style={{ width: 72 }}>
           {categories.map(({ id, label, Icon, bg, color }) => (
             <button
               key={id}
               onClick={() => setActiveCategory(id)}
-              className="flex flex-col items-center gap-1 border-0 bg-transparent cursor-pointer flex-shrink-0"
+              className="flex flex-col items-center gap-1 py-3 px-1 border-0 cursor-pointer flex-shrink-0 transition-colors"
+              style={{ background: activeCategory === id ? '#F5F3FF' : 'white' }}
             >
               <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                style={{
-                  background: activeCategory === id ? color : bg,
-                  transform: activeCategory === id ? 'scale(1.05)' : 'scale(1)',
-                  transition: 'transform 0.15s',
-                }}
+                className="w-11 h-11 rounded-2xl flex items-center justify-center"
+                style={{ background: activeCategory === id ? color : bg }}
               >
-                <Icon size={22} color={activeCategory === id ? 'white' : color} />
+                <Icon size={20} color={activeCategory === id ? 'white' : color} />
               </div>
-              <span className="text-[10px] text-gray-500 font-medium">{label}</span>
+              <span className="text-[9px] text-center leading-tight font-medium" style={{ color: activeCategory === id ? color : '#9CA3AF' }}>
+                {label}
+              </span>
             </button>
           ))}
         </div>
 
-        {activeTab === 'cerca' && userLocation && (
-          <div className="px-4 py-2 bg-ps-teal-light border-b border-gray-100 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <MapPin size={13} className="text-ps-teal flex-shrink-0" />
-              <span className="text-xs text-ps-teal font-medium">Mostrando lugares cerca de ti</span>
-            </div>
-            <button
-              onClick={refreshLocation}
-              className="text-xs font-semibold border-0 cursor-pointer px-2.5 py-1 rounded-full"
-              style={{ background: '#0F9B8E', color: 'white' }}
-            >
-              Actualizar
-            </button>
-          </div>
-        )}
+        {/* Columna derecha - contenido */}
+        <div className="flex-1 overflow-y-auto bg-ps-bg">
 
-        {activeTab === 'cerca' && (
-          <div
-            onClick={() => setShowMap(true)}
-            style={{ height: 160, background: 'linear-gradient(135deg, #DBEAFE, #EDE9FE)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '0.5px solid #E5E7EB', cursor: 'pointer' }}
-          >
-            <span style={{ position: 'absolute', fontSize: 24, top: 30, left: 60 }}>📍</span>
-            <span style={{ position: 'absolute', fontSize: 24, top: 50, right: 70 }}>📍</span>
-            <span style={{ position: 'absolute', fontSize: 24, bottom: 25, left: 130 }}>📍</span>
-            <button className="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 text-sm font-medium text-gray-700 cursor-pointer z-10">
-              <MapPin size={14} className="text-ps-purple" /> Ver mapa completo
-            </button>
-          </div>
-        )}
-
-        <div className="px-4 py-3 bg-white border-b border-gray-100">
-          <span className="font-semibold text-sm text-gray-900">
-            {loading ? 'Cargando...' : `${filtered.length} lugar${filtered.length !== 1 ? 'es' : ''} ${activeTab === 'todos' ? 'en el directorio' : 'cerca de ti'}`}
-          </span>
-        </div>
-
-        {loading ? (
-          <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
-            <span className="text-4xl">🐾</span>
-            <p className="text-sm">Cargando lugares...</p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
-            <span className="text-4xl">📍</span>
-            <p className="text-sm">No hay lugares en esta categoría</p>
-          </div>
-        ) : (
-          filtered.map(place => {
-            const CatIcon = catIcons[place.category] || MapPin
-            const { bg, color } = catColors[place.category] || { bg: '#EDE9FE', color: '#7C3AED' }
-            return (
-              <div key={place.id} onClick={() => setSelectedPlace(place)} className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100 bg-white cursor-pointer active:bg-gray-50">
-                <div className="flex items-center justify-center rounded-xl flex-shrink-0" style={{ width: 56, height: 56, background: bg }}>
-                  <CatIcon size={26} color={color} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm text-gray-900">{place.name}</div>
-                  <div className="text-xs font-medium mt-0.5" style={{ color }}>{place.type}</div>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Star size={11} fill="#F59E0B" color="#F59E0B" />
-                    <span className="text-xs text-yellow-500 font-medium">{place.rating}</span>
-                    <span className="text-xs text-gray-400">({place.reviews})</span>
-                  </div>
-                  <div className="text-xs text-gray-400 mt-0.5 truncate">{place.address}</div>
-                  <div className="text-xs mt-0.5">
-                    {place.hours === 'Ver horario en Google Maps' ? (
-                      <button
-                        onClick={e => { e.stopPropagation(); window.open(`https://www.google.com/maps/search/${encodeURIComponent(place.name)}`, '_blank') }}
-                        style={{ color: '#7C3AED', fontWeight: 500, border: 0, background: 'transparent', cursor: 'pointer', padding: 0, fontSize: 12 }}
-                      >
-                        Ver en Google Maps
-                      </button>
-                    ) : (
-                      <span style={{ color: place.open ? '#16A34A' : '#DC2626' }}>{place.hours}</span>
-                    )}
-                  </div>
-                </div>
-                {place.distance && (
-                  <div className="text-sm text-gray-400 font-medium flex-shrink-0">{place.distance} km</div>
-                )}
+          {activeTab === 'cerca' && userLocation && (
+            <div className="px-3 py-2 bg-ps-teal-light flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <MapPin size={12} className="text-ps-teal flex-shrink-0" />
+                <span className="text-xs text-ps-teal font-medium">Cerca de ti</span>
               </div>
-            )
-          })
-        )}
+              <button
+                onClick={refreshLocation}
+                className="text-xs font-semibold border-0 cursor-pointer px-2 py-1 rounded-full"
+                style={{ background: '#0F9B8E', color: 'white' }}
+              >
+                Actualizar
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'cerca' && (
+            <div
+              onClick={() => setShowMap(true)}
+              style={{ height: 140, background: 'linear-gradient(135deg, #DBEAFE, #EDE9FE)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '0.5px solid #E5E7EB', cursor: 'pointer' }}
+            >
+              <span style={{ position: 'absolute', fontSize: 20, top: 25, left: 40 }}>📍</span>
+              <span style={{ position: 'absolute', fontSize: 20, top: 40, right: 50 }}>📍</span>
+              <span style={{ position: 'absolute', fontSize: 20, bottom: 20, left: 90 }}>📍</span>
+              <button className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs font-medium text-gray-700 cursor-pointer z-10">
+                <MapPin size={12} className="text-ps-purple" /> Ver mapa completo
+              </button>
+            </div>
+          )}
+
+          <div className="px-3 py-2 bg-white border-b border-gray-100">
+            <span className="font-semibold text-xs text-gray-900">
+              {loading ? 'Cargando...' : `${filtered.length} lugar${filtered.length !== 1 ? 'es' : ''} ${activeTab === 'todos' ? 'en directorio' : 'cerca de ti'}`}
+            </span>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
+              <span className="text-4xl">🐾</span>
+              <p className="text-sm">Cargando lugares...</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
+              <span className="text-4xl">📍</span>
+              <p className="text-sm">No hay lugares aquí</p>
+            </div>
+          ) : (
+            filtered.map(place => {
+              const CatIcon = catIcons[place.category] || MapPin
+              const { bg, color } = catColors[place.category] || { bg: '#EDE9FE', color: '#7C3AED' }
+              return (
+                <div key={place.id} onClick={() => setSelectedPlace(place)} className="flex gap-3 px-3 py-3 border-b border-gray-100 bg-white cursor-pointer active:bg-gray-50">
+                  {/* Foto placeholder */}
+                  <div className="relative flex-shrink-0 rounded-2xl flex items-center justify-center" style={{ width: 80, height: 80, background: bg }}>
+                    <CatIcon size={28} color={color} />
+                    <button
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center border-0 cursor-pointer"
+                      style={{ background: 'rgba(255,255,255,0.9)' }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <Heart size={12} color="#9CA3AF" />
+                    </button>
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-1">
+                      <div className="font-semibold text-sm text-gray-900 leading-tight">{place.name}</div>
+                      {place.distance && (
+                        <div className="text-xs text-gray-400 font-medium flex-shrink-0">{place.distance} km</div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1 mt-1 flex-wrap">
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: bg, color }}>
+                        {place.type}
+                      </span>
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: '#DCFCE7', color: '#16A34A' }}>
+                        🐾 Dog Friendly
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 mt-1">
+                      <Star size={10} fill="#F59E0B" color="#F59E0B" />
+                      <span className="text-xs text-yellow-500 font-medium">{place.rating}</span>
+                      <span className="text-xs text-gray-400">({place.reviews})</span>
+                    </div>
+
+                    <div className="text-xs text-gray-400 mt-0.5 truncate">{place.address}</div>
+
+                    <div className="text-xs mt-0.5">
+                      {place.hours === 'Ver horario en Google Maps' ? (
+                        <button
+                          onClick={e => { e.stopPropagation(); window.open(`https://www.google.com/maps/search/${encodeURIComponent(place.name)}`, '_blank') }}
+                          style={{ color: '#7C3AED', fontWeight: 500, border: 0, background: 'transparent', cursor: 'pointer', padding: 0, fontSize: 11 }}
+                        >
+                          Ver en Google Maps
+                        </button>
+                      ) : (
+                        <span style={{ color: place.open ? '#16A34A' : '#DC2626' }}>{place.hours}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
       </div>
 
       {showMap && (
