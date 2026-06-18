@@ -10,6 +10,7 @@ import Eventos from './pages/Eventos'
 import Chat from './pages/Chat'
 import BottomNav from './components/BottomNav'
 import MatchModal from './components/MatchModal'
+import Hub from './pages/Hub'
 
 export default function App() {
   const { user, loading, signOut } = useAuth()
@@ -23,7 +24,7 @@ export default function App() {
     </div>
   )
 
- if (showSplash && !user) {
+  if (showSplash && !user) {
     return (
       <div className="phone-shell">
         <Splash onEnter={() => setShowSplash(false)} />
@@ -32,7 +33,7 @@ export default function App() {
   }
 
   if (user && screen === 'splash') {
-    setScreen('feed')
+    setScreen('hub')
   }
 
   if (!user) {
@@ -63,6 +64,7 @@ export default function App() {
       </div>
 
       <div className="flex flex-col flex-1 overflow-hidden relative">
+        {screen === 'hub'     && <Hub onNavigate={setScreen} unreadCount={0} />}
         {screen === 'feed'    && <Feed />}
         {screen === 'match'   && <Match onMatch={handleMatch} />}
         {screen === 'chat'    && <Chat />}

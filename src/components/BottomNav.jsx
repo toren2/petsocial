@@ -1,11 +1,11 @@
 import React from 'react'
-import { Home, Heart, MessageCircle, MapPin, Calendar, User } from 'lucide-react'
+import { Home, Heart, MessageCircle, MapPin, Calendar, User, Newspaper } from 'lucide-react'
 
 const tabs = [
-  { id: 'feed',     label: 'Feed',     Icon: Home          },
+  { id: 'hub',      label: 'Inicio',   Icon: Home          },
+  { id: 'feed',     label: 'Feed',     Icon: Newspaper     },
   { id: 'match',    label: 'Match',    Icon: Heart         },
   { id: 'chat',     label: 'Chat',     Icon: MessageCircle },
-  { id: 'eventos',  label: 'Eventos',  Icon: Calendar      },
   { id: 'lugares',  label: 'Lugares',  Icon: MapPin        },
   { id: 'perfil',   label: 'Perfil',   Icon: User          },
 ]
