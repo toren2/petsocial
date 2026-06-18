@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Search, Bell, Plus, Heart, MessageCircle, Share2, Bookmark, MoreHorizontal } from 'lucide-react'
+import { Search, Bell, Plus, Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Trash2 } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import CreatePostModal from '../components/CreatePostModal'
@@ -7,7 +7,7 @@ import StoriesBar from '../components/StoriesBar'
 import Notifications from '../components/Notifications'
 import PerfilPublico from './PerfilPublico'
 
-function Post({ post, currentUserId, onViewProfile }) {
+function Post({ post, currentUserId, onViewProfile, onDelete }) {
   const [liked, setLiked] = useState(post.liked)
   const [likes, setLikes] = useState(post.likes)
 
@@ -42,9 +42,14 @@ function Post({ post, currentUserId, onViewProfile }) {
             {post.pet_breed} · {new Date(post.created_at).toLocaleDateString('es', { day: 'numeric', month: 'short' })}
           </div>
         </div>
-        <button className="border-0 bg-transparent p-1 cursor-pointer text-gray-400">
-          <MoreHorizontal size={20} />
-        </button>
+        {post.user_id === currentUserId && (
+  <button
+    onClick={e => { e.stopPropagation(); onDelete(post.id, post.image_url) }}
+    className="border-0 bg-transparent p-1 cursor-pointer text-gray-400"
+  >
+    <Trash2 size={20} />
+  </button>
+)}
       </div>
 
       {post.image_url ? (
@@ -137,6 +142,16 @@ export default function Feed() {
     setPosts(prev => [{ ...post, liked: false }, ...prev])
   }
 
+  async function deletePost(postId, imageUrl) {
+  if (!window.confirm('¿Eliminar este post?')) return
+  await supabase.from('posts').delete().eq('id', postId)
+  if (imageUrl) {
+    const path = imageUrl.split('/posts/')[1]
+    if (path) await supabase.storage.from('posts').remove([path])
+  }
+  setPosts(prev => prev.filter(p => p.id !== postId))
+}
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
@@ -206,7 +221,7 @@ export default function Feed() {
             </button>
           </div>
         ) : (
-          posts.map(p => <Post key={p.id} post={p} currentUserId={user.id} onViewProfile={setViewingProfile} />)
+          posts.map(p => <Post key={p.id} post={p} currentUserId={user.id} onViewProfile={setViewingProfile} onDelete={deletePost} />)
         )}
       </div>
 
