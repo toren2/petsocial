@@ -9,7 +9,6 @@ function ConversationList({ onOpen }) {
   const { user } = useAuth()
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
-  const [viewingProfile, setViewingProfile] = useState(null)
 
   useEffect(() => { fetchMatches() }, [])
 
@@ -62,14 +61,12 @@ function ConversationList({ onOpen }) {
               onClick={() => onOpen(match)}
               className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100 bg-white cursor-pointer active:bg-gray-50"
             >
-              <div className="relative flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-ps-purple-light flex items-center justify-center text-2xl overflow-hidden">
-  {match.profile?.avatar_url ? (
-    <img src={match.profile.avatar_url} alt={match.profile.pet_name} className="w-full h-full object-cover" />
-  ) : (
-    match.profile?.emoji || '🐕'
-  )}
-</div>
+              <div className="w-12 h-12 rounded-full bg-ps-purple-light flex items-center justify-center text-2xl overflow-hidden flex-shrink-0">
+                {match.profile?.avatar_url ? (
+                  <img src={match.profile.avatar_url} alt={match.profile.pet_name} className="w-full h-full object-cover" />
+                ) : (
+                  match.profile?.emoji || '🐕'
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm text-gray-900">{match.profile?.pet_name || 'Mascota'}</div>
@@ -93,6 +90,7 @@ function Conversation({ match, onBack }) {
   const [msgs, setMsgs] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
+  const [viewingProfile, setViewingProfile] = useState(null)
   const bottomRef = useRef(null)
 
   useEffect(() => {
@@ -130,45 +128,37 @@ function Conversation({ match, onBack }) {
     const text = input.trim()
     if (!text) return
     setInput('')
-   const { data, error } = await supabase
-  .from('messages')
-  .insert([{
-    sender_id: user.id,
-    receiver_id: match.otherId,
-    text,
-  }])
-  .select()
-if (!error && data) {
-  setMsgs(prev => [...prev, data[0]])
-  const { data: myProfile } = await supabase
-    .from('profiles')
-    .select('pet_name')
-    .eq('id', user.id)
-    .single()
-  await notifyMessage(match.otherId, myProfile?.pet_name || 'Una mascota')
-}
+    const { data, error } = await supabase
+      .from('messages')
+      .insert([{ sender_id: user.id, receiver_id: match.otherId, text }])
+      .select()
+    if (!error && data) {
+      setMsgs(prev => [...prev, data[0]])
+      const { data: myProfile } = await supabase.from('profiles').select('pet_name').eq('id', user.id).single()
+      await notifyMessage(match.otherId, myProfile?.pet_name || 'Una mascota')
+    }
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
         <button onClick={onBack} className="border-0 bg-transparent cursor-pointer text-ps-purple">
           <ArrowLeft size={22} />
         </button>
-     <div
-  className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center text-xl flex-shrink-0 overflow-hidden cursor-pointer"
-  onClick={() => setViewingProfile(match.otherId)}
->
-  {match.profile?.avatar_url ? (
-    <img src={match.profile.avatar_url} alt={match.profile.pet_name} className="w-full h-full object-cover" />
-  ) : (
-    match.profile?.emoji || '🐕'
-  )}
-</div>
-<div className="flex-1 cursor-pointer" onClick={() => setViewingProfile(match.otherId)}>
-  <div className="font-semibold text-gray-900 text-base">{match.profile?.pet_name || 'Mascota'}</div>
-  <div className="text-xs text-gray-400">{match.profile?.breed}</div>
-</div>
+        <div
+          className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center text-xl flex-shrink-0 overflow-hidden cursor-pointer"
+          onClick={() => setViewingProfile(match.otherId)}
+        >
+          {match.profile?.avatar_url ? (
+            <img src={match.profile.avatar_url} alt={match.profile.pet_name} className="w-full h-full object-cover" />
+          ) : (
+            match.profile?.emoji || '🐕'
+          )}
+        </div>
+        <div className="flex-1 cursor-pointer" onClick={() => setViewingProfile(match.otherId)}>
+          <div className="font-semibold text-gray-900 text-base">{match.profile?.pet_name || 'Mascota'}</div>
+          <div className="text-xs text-gray-400">{match.profile?.breed}</div>
+        </div>
         <button className="border-0 bg-transparent cursor-pointer text-gray-400">
           <MoreVertical size={20} />
         </button>
@@ -186,9 +176,7 @@ if (!error && data) {
         {loading ? (
           <div className="text-center text-sm text-gray-400 py-4">Cargando mensajes...</div>
         ) : msgs.length === 0 ? (
-          <div className="text-center text-sm text-gray-400 py-4">
-            ¡Sé el primero en decir hola! 👋
-          </div>
+          <div className="text-center text-sm text-gray-400 py-4">¡Sé el primero en decir hola! 👋</div>
         ) : (
           msgs.map(msg => (
             <div key={msg.id} className={`flex flex-col ${msg.sender_id === user.id ? 'items-end' : 'items-start'}`}>
@@ -231,19 +219,16 @@ if (!error && data) {
           onClick={sendMsg}
           className="flex items-center justify-center rounded-full bg-ps-purple border-0 cursor-pointer text-white flex-shrink-0"
           style={{ width: 36, height: 36 }}
-          aria-label="Enviar"
         >
           <Send size={16} />
         </button>
       </div>
+
       {viewingProfile && (
-  <div className="absolute inset-0 z-40 bg-ps-bg flex flex-col">
-    <PerfilPublico
-      userId={viewingProfile}
-      onBack={() => setViewingProfile(null)}
-    />
-  </div>
-)}
+        <div className="absolute inset-0 z-40 bg-ps-bg flex flex-col">
+          <PerfilPublico userId={viewingProfile} onBack={() => setViewingProfile(null)} />
+        </div>
+      )}
     </div>
   )
 }
