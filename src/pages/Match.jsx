@@ -18,6 +18,42 @@ const tagColors = {
 
 const DAILY_LIKE_LIMIT = 10
 
+function PhotoCarousel({ photos, emoji, bg, online, location }) {
+  const [index, setIndex] = useState(0)
+
+  if (!photos.length) return (
+    <div className="relative flex items-center justify-center overflow-hidden" style={{ height: 300, background: bg || '#EDE9FE', fontSize: 110 }}>
+      <span>{emoji}</span>
+      {online && <span className="absolute top-3 left-3 bg-green-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full">● Activo</span>}
+      {location && <span className="absolute top-3 right-3 bg-black/40 text-white text-xs px-2.5 py-0.5 rounded-full">📍 {location}</span>}
+    </div>
+  )
+
+  return (
+    <div className="relative overflow-hidden" style={{ height: 300 }}>
+      <img src={photos[index]} alt="pet" className="w-full h-full object-cover" />
+
+      {photos.length > 1 && (
+        <div className="absolute top-2 left-0 right-0 flex justify-center gap-1 z-10">
+          {photos.map((_, i) => (
+            <div key={i} className="h-1 rounded-full transition-all" style={{ width: i === index ? 20 : 8, background: i === index ? 'white' : 'rgba(255,255,255,0.5)' }} />
+          ))}
+        </div>
+      )}
+
+      {online && <span className="absolute top-3 left-3 bg-green-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full z-10">● Activo</span>}
+      {location && <span className="absolute top-3 right-3 bg-black/40 text-white text-xs px-2.5 py-0.5 rounded-full z-10">📍 {location}</span>}
+
+      {index > 0 && (
+        <button onClick={e => { e.stopPropagation(); setIndex(i => i - 1) }} className="absolute left-0 top-0 bottom-0 w-1/3 border-0 bg-transparent cursor-pointer z-10" />
+      )}
+      {index < photos.length - 1 && (
+        <button onClick={e => { e.stopPropagation(); setIndex(i => i + 1) }} className="absolute right-0 top-0 bottom-0 w-1/3 border-0 bg-transparent cursor-pointer z-10" />
+      )}
+    </div>
+  )
+}
+
 export default function Match({ onMatch }) {
   const { user } = useAuth()
   const [candidates, setCandidates] = useState([])
@@ -26,13 +62,30 @@ export default function Match({ onMatch }) {
   const [loading, setLoading] = useState(true)
   const [likesUsed, setLikesUsed] = useState(0)
   const [saved, setSaved] = useState([])
+  const [petPhotosMap, setPetPhotosMap] = useState({})
 
   useEffect(() => { fetchCandidates() }, [])
+
+  async function fetchPetPhotos(profileIds) {
+    if (!profileIds.length) return
+    const { data } = await supabase
+      .from('pet_photos')
+      .select('*')
+      .in('user_id', profileIds)
+      .order('order_index', { ascending: true })
+    if (data) {
+      const map = {}
+      data.forEach(p => {
+        if (!map[p.user_id]) map[p.user_id] = []
+        map[p.user_id].push(p.photo_url)
+      })
+      setPetPhotosMap(map)
+    }
+  }
 
   async function fetchCandidates() {
     setLoading(true)
 
-    // Obtener matches existentes
     const { data: existingMatches } = await supabase
       .from('matches')
       .select('user1_id, user2_id')
@@ -41,14 +94,12 @@ export default function Match({ onMatch }) {
       m.user1_id === user.id ? m.user2_id : m.user1_id
     ) || []
 
-    // Obtener likes ya enviados
     const { data: sentLikes } = await supabase
       .from('likes')
       .select('receiver_id')
       .eq('sender_id', user.id)
     const likedIds = sentLikes?.map(l => l.receiver_id) || []
 
-    // Obtener guardados
     const { data: savedData } = await supabase
       .from('saved_pets')
       .select('saved_user_id')
@@ -56,7 +107,6 @@ export default function Match({ onMatch }) {
     const savedIds = savedData?.map(s => s.saved_user_id) || []
     setSaved(savedIds)
 
-    // Contar likes de hoy
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const { count } = await supabase
@@ -66,7 +116,6 @@ export default function Match({ onMatch }) {
       .gte('created_at', today.toISOString())
     setLikesUsed(count || 0)
 
-    // Obtener perfiles
     const { data: profiles } = await supabase
       .from('profiles')
       .select('*')
@@ -93,10 +142,15 @@ export default function Match({ onMatch }) {
           realUser: true,
         }))
       setCandidates(filtered)
+      setIndex(0)
+      await fetchPetPhotos(filtered.map(p => p.id))
+    } else {
+      setCandidates([])
+      setIndex(0)
     }
-    setIndex(0)
     setLoading(false)
   }
+
   const pet = candidates[index]
 
   async function swipe(dir) {
@@ -107,56 +161,31 @@ export default function Match({ onMatch }) {
         alert(`Alcanzaste el límite de ${DAILY_LIKE_LIMIT} likes por hoy. Vuelve mañana o actualiza a Premium.`)
         return
       }
-
       setSwiping(dir)
       setTimeout(async () => {
         setSwiping(null)
-
-        // Registrar like
-        await supabase.from('likes').upsert([{
-          sender_id: user.id,
-          receiver_id: pet.id,
-        }], { onConflict: 'sender_id,receiver_id', ignoreDuplicates: true })
-
+        await supabase.from('likes').upsert([{ sender_id: user.id, receiver_id: pet.id }], { onConflict: 'sender_id,receiver_id', ignoreDuplicates: true })
         setLikesUsed(n => n + 1)
-
-        // Verificar si hay like mutuo
-        const { data: mutualLike } = await supabase
-          .from('likes')
-          .select('id')
-          .eq('sender_id', pet.id)
-          .eq('receiver_id', user.id)
-          .single()
-
+        const { data: mutualLike } = await supabase.from('likes').select('id').eq('sender_id', pet.id).eq('receiver_id', user.id).single()
         if (mutualLike) {
-          // ¡Match! Crear match y notificar
-          const { error } = await supabase
-            .from('matches')
-            .upsert([{ user1_id: user.id, user2_id: pet.id }], { onConflict: 'user1_id,user2_id', ignoreDuplicates: true })
+          const { error } = await supabase.from('matches').upsert([{ user1_id: user.id, user2_id: pet.id }], { onConflict: 'user1_id,user2_id', ignoreDuplicates: true })
           if (!error) {
             onMatch(pet)
             const { data: myProfile } = await supabase.from('profiles').select('pet_name').eq('id', user.id).single()
             await notifyMatch(user.id, pet.id, myProfile?.pet_name || 'Una mascota', pet.name)
           }
         }
-
         setIndex(i => i + 1)
       }, 300)
 
     } else if (dir === 'save') {
-      await supabase.from('saved_pets').upsert([{
-        user_id: user.id,
-        saved_user_id: pet.id,
-      }], { onConflict: 'user_id,saved_user_id', ignoreDuplicates: true })
+      await supabase.from('saved_pets').upsert([{ user_id: user.id, saved_user_id: pet.id }], { onConflict: 'user_id,saved_user_id', ignoreDuplicates: true })
       setSaved(prev => [...prev, pet.id])
       setIndex(i => i + 1)
 
     } else {
       setSwiping('nope')
-      setTimeout(() => {
-        setSwiping(null)
-        setIndex(i => i + 1)
-      }, 300)
+      setTimeout(() => { setSwiping(null); setIndex(i => i + 1) }, 300)
     }
   }
 
@@ -190,23 +219,13 @@ export default function Match({ onMatch }) {
       <div className="flex-1 overflow-y-auto px-4 py-3 bg-ps-bg">
         {pet ? (
           <div className="rounded-2xl overflow-hidden bg-white border border-gray-200" style={cardStyle}>
-            <div className="relative flex items-center justify-center overflow-hidden" style={{ height: 300, background: pet.bg || '#EDE9FE', fontSize: 110 }}>
-              {pet.avatar_url ? (
-                <img src={pet.avatar_url} alt={pet.name} className="w-full h-full object-cover" />
-              ) : (
-                <span>{pet.emoji}</span>
-              )}
-              {pet.online && (
-                <span className="absolute top-3 left-3 bg-green-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                  ● Activo
-                </span>
-              )}
-              {pet.location && (
-                <span className="absolute top-3 right-3 bg-black/40 text-white text-xs px-2.5 py-0.5 rounded-full">
-                  📍 {pet.location}
-                </span>
-              )}
-            </div>
+            <PhotoCarousel
+              photos={petPhotosMap[pet.id] || (pet.avatar_url ? [pet.avatar_url] : [])}
+              emoji={pet.emoji}
+              bg={pet.bg}
+              online={pet.online}
+              location={pet.location}
+            />
             <div className="p-4">
               <div className="text-xl font-bold text-gray-900 mb-0.5">
                 {pet.name} {pet.sex === 'Macho' ? '♂' : '♀'}
@@ -225,45 +244,23 @@ export default function Match({ onMatch }) {
           <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-400">
             <span className="text-5xl">🐾</span>
             <p className="text-sm font-medium">No hay más mascotas por ahora</p>
-            <button
-              onClick={fetchCandidates}
-              className="text-xs font-semibold px-4 py-2 rounded-full border-0 cursor-pointer mt-2"
-              style={{ background: '#EDE9FE', color: '#7C3AED' }}
-            >
+            <button onClick={fetchCandidates} className="text-xs font-semibold px-4 py-2 rounded-full border-0 cursor-pointer mt-2" style={{ background: '#EDE9FE', color: '#7C3AED' }}>
               Buscar de nuevo
             </button>
           </div>
         )}
 
         <div className="flex justify-center items-center gap-4 py-5">
-          <button
-            onClick={() => swipe('nope')}
-            className="flex items-center justify-center rounded-full bg-red-50 text-red-500 border-0 cursor-pointer active:scale-95"
-            style={{ width: 56, height: 56 }}
-          >
+          <button onClick={() => swipe('nope')} className="flex items-center justify-center rounded-full bg-red-50 text-red-500 border-0 cursor-pointer active:scale-95" style={{ width: 56, height: 56 }}>
             <X size={24} strokeWidth={2.5} />
           </button>
-          <button
-            onClick={() => swipe('save')}
-            className="flex items-center justify-center rounded-full bg-blue-50 text-blue-400 border-0 cursor-pointer active:scale-95"
-            style={{ width: 50, height: 50 }}
-          >
+          <button onClick={() => swipe('save')} className="flex items-center justify-center rounded-full bg-blue-50 text-blue-400 border-0 cursor-pointer active:scale-95" style={{ width: 50, height: 50 }}>
             <Bookmark size={20} strokeWidth={2} />
           </button>
-          <button
-            onClick={() => swipe('like')}
-            className="flex items-center justify-center rounded-full bg-pink-50 border-0 cursor-pointer active:scale-95"
-            style={{ width: 70, height: 70 }}
-            disabled={likesUsed >= DAILY_LIKE_LIMIT}
-          >
+          <button onClick={() => swipe('like')} className="flex items-center justify-center rounded-full bg-pink-50 border-0 cursor-pointer active:scale-95" style={{ width: 70, height: 70 }} disabled={likesUsed >= DAILY_LIKE_LIMIT}>
             <Heart size={28} strokeWidth={2} fill="#EC4899" color={likesUsed >= DAILY_LIKE_LIMIT ? '#D1D5DB' : '#EC4899'} />
           </button>
-          <button
-            onClick={() => swipe('super')}
-            className="flex items-center justify-center rounded-full bg-yellow-50 text-yellow-500 border-0 cursor-pointer active:scale-95"
-            style={{ width: 50, height: 50 }}
-            disabled={likesUsed >= DAILY_LIKE_LIMIT}
-          >
+          <button onClick={() => swipe('super')} className="flex items-center justify-center rounded-full bg-yellow-50 text-yellow-500 border-0 cursor-pointer active:scale-95" style={{ width: 50, height: 50 }} disabled={likesUsed >= DAILY_LIKE_LIMIT}>
             <Star size={22} strokeWidth={2} />
           </button>
         </div>
