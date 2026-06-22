@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { SlidersHorizontal, X, Heart, Star } from 'lucide-react'
+import { SlidersHorizontal, X, Heart, Star, Bookmark } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { notifyMatch } from '../notifications'
@@ -16,27 +16,57 @@ const tagColors = {
   'Busca amigos': 'bg-teal-100 text-teal-800',
 }
 
+const DAILY_LIKE_LIMIT = 10
+
 export default function Match({ onMatch }) {
   const { user } = useAuth()
   const [candidates, setCandidates] = useState([])
   const [index, setIndex] = useState(0)
   const [swiping, setSwiping] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [likesUsed, setLikesUsed] = useState(0)
+  const [saved, setSaved] = useState([])
 
   useEffect(() => { fetchCandidates() }, [])
 
   async function fetchCandidates() {
     setLoading(true)
 
+    // Obtener matches existentes
     const { data: existingMatches } = await supabase
       .from('matches')
       .select('user1_id, user2_id')
       .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-
     const matchedIds = existingMatches?.map(m =>
       m.user1_id === user.id ? m.user2_id : m.user1_id
     ) || []
 
+    // Obtener likes ya enviados
+    const { data: sentLikes } = await supabase
+      .from('likes')
+      .select('receiver_id')
+      .eq('sender_id', user.id)
+    const likedIds = sentLikes?.map(l => l.receiver_id) || []
+
+    // Obtener guardados
+    const { data: savedData } = await supabase
+      .from('saved_pets')
+      .select('saved_user_id')
+      .eq('user_id', user.id)
+    const savedIds = savedData?.map(s => s.saved_user_id) || []
+    setSaved(savedIds)
+
+    // Contar likes de hoy
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const { count } = await supabase
+      .from('likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('sender_id', user.id)
+      .gte('created_at', today.toISOString())
+    setLikesUsed(count || 0)
+
+    // Obtener perfiles
     const { data: profiles } = await supabase
       .from('profiles')
       .select('*')
@@ -44,7 +74,7 @@ export default function Match({ onMatch }) {
 
     if (profiles && profiles.length > 0) {
       const filtered = profiles
-        .filter(p => !matchedIds.includes(p.id))
+        .filter(p => !matchedIds.includes(p.id) && !likedIds.includes(p.id))
         .map(p => ({
           id: p.id,
           name: p.pet_name,
@@ -64,27 +94,70 @@ export default function Match({ onMatch }) {
         }))
       setCandidates(filtered)
     }
+    setIndex(0)
     setLoading(false)
   }
-
   const pet = candidates[index]
 
   async function swipe(dir) {
-    setSwiping(dir)
-    setTimeout(async () => {
-      setSwiping(null)
-      if ((dir === 'like' || dir === 'super') && pet?.realUser) {
-        const { error } = await supabase
-          .from('matches')
-          .upsert([{ user1_id: user.id, user2_id: pet.id }], { onConflict: 'user1_id,user2_id', ignoreDuplicates: true })
-        if (!error) {
-          onMatch(pet)
-          const { data: myProfile } = await supabase.from('profiles').select('pet_name').eq('id', user.id).single()
-          await notifyMatch(user.id, pet.id, myProfile?.pet_name || 'Una mascota', pet.name)
-        }
+    if (!pet) return
+
+    if (dir === 'like' || dir === 'super') {
+      if (likesUsed >= DAILY_LIKE_LIMIT) {
+        alert(`Alcanzaste el límite de ${DAILY_LIKE_LIMIT} likes por hoy. Vuelve mañana o actualiza a Premium.`)
+        return
       }
+
+      setSwiping(dir)
+      setTimeout(async () => {
+        setSwiping(null)
+
+        // Registrar like
+        await supabase.from('likes').upsert([{
+          sender_id: user.id,
+          receiver_id: pet.id,
+        }], { onConflict: 'sender_id,receiver_id', ignoreDuplicates: true })
+
+        setLikesUsed(n => n + 1)
+
+        // Verificar si hay like mutuo
+        const { data: mutualLike } = await supabase
+          .from('likes')
+          .select('id')
+          .eq('sender_id', pet.id)
+          .eq('receiver_id', user.id)
+          .single()
+
+        if (mutualLike) {
+          // ¡Match! Crear match y notificar
+          const { error } = await supabase
+            .from('matches')
+            .upsert([{ user1_id: user.id, user2_id: pet.id }], { onConflict: 'user1_id,user2_id', ignoreDuplicates: true })
+          if (!error) {
+            onMatch(pet)
+            const { data: myProfile } = await supabase.from('profiles').select('pet_name').eq('id', user.id).single()
+            await notifyMatch(user.id, pet.id, myProfile?.pet_name || 'Una mascota', pet.name)
+          }
+        }
+
+        setIndex(i => i + 1)
+      }, 300)
+
+    } else if (dir === 'save') {
+      await supabase.from('saved_pets').upsert([{
+        user_id: user.id,
+        saved_user_id: pet.id,
+      }], { onConflict: 'user_id,saved_user_id', ignoreDuplicates: true })
+      setSaved(prev => [...prev, pet.id])
       setIndex(i => i + 1)
-    }, 300)
+
+    } else {
+      setSwiping('nope')
+      setTimeout(() => {
+        setSwiping(null)
+        setIndex(i => i + 1)
+      }, 300)
+    }
   }
 
   const cardStyle = swiping ? {
@@ -106,9 +179,9 @@ export default function Match({ onMatch }) {
         <h2 className="text-xl font-bold text-gray-900">Match</h2>
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium px-3 py-1.5 rounded-full" style={{ background: '#EDE9FE', color: '#7C3AED' }}>
-            🌎 Global
+            ❤️ {DAILY_LIKE_LIMIT - likesUsed} restantes
           </span>
-          <button className="border-0 bg-transparent cursor-pointer text-ps-purple" aria-label="Filtros">
+          <button className="border-0 bg-transparent cursor-pointer text-ps-purple">
             <SlidersHorizontal size={20} />
           </button>
         </div>
@@ -162,17 +235,45 @@ export default function Match({ onMatch }) {
           </div>
         )}
 
-        <div className="flex justify-center items-center gap-5 py-5">
-          <button onClick={() => swipe('nope')} className="flex items-center justify-center rounded-full bg-red-50 text-red-500 border-0 cursor-pointer active:scale-95" style={{ width: 60, height: 60 }}>
-            <X size={26} strokeWidth={2.5} />
+        <div className="flex justify-center items-center gap-4 py-5">
+          <button
+            onClick={() => swipe('nope')}
+            className="flex items-center justify-center rounded-full bg-red-50 text-red-500 border-0 cursor-pointer active:scale-95"
+            style={{ width: 56, height: 56 }}
+          >
+            <X size={24} strokeWidth={2.5} />
           </button>
-          <button onClick={() => swipe('like')} className="flex items-center justify-center rounded-full bg-pink-50 border-0 cursor-pointer active:scale-95" style={{ width: 70, height: 70 }}>
-            <Heart size={28} strokeWidth={2} fill="#EC4899" color="#EC4899" />
+          <button
+            onClick={() => swipe('save')}
+            className="flex items-center justify-center rounded-full bg-blue-50 text-blue-400 border-0 cursor-pointer active:scale-95"
+            style={{ width: 50, height: 50 }}
+          >
+            <Bookmark size={20} strokeWidth={2} />
           </button>
-          <button onClick={() => swipe('super')} className="flex items-center justify-center rounded-full bg-yellow-50 text-yellow-500 border-0 cursor-pointer active:scale-95" style={{ width: 60, height: 60 }}>
-            <Star size={24} strokeWidth={2} />
+          <button
+            onClick={() => swipe('like')}
+            className="flex items-center justify-center rounded-full bg-pink-50 border-0 cursor-pointer active:scale-95"
+            style={{ width: 70, height: 70 }}
+            disabled={likesUsed >= DAILY_LIKE_LIMIT}
+          >
+            <Heart size={28} strokeWidth={2} fill="#EC4899" color={likesUsed >= DAILY_LIKE_LIMIT ? '#D1D5DB' : '#EC4899'} />
+          </button>
+          <button
+            onClick={() => swipe('super')}
+            className="flex items-center justify-center rounded-full bg-yellow-50 text-yellow-500 border-0 cursor-pointer active:scale-95"
+            style={{ width: 50, height: 50 }}
+            disabled={likesUsed >= DAILY_LIKE_LIMIT}
+          >
+            <Star size={22} strokeWidth={2} />
           </button>
         </div>
+
+        {likesUsed >= DAILY_LIKE_LIMIT && (
+          <div className="mx-2 p-4 rounded-2xl text-center" style={{ background: '#FEF3C7' }}>
+            <p className="text-sm font-semibold text-yellow-800">Límite diario alcanzado</p>
+            <p className="text-xs text-yellow-700 mt-1">Vuelve mañana o actualiza a Premium para likes ilimitados</p>
+          </div>
+        )}
       </div>
     </div>
   )
