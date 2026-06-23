@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Plus, Send, Trash2 } from 'lucide-react'
+import { X, Plus, Send, Trash2, Camera } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 
@@ -41,7 +41,8 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) 
   }
 
   return (
-    <div className="absolute inset-0 bg-black z-50 flex flex-col">
+    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+      {/* Progress bars */}
       <div className="flex gap-1 px-3 pt-3 pb-2 flex-shrink-0">
         {stories.map((s, i) => (
           <div key={s.id} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
@@ -53,10 +54,11 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) 
         ))}
       </div>
 
+      {/* Header */}
       <div className="flex items-center gap-3 px-4 py-2 flex-shrink-0">
         <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 flex items-center justify-center flex-shrink-0">
           {story.avatar_url ? (
-            <img src={story.image_url} alt="story" className="w-full h-full object-contain" />
+            <img src={story.avatar_url} alt={story.pet_name} className="w-full h-full object-cover" />
           ) : (
             <span className="text-lg">{story.pet_emoji || '🐕'}</span>
           )}
@@ -68,10 +70,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) 
           </div>
         </div>
         {story.user_id === currentUserId && (
-          <button
-            onClick={handleDelete}
-            className="border-0 bg-transparent cursor-pointer text-white/80 mr-2"
-          >
+          <button onClick={handleDelete} className="border-0 bg-transparent cursor-pointer text-white/80 mr-2">
             <Trash2 size={20} />
           </button>
         )}
@@ -80,16 +79,20 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) 
         </button>
       </div>
 
-      <div className="flex-1 relative" onClick={e => {
-        const x = e.clientX / window.innerWidth
-        if (x < 0.4) {
-          if (index > 0) setIndex(i => i - 1)
-        } else {
-          if (index < stories.length - 1) setIndex(i => i + 1)
-          else onClose()
-        }
-      }}>
-        <img src={story.image_url} alt="story" className="w-full h-full object-cover" />
+      {/* Image — object-contain para ver completa sin zoom */}
+      <div
+        className="flex-1 relative flex items-center justify-center"
+        onClick={e => {
+          const x = e.clientX / window.innerWidth
+          if (x < 0.4) {
+            if (index > 0) setIndex(i => i - 1)
+          } else {
+            if (index < stories.length - 1) setIndex(i => i + 1)
+            else onClose()
+          }
+        }}
+      >
+        <img src={story.image_url} alt="story" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
         {story.caption && (
           <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/70 to-transparent">
             <p className="text-white text-sm">{story.caption}</p>
@@ -134,18 +137,21 @@ function CreateStoryModal({ profile, onClose, onCreate }) {
   }
 
   return (
-    <div className="absolute inset-0 bg-black/50 z-50 flex flex-col justify-end">
-      <div className="bg-white rounded-t-3xl flex flex-col max-h-[90%]">
+    <div className="fixed inset-0 bg-black/60 z-50 flex flex-col justify-end">
+      <div className="bg-white rounded-t-3xl flex flex-col flex-shrink-0">
+        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <h3 className="font-bold text-gray-900 text-lg">Nueva historia</h3>
           <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-gray-400">
             <X size={22} />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
+
+        {/* Preview o selector */}
+        <div className="px-5 pt-4 pb-2">
           {imagePreview ? (
-            <div className="relative rounded-2xl overflow-hidden" style={{ height: 300 }}>
-              <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
+            <div className="relative rounded-2xl overflow-hidden" style={{ height: 220 }}>
+              <img src={imagePreview} alt="preview" className="w-full h-full object-contain bg-gray-100" />
               <button
                 onClick={() => { setImageFile(null); setImagePreview(null) }}
                 className="absolute top-2 right-2 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center border-0 cursor-pointer"
@@ -156,22 +162,27 @@ function CreateStoryModal({ profile, onClose, onCreate }) {
           ) : (
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-gray-200 rounded-2xl py-12 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
+              className="w-full border-2 border-dashed border-gray-200 rounded-2xl py-8 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
             >
-              <Plus size={32} className="text-gray-300" />
+              <Camera size={32} className="text-gray-300" />
               <span className="text-sm text-gray-400">Toca para agregar una foto</span>
             </button>
           )}
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
-          <textarea
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none bg-ps-bg resize-none"
-            placeholder="Agrega un texto a tu historia... (opcional)"
-            rows={3}
+        </div>
+
+        {/* Caption */}
+        <div className="px-5 pb-2">
+          <input
+            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg"
+            placeholder="Agrega un texto... (opcional)"
             value={caption}
             onChange={e => setCaption(e.target.value)}
           />
         </div>
-        <div className="px-5 py-4 border-t border-gray-100">
+
+        {/* Botón publicar — siempre visible */}
+        <div className="px-5 py-4">
           <button
             onClick={submit}
             disabled={loading || !imageFile}
@@ -260,7 +271,7 @@ export default function StoriesBar({ profile }) {
             className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer"
             onClick={() => setViewingStories(group.stories)}
           >
-            <div className="rounded-full p-0.5" style={{ border: `2px solid ${group.isOwn ? '#7C3AED' : '#7C3AED'}` }}>
+            <div className="rounded-full p-0.5" style={{ border: '2px solid #7C3AED' }}>
               <div className="w-12 h-12 rounded-full flex items-center justify-center bg-ps-purple-light overflow-hidden text-2xl">
                 {group.avatar_url ? (
                   <img src={group.avatar_url} alt={group.pet_name} className="w-full h-full object-cover" />
