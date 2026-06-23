@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Plus, Send } from 'lucide-react'
+import { X, Plus, Send, Trash2 } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 
-function StoryViewer({ stories, startIndex, onClose }) {
+function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) {
   const [index, setIndex] = useState(startIndex)
   const [progress, setProgress] = useState(0)
   const timerRef = useRef(null)
@@ -30,9 +30,18 @@ function StoryViewer({ stories, startIndex, onClose }) {
 
   if (!story) return null
 
+  async function handleDelete() {
+    if (!window.confirm('¿Eliminar esta historia?')) return
+    await onDelete(story)
+    if (index < stories.length - 1) {
+      setIndex(i => i + 1)
+    } else {
+      onClose()
+    }
+  }
+
   return (
     <div className="absolute inset-0 bg-black z-50 flex flex-col">
-      {/* Progress bars */}
       <div className="flex gap-1 px-3 pt-3 pb-2 flex-shrink-0">
         {stories.map((s, i) => (
           <div key={s.id} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
@@ -44,7 +53,6 @@ function StoryViewer({ stories, startIndex, onClose }) {
         ))}
       </div>
 
-      {/* Header */}
       <div className="flex items-center gap-3 px-4 py-2 flex-shrink-0">
         <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 flex items-center justify-center flex-shrink-0">
           {story.avatar_url ? (
@@ -59,12 +67,19 @@ function StoryViewer({ stories, startIndex, onClose }) {
             {new Date(story.created_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
           </div>
         </div>
+        {story.user_id === currentUserId && (
+          <button
+            onClick={handleDelete}
+            className="border-0 bg-transparent cursor-pointer text-white/80 mr-2"
+          >
+            <Trash2 size={20} />
+          </button>
+        )}
         <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-white">
           <X size={24} />
         </button>
       </div>
 
-      {/* Image */}
       <div className="flex-1 relative" onClick={e => {
         const x = e.clientX / window.innerWidth
         if (x < 0.4) {
@@ -105,18 +120,12 @@ function CreateStoryModal({ profile, onClose, onCreate }) {
     setLoading(true)
     const ext = imageFile.name.split('.').pop()
     const path = `${user.id}/${Date.now()}.${ext}`
-    const { error: uploadError } = await supabase.storage
-      .from('stories')
-      .upload(path, imageFile)
+    const { error: uploadError } = await supabase.storage.from('stories').upload(path, imageFile)
     if (!uploadError) {
       const { data } = supabase.storage.from('stories').getPublicUrl(path)
       const { data: story, error } = await supabase
         .from('stories')
-        .insert([{
-          user_id: user.id,
-          image_url: data.publicUrl,
-          caption: caption.trim(),
-        }])
+        .insert([{ user_id: user.id, image_url: data.publicUrl, caption: caption.trim() }])
         .select()
       if (!error && story) onCreate(story[0])
     }
@@ -178,11 +187,10 @@ function CreateStoryModal({ profile, onClose, onCreate }) {
   )
 }
 
-export default function StoriesBar({ profile, onCreatePost }) {
+export default function StoriesBar({ profile }) {
   const { user } = useAuth()
   const [stories, setStories] = useState([])
   const [viewingStories, setViewingStories] = useState(null)
-  const [viewingIndex, setViewingIndex] = useState(0)
   const [showCreate, setShowCreate] = useState(false)
 
   useEffect(() => { fetchStories() }, [])
@@ -218,22 +226,21 @@ export default function StoriesBar({ profile, onCreatePost }) {
       }))
 
       setStories(grouped)
+    } else {
+      setStories([])
     }
   }
 
-  function handleCreateStory(story) {
+  async function deleteStory(story) {
+    const path = story.image_url.split('/stories/')[1]
+    if (path) await supabase.storage.from('stories').remove([path])
+    await supabase.from('stories').delete().eq('id', story.id)
     fetchStories()
-  }
-
-  function openStories(group, index) {
-    setViewingStories(group.stories)
-    setViewingIndex(0)
   }
 
   return (
     <>
       <div className="flex gap-3 px-4 py-3 bg-white border-b border-gray-100 overflow-x-auto">
-        {/* Mi historia */}
         <div className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer" onClick={() => setShowCreate(true)}>
           <div className="rounded-full p-0.5" style={{ border: '2px dashed #D1D5DB' }}>
             <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 overflow-hidden">
@@ -247,14 +254,13 @@ export default function StoriesBar({ profile, onCreatePost }) {
           <span className="text-[10px] text-gray-500 max-w-[52px] text-center truncate">Tu historia</span>
         </div>
 
-        {/* Stories de otros */}
-        {stories.map((group, i) => (
+        {stories.map((group) => (
           <div
             key={group.userId}
             className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer"
-            onClick={() => openStories(group, i)}
+            onClick={() => setViewingStories(group.stories)}
           >
-            <div className="rounded-full p-0.5" style={{ border: '2px solid #7C3AED' }}>
+            <div className="rounded-full p-0.5" style={{ border: `2px solid ${group.isOwn ? '#7C3AED' : '#7C3AED'}` }}>
               <div className="w-12 h-12 rounded-full flex items-center justify-center bg-ps-purple-light overflow-hidden text-2xl">
                 {group.avatar_url ? (
                   <img src={group.avatar_url} alt={group.pet_name} className="w-full h-full object-cover" />
@@ -271,8 +277,10 @@ export default function StoriesBar({ profile, onCreatePost }) {
       {viewingStories && (
         <StoryViewer
           stories={viewingStories}
-          startIndex={viewingIndex}
-          onClose={() => setViewingStories(null)}
+          startIndex={0}
+          onClose={() => { setViewingStories(null); fetchStories() }}
+          onDelete={deleteStory}
+          currentUserId={user.id}
         />
       )}
 
@@ -280,7 +288,7 @@ export default function StoriesBar({ profile, onCreatePost }) {
         <CreateStoryModal
           profile={profile}
           onClose={() => setShowCreate(false)}
-          onCreate={handleCreateStory}
+          onCreate={() => { fetchStories(); setShowCreate(false) }}
         />
       )}
     </>
