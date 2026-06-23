@@ -13,6 +13,17 @@ function Post({ post, currentUserId, onViewProfile, onDelete }) {
   const [likes, setLikes] = useState(post.likes)
   const [showComments, setShowComments] = useState(false)
   const [commentCount, setCommentCount] = useState(0)
+  const [saved, setSaved] = useState(post.saved || false)
+
+  async function toggleSave() {
+  const newSaved = !saved
+  setSaved(newSaved)
+  if (newSaved) {
+    await supabase.from('saved_posts').insert([{ post_id: post.id, user_id: currentUserId }])
+  } else {
+    await supabase.from('saved_posts').delete().eq('post_id', post.id).eq('user_id', currentUserId)
+  }
+}
 
   useEffect(() => {
     supabase
@@ -106,9 +117,13 @@ function Post({ post, currentUserId, onViewProfile, onDelete }) {
         >
           <Share2 size={20} />
         </button>
-        <button className="border-0 bg-transparent p-0 cursor-pointer text-gray-400 ml-auto">
-          <Bookmark size={20} />
-        </button>
+        <button
+  onClick={toggleSave}
+  className="border-0 bg-transparent p-0 cursor-pointer ml-auto"
+  style={{ color: saved ? '#7C3AED' : '#9CA3AF' }}
+>
+  <Bookmark size={20} fill={saved ? '#7C3AED' : 'none'} />
+</button>
       </div>
 
       <div className="px-4 pb-1 text-sm font-semibold text-gray-900">{likes} me gusta</div>
@@ -166,9 +181,11 @@ export default function Feed() {
       const { data: likes } = await supabase.from('post_likes').select('post_id').eq('user_id', user.id)
       const { data: allLikes } = await supabase.from('post_likes').select('post_id')
       const likedIds = likes?.map(l => l.post_id) || []
+      const { data: savedPosts } = await supabase.from('saved_posts').select('post_id').eq('user_id', user.id)
+const savedIds = savedPosts?.map(s => s.post_id) || []
       const countMap = {}
       allLikes?.forEach(l => { countMap[l.post_id] = (countMap[l.post_id] || 0) + 1 })
-      setPosts(data.map(p => ({ ...p, liked: likedIds.includes(p.id), likes: countMap[p.id] || 0 })))
+      setPosts(data.map(p => ({ ...p, liked: likedIds.includes(p.id), likes: countMap[p.id] || 0, saved: savedIds.includes(p.id) })))
     }
     setLoading(false)
   }
