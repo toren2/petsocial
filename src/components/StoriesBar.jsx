@@ -56,7 +56,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) 
       <div className="flex items-center gap-3 px-4 py-2 flex-shrink-0">
         <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 flex items-center justify-center flex-shrink-0">
           {story.avatar_url ? (
-            <img src={story.avatar_url} alt={story.pet_name} className="w-full h-full object-cover" />
+            <img src={story.image_url} alt="story" className="w-full h-full object-contain" />
           ) : (
             <span className="text-lg">{story.pet_emoji || '🐕'}</span>
           )}
