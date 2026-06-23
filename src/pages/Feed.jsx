@@ -6,10 +6,21 @@ import CreatePostModal from '../components/CreatePostModal'
 import StoriesBar from '../components/StoriesBar'
 import Notifications from '../components/Notifications'
 import PerfilPublico from './PerfilPublico'
+import CommentsModal from '../components/CommentsModal'
 
 function Post({ post, currentUserId, onViewProfile, onDelete }) {
   const [liked, setLiked] = useState(post.liked)
   const [likes, setLikes] = useState(post.likes)
+  const [showComments, setShowComments] = useState(false)
+  const [commentCount, setCommentCount] = useState(0)
+
+  useEffect(() => {
+    supabase
+      .from('post_comments')
+      .select('*', { count: 'exact', head: true })
+      .eq('post_id', post.id)
+      .then(({ count }) => setCommentCount(count || 0))
+  }, [])
 
   async function toggleLike() {
     const newLiked = !liked
@@ -20,6 +31,16 @@ function Post({ post, currentUserId, onViewProfile, onDelete }) {
       await supabase.from('post_likes').insert([{ post_id: post.id, user_id: currentUserId }])
     } else {
       await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', currentUserId)
+    }
+  }
+
+  async function handleShare() {
+    const url = `${window.location.origin}?post=${post.id}`
+    if (navigator.share) {
+      await navigator.share({ title: `${post.pet_name} en PetSocial`, text: post.caption || '', url })
+    } else {
+      await navigator.clipboard.writeText(url)
+      alert('Link copiado al portapapeles')
     }
   }
 
@@ -43,13 +64,13 @@ function Post({ post, currentUserId, onViewProfile, onDelete }) {
           </div>
         </div>
         {post.user_id === currentUserId && (
-  <button
-    onClick={e => { e.stopPropagation(); onDelete(post.id, post.image_url) }}
-    className="border-0 bg-transparent p-1 cursor-pointer text-gray-400"
-  >
-    <Trash2 size={20} />
-  </button>
-)}
+          <button
+            onClick={e => { e.stopPropagation(); onDelete(post.id, post.image_url) }}
+            className="border-0 bg-transparent p-1 cursor-pointer text-gray-400"
+          >
+            <Trash2 size={20} />
+          </button>
+        )}
       </div>
 
       {post.image_url ? (
@@ -72,10 +93,17 @@ function Post({ post, currentUserId, onViewProfile, onDelete }) {
           <Heart size={22} fill={liked ? '#EC4899' : 'none'} />
           <span>{likes}</span>
         </button>
-        <button className="border-0 bg-transparent p-0 cursor-pointer flex items-center gap-1 text-sm text-gray-400">
+        <button
+          onClick={() => setShowComments(true)}
+          className="border-0 bg-transparent p-0 cursor-pointer flex items-center gap-1 text-sm text-gray-400"
+        >
           <MessageCircle size={22} />
+          {commentCount > 0 && <span>{commentCount}</span>}
         </button>
-        <button className="border-0 bg-transparent p-0 cursor-pointer text-gray-400">
+        <button
+          onClick={handleShare}
+          className="border-0 bg-transparent p-0 cursor-pointer text-gray-400"
+        >
           <Share2 size={20} />
         </button>
         <button className="border-0 bg-transparent p-0 cursor-pointer text-gray-400 ml-auto">
@@ -89,6 +117,13 @@ function Post({ post, currentUserId, onViewProfile, onDelete }) {
           <span className="font-semibold">{post.pet_name} </span>
           {post.caption}
         </div>
+      )}
+
+      {showComments && (
+        <CommentsModal
+          post={post}
+          onClose={() => { setShowComments(false); supabase.from('post_comments').select('*', { count: 'exact', head: true }).eq('post_id', post.id).then(({ count }) => setCommentCount(count || 0)) }}
+        />
       )}
     </div>
   )
@@ -143,14 +178,14 @@ export default function Feed() {
   }
 
   async function deletePost(postId, imageUrl) {
-  if (!window.confirm('¿Eliminar este post?')) return
-  await supabase.from('posts').delete().eq('id', postId)
-  if (imageUrl) {
-    const path = imageUrl.split('/posts/')[1]
-    if (path) await supabase.storage.from('posts').remove([path])
+    if (!window.confirm('¿Eliminar este post?')) return
+    await supabase.from('posts').delete().eq('id', postId)
+    if (imageUrl) {
+      const path = imageUrl.split('/posts/')[1]
+      if (path) await supabase.storage.from('posts').remove([path])
+    }
+    setPosts(prev => prev.filter(p => p.id !== postId))
   }
-  setPosts(prev => prev.filter(p => p.id !== postId))
-}
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
