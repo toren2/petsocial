@@ -1,57 +1,142 @@
-import React, { useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet'
-
-const L = window.L
-
-const categoryEmojis = {
-  vet:   '🏥',
-  groom: '✂️',
-  park:  '🌳',
-  shop:  '🛍️',
-  hotel: '🏨',
-}
+import React, { useEffect, useRef } from 'react'
 
 const categoryColors = {
-  vet:   '#7C3AED',
-  groom: '#EC4899',
-  park:  '#16A34A',
-  shop:  '#D97706',
-  hotel: '#0F9B8E',
+  vet:        '#7C3AED',
+  groom:      '#EC4899',
+  park:       '#16A34A',
+  shop:       '#D97706',
+  hotel:      '#0F9B8E',
+  restaurant: '#DC2626',
 }
 
-function createEmojiIcon(category) {
-  const emoji = categoryEmojis[category] || '📍'
-  const color = categoryColors[category] || '#7C3AED'
-  return new L.DivIcon({
-    html: `<div style="background:${color};width:34px;height:34px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;">${emoji}</div>`,
-    className: 'custom-div-icon',
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
-    popupAnchor: [0, -20],
-  })
-}
-
-function createUserIcon() {
-  return L.divIcon({
-    html: `<div style="width:16px;height:16px;border-radius:50%;background:#3B82F6;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>`,
-    className: '',
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
-  })
-}
-
-function RecenterMap({ center }) {
-  const map = useMap()
-  useEffect(() => {
-    if (center) map.setView(center, 14)
-  }, [center])
-  return null
+const categoryEmojis = {
+  vet:        '🏥',
+  groom:      '✂️',
+  park:       '🌳',
+  shop:       '🛍️',
+  hotel:      '🏨',
+  restaurant: '🍽️',
 }
 
 export default function MapaLugares({ places, userLocation, onPlaceSelect, onClose }) {
+  const mapRef = useRef(null)
+  const mapInstanceRef = useRef(null)
   const center = userLocation
-    ? [userLocation.lat, userLocation.lng]
-    : [8.9936, -79.5197]
+    ? { lat: userLocation.lat, lng: userLocation.lng }
+    : { lat: 8.9936, lng: -79.5197 }
+
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY
+
+    if (window.google && window.google.maps) {
+      initMap()
+      return
+    }
+
+    if (document.querySelector('script[src*="maps.googleapis.com"]')) {
+      const checkReady = setInterval(() => {
+        if (window.google && window.google.maps) {
+          clearInterval(checkReady)
+          initMap()
+        }
+      }, 100)
+      return () => clearInterval(checkReady)
+    }
+
+    const script = document.createElement('script')
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
+    script.async = true
+    script.defer = true
+    script.onload = initMap
+    document.head.appendChild(script)
+  }, [])
+
+  function initMap() {
+    if (!mapRef.current) return
+
+    const map = new window.google.maps.Map(mapRef.current, {
+      center,
+      zoom: 14,
+      disableDefaultUI: false,
+      zoomControl: true,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+      styles: [
+        { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }
+      ]
+    })
+
+    mapInstanceRef.current = map
+
+    if (userLocation) {
+      new window.google.maps.Marker({
+        position: { lat: userLocation.lat, lng: userLocation.lng },
+        map,
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: '#3B82F6',
+          fillOpacity: 1,
+          strokeColor: 'white',
+          strokeWeight: 2,
+        },
+        title: 'Tu ubicación',
+      })
+
+      new window.google.maps.Circle({
+        map,
+        center: { lat: userLocation.lat, lng: userLocation.lng },
+        radius: 500,
+        fillColor: '#3B82F6',
+        fillOpacity: 0.1,
+        strokeColor: '#3B82F6',
+        strokeWeight: 1,
+      })
+    }
+
+    places.filter(p => p.lat && p.lng).forEach(place => {
+      const color = categoryColors[place.category] || '#7C3AED'
+      const emoji = categoryEmojis[place.category] || '📍'
+
+      const marker = new window.google.maps.Marker({
+        position: { lat: parseFloat(place.lat), lng: parseFloat(place.lng) },
+        map,
+        title: place.name,
+        icon: {
+          url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+              <circle cx="20" cy="20" r="18" fill="${color}" stroke="white" stroke-width="2"/>
+              <text x="20" y="26" text-anchor="middle" font-size="18">${emoji}</text>
+            </svg>
+          `)}`,
+          scaledSize: new window.google.maps.Size(40, 40),
+          anchor: new window.google.maps.Point(20, 20),
+        }
+      })
+
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `
+          <div style="min-width:160px;padding:4px">
+            <div style="font-weight:600;font-size:13px">${place.name}</div>
+            <div style="font-size:11px;color:${color};margin-top:2px">${place.type}</div>
+            <div style="font-size:11px;color:#6B7280;margin-top:2px">⭐ ${place.rating} · ${place.reviews} reseñas</div>
+            ${place.distance ? `<div style="font-size:11px;color:#6B7280">${place.distance} km</div>` : ''}
+            <button onclick="window._petsocialSelectPlace('${place.id}')" style="margin-top:8px;background:${color};color:white;border:none;border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;width:100%">Ver detalle</button>
+          </div>
+        `
+      })
+
+      marker.addListener('click', () => {
+        infoWindow.open(map, marker)
+      })
+    })
+
+    window._petsocialSelectPlace = (placeId) => {
+      const place = places.find(p => String(p.id) === String(placeId))
+      if (place) onPlaceSelect(place)
+    }
+  }
 
   return (
     <div className="absolute inset-0 z-50 flex flex-col">
@@ -71,7 +156,7 @@ export default function MapaLugares({ places, userLocation, onPlaceSelect, onClo
           <div key={cat} className="flex items-center gap-1 flex-shrink-0">
             <span className="text-sm">{emoji}</span>
             <span className="text-xs text-gray-500">
-              {cat === 'vet' ? 'Vet' : cat === 'groom' ? 'Grooming' : cat === 'park' ? 'Parque' : cat === 'shop' ? 'Shop' : 'Hotel'}
+              {cat === 'vet' ? 'Vet' : cat === 'groom' ? 'Grooming' : cat === 'park' ? 'Parque' : cat === 'shop' ? 'Shop' : cat === 'hotel' ? 'Hotel' : 'Rest.'}
             </span>
           </div>
         ))}
@@ -81,57 +166,7 @@ export default function MapaLugares({ places, userLocation, onPlaceSelect, onClo
         </div>
       </div>
 
-      <div className="flex-1">
-        <MapContainer
-          center={center}
-          zoom={14}
-          style={{ height: '100%', width: '100%' }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-
-          <RecenterMap center={userLocation ? [userLocation.lat, userLocation.lng] : null} />
-
-          {userLocation && (
-            <>
-              <Marker
-                position={[userLocation.lat, userLocation.lng]}
-                icon={createUserIcon()}
-              />
-              <Circle
-                center={[userLocation.lat, userLocation.lng]}
-                radius={500}
-                pathOptions={{ color: '#3B82F6', fillColor: '#3B82F6', fillOpacity: 0.1, weight: 1 }}
-              />
-            </>
-          )}
-
-          {places.filter(p => p.lat && p.lng).map(place => (
-            <Marker
-              key={place.id}
-              position={[place.lat, place.lng]}
-              icon={createEmojiIcon(place.category)}
-              eventHandlers={{ click: () => onPlaceSelect(place) }}
-            >
-              <Popup>
-                <div style={{ minWidth: 150 }}>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{place.name}</div>
-                  <div style={{ fontSize: 11, color: categoryColors[place.category], marginTop: 2 }}>{place.type}</div>
-                  <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>⭐ {place.rating} · {place.distance} km</div>
-                  <button
-                    onClick={() => onPlaceSelect(place)}
-                    style={{ marginTop: 8, background: '#7C3AED', color: 'white', border: 'none', borderRadius: 20, padding: '4px 12px', fontSize: 11, cursor: 'pointer', width: '100%' }}
-                  >
-                    Ver detalle
-                  </button>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-      </div>
+      <div ref={mapRef} className="flex-1" />
     </div>
   )
 }
