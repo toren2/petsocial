@@ -142,6 +142,10 @@ export default function MapaLugares({ places, userLocation, onPlaceSelect, onClo
       const place = places.find(p => String(p.id) === String(placeId))
       if (place) onPlaceSelect(place)
     }
+  // Centrar en ubicación del usuario si ya llegó
+if (userLocation) {
+  map.setCenter({ lat: userLocation.lat, lng: userLocation.lng })
+}
   }
 
   return (
