@@ -21,44 +21,51 @@ const categoryEmojis = {
 export default function MapaLugares({ places, userLocation, onPlaceSelect, onClose }) {
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
-  const center = userLocation
+
+  const defaultCenter = userLocation
     ? { lat: userLocation.lat, lng: userLocation.lng }
     : { lat: 8.9936, lng: -79.5197 }
 
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY
 
-    if (window.google && window.google.maps) {
-      initMap()
-      return
+    function loadMap() {
+      if (window.google && window.google.maps) {
+        initMap()
+        return
+      }
+      if (document.querySelector('script[src*="maps.googleapis.com"]')) {
+        const checkReady = setInterval(() => {
+          if (window.google && window.google.maps) {
+            clearInterval(checkReady)
+            initMap()
+          }
+        }, 100)
+        return () => clearInterval(checkReady)
+      }
+      const script = document.createElement('script')
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
+      script.async = true
+      script.defer = true
+      script.onload = initMap
+      document.head.appendChild(script)
     }
 
-    if (document.querySelector('script[src*="maps.googleapis.com"]')) {
-      const checkReady = setInterval(() => {
-        if (window.google && window.google.maps) {
-          clearInterval(checkReady)
-          initMap()
-        }
-      }, 100)
-      return () => clearInterval(checkReady)
-    }
-
-    const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
-    script.async = true
-    script.defer = true
-    script.onload = initMap
-    document.head.appendChild(script)
+    loadMap()
   }, [])
 
   useEffect(() => {
     if (mapInstanceRef.current && userLocation) {
-      mapInstanceRef.current.setCenter({ lat: userLocation.lat, lng: userLocation.lng })
+      mapInstanceRef.current.panTo({ lat: userLocation.lat, lng: userLocation.lng })
     }
   }, [userLocation])
 
   function initMap() {
     if (!mapRef.current) return
+
+    const center = userLocation
+      ? { lat: userLocation.lat, lng: userLocation.lng }
+      : { lat: 8.9936, lng: -79.5197 }
 
     const map = new window.google.maps.Map(mapRef.current, {
       center,
@@ -142,10 +149,6 @@ export default function MapaLugares({ places, userLocation, onPlaceSelect, onClo
       const place = places.find(p => String(p.id) === String(placeId))
       if (place) onPlaceSelect(place)
     }
-  // Centrar en ubicación del usuario si ya llegó
-if (userLocation) {
-  map.setCenter({ lat: userLocation.lat, lng: userLocation.lng })
-}
   }
 
   return (
