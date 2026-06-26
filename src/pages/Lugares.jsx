@@ -321,13 +321,13 @@ export default function Lugares() {
       </div>
 
       {showMap && (
-        <MapaLugares
-          places={places}
-          userLocation={userLocation}
-          onPlaceSelect={place => { setShowMap(false); setSelectedPlace(place) }}
-          onClose={() => setShowMap(false)}
-        />
-      )}
+  <MapaLugares
+    places={places.filter(p => p.lat && p.lng)}
+    userLocation={userLocation}
+    onPlaceSelect={place => { setShowMap(false); setSelectedPlace(place) }}
+    onClose={() => setShowMap(false)}
+  />
+)}
     </div>
   )
 }

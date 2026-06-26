@@ -42,6 +42,11 @@ export default function MapaLugares({ places, userLocation, onPlaceSelect, onClo
       }, 100)
       return () => clearInterval(checkReady)
     }
+useEffect(() => {
+  if (mapInstanceRef.current && userLocation) {
+    mapInstanceRef.current.setCenter({ lat: userLocation.lat, lng: userLocation.lng })
+  }
+}, [userLocation])
 
     const script = document.createElement('script')
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
