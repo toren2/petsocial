@@ -127,6 +127,24 @@ export default function Lugares() {
     }
   }
 
+  function openMap() {
+    if (userLocation) {
+      setShowMap(true)
+      return
+    }
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+          setShowMap(true)
+        },
+        () => setShowMap(true)
+      )
+    } else {
+      setShowMap(true)
+    }
+  }
+
   if (selectedPlace) return <LugarDetalle place={selectedPlace} onBack={() => setSelectedPlace(null)} />
 
   const supabasePlaces = places.filter(p => !String(p.id).startsWith('osm-'))
@@ -139,18 +157,16 @@ export default function Lugares() {
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
         <div>
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">Lugares 🐾</h2>
           <p className="text-xs text-gray-400 mt-0.5">Descubre los mejores lugares para tu mascota</p>
         </div>
-        <button onClick={() => setShowMap(true)} className="border-0 bg-transparent cursor-pointer text-ps-purple" aria-label="Ver mapa">
+        <button onClick={openMap} className="border-0 bg-transparent cursor-pointer text-ps-purple" aria-label="Ver mapa">
           <Map size={22} />
         </button>
       </div>
 
-      {/* Tabs */}
       <div className="flex bg-white border-b border-gray-100 flex-shrink-0">
         <button
           onClick={() => setActiveTab('cerca')}
@@ -168,7 +184,6 @@ export default function Lugares() {
         </button>
       </div>
 
-      {/* Search */}
       <div className="px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -182,10 +197,7 @@ export default function Lugares() {
         </div>
       </div>
 
-      {/* Main layout - dos columnas */}
       <div className="flex flex-1 overflow-hidden">
-
-        {/* Columna izquierda - categorías vertical */}
         <div className="flex flex-col bg-white border-r border-gray-100 overflow-y-auto flex-shrink-0" style={{ width: 72 }}>
           {categories.map(({ id, label, Icon, bg, color }) => (
             <button
@@ -207,9 +219,7 @@ export default function Lugares() {
           ))}
         </div>
 
-        {/* Columna derecha - contenido */}
         <div className="flex-1 overflow-y-auto bg-ps-bg">
-
           {activeTab === 'cerca' && userLocation && (
             <div className="px-3 py-2 bg-ps-teal-light flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5">
@@ -228,7 +238,7 @@ export default function Lugares() {
 
           {activeTab === 'cerca' && (
             <div
-              onClick={() => setShowMap(true)}
+              onClick={openMap}
               style={{ height: 140, background: 'linear-gradient(135deg, #DBEAFE, #EDE9FE)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '0.5px solid #E5E7EB', cursor: 'pointer' }}
             >
               <span style={{ position: 'absolute', fontSize: 20, top: 25, left: 40 }}>📍</span>
@@ -262,7 +272,6 @@ export default function Lugares() {
               const { bg, color } = catColors[place.category] || { bg: '#EDE9FE', color: '#7C3AED' }
               return (
                 <div key={place.id} onClick={() => setSelectedPlace(place)} className="flex gap-3 px-3 py-3 border-b border-gray-100 bg-white cursor-pointer active:bg-gray-50">
-                  {/* Foto placeholder */}
                   <div className="relative flex-shrink-0 rounded-2xl flex items-center justify-center" style={{ width: 80, height: 80, background: bg }}>
                     <CatIcon size={28} color={color} />
                     <button
@@ -273,8 +282,6 @@ export default function Lugares() {
                       <Heart size={12} color="#9CA3AF" />
                     </button>
                   </div>
-
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-1">
                       <div className="font-semibold text-sm text-gray-900 leading-tight">{place.name}</div>
@@ -282,7 +289,6 @@ export default function Lugares() {
                         <div className="text-xs text-gray-400 font-medium flex-shrink-0">{place.distance} km</div>
                       )}
                     </div>
-
                     <div className="flex items-center gap-1 mt-1 flex-wrap">
                       <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: bg, color }}>
                         {place.type}
@@ -291,15 +297,12 @@ export default function Lugares() {
                         🐾 Dog Friendly
                       </span>
                     </div>
-
                     <div className="flex items-center gap-1 mt-1">
                       <Star size={10} fill="#F59E0B" color="#F59E0B" />
                       <span className="text-xs text-yellow-500 font-medium">{place.rating}</span>
                       <span className="text-xs text-gray-400">({place.reviews})</span>
                     </div>
-
                     <div className="text-xs text-gray-400 mt-0.5 truncate">{place.address}</div>
-
                     <div className="text-xs mt-0.5">
                       {place.hours === 'Ver horario en Google Maps' ? (
                         <button
@@ -321,13 +324,13 @@ export default function Lugares() {
       </div>
 
       {showMap && (
-  <MapaLugares
-    places={places.filter(p => p.lat && p.lng)}
-    userLocation={userLocation}
-    onPlaceSelect={place => { setShowMap(false); setSelectedPlace(place) }}
-    onClose={() => setShowMap(false)}
-  />
-)}
+        <MapaLugares
+          places={places.filter(p => p.lat && p.lng)}
+          userLocation={userLocation}
+          onPlaceSelect={place => { setShowMap(false); setSelectedPlace(place) }}
+          onClose={() => setShowMap(false)}
+        />
+      )}
     </div>
   )
 }
