@@ -88,7 +88,7 @@ export default function MapaLugares({ places, userLocation, onPlaceSelect, onClo
 if (loc) {
   setTimeout(() => {
     map.setCenter({ lat: loc.lat, lng: loc.lng })
-    map.setZoom(15)
+    map.setZoom(17)
   }, 500)
 }
     if (loc) {
