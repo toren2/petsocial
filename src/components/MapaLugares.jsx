@@ -87,7 +87,9 @@ export default function MapaLugares({ places, userLocation, onPlaceSelect, onClo
 // Centrar con delay para asegurar que el mapa esté listo
 if (loc) {
   setTimeout(() => {
-    map.setCenter({ lat: loc.lat, lng: loc.lng })
+    // Compensar el offset del header ajustando lat ligeramente al sur
+    const offsetLat = loc.lat - 0.003
+    map.setCenter({ lat: offsetLat, lng: loc.lng })
     map.setZoom(16)
   }, 500)
 }
