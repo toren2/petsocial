@@ -84,6 +84,13 @@ export default function MapaLugares({ places, userLocation, onPlaceSelect, onClo
 
     mapInstanceRef.current = map
 
+// Centrar con delay para asegurar que el mapa esté listo
+if (loc) {
+  setTimeout(() => {
+    map.setCenter({ lat: loc.lat, lng: loc.lng })
+    map.setZoom(15)
+  }, 500)
+}
     if (loc) {
       new window.google.maps.Marker({
         position: { lat: loc.lat, lng: loc.lng },
