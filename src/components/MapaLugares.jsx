@@ -87,9 +87,7 @@ export default function MapaLugares({ places, userLocation, onPlaceSelect, onClo
 // Centrar con delay para asegurar que el mapa esté listo
 if (loc) {
   setTimeout(() => {
-    // Compensar el offset del header ajustando lat ligeramente al sur
-    const offsetLat = loc.lat - 0.005
-    map.setCenter({ lat: offsetLat, lng: loc.lng })
+    map.setCenter({ lat: loc.lat, lng: loc.lng })
     map.setZoom(16)
   }, 500)
 }
@@ -163,7 +161,7 @@ if (loc) {
   }
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col">
+    <div className="fixed inset-0 z-50 flex flex-col" style={{ height: '100dvh' }}>
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
         <h2 className="text-lg font-bold text-gray-900">Mapa de lugares</h2>
         <button
