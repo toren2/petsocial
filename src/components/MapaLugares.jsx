@@ -88,9 +88,10 @@ export default function MapaLugares({ places, userLocation, onPlaceSelect, onClo
 if (loc) {
   setTimeout(() => {
     map.setCenter({ lat: loc.lat, lng: loc.lng })
-    map.setZoom(17)
+    map.setZoom(16)
+    map.panBy(0, -60) // compensar el header
   }, 500)
-}
+}s
     if (loc) {
       new window.google.maps.Marker({
         position: { lat: loc.lat, lng: loc.lng },
