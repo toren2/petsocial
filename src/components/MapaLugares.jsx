@@ -21,10 +21,11 @@ const categoryEmojis = {
 export default function MapaLugares({ places, userLocation, onPlaceSelect, onClose }) {
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
+  const userLocationRef = useRef(userLocation)
 
-  const defaultCenter = userLocation
-    ? { lat: userLocation.lat, lng: userLocation.lng }
-    : { lat: 8.9936, lng: -79.5197 }
+  useEffect(() => {
+    userLocationRef.current = userLocation
+  }, [userLocation])
 
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY
@@ -63,8 +64,9 @@ export default function MapaLugares({ places, userLocation, onPlaceSelect, onClo
   function initMap() {
     if (!mapRef.current) return
 
-    const center = userLocation
-      ? { lat: userLocation.lat, lng: userLocation.lng }
+    const loc = userLocationRef.current
+    const center = loc
+      ? { lat: loc.lat, lng: loc.lng }
       : { lat: 8.9936, lng: -79.5197 }
 
     const map = new window.google.maps.Map(mapRef.current, {
@@ -82,9 +84,9 @@ export default function MapaLugares({ places, userLocation, onPlaceSelect, onClo
 
     mapInstanceRef.current = map
 
-    if (userLocation) {
+    if (loc) {
       new window.google.maps.Marker({
-        position: { lat: userLocation.lat, lng: userLocation.lng },
+        position: { lat: loc.lat, lng: loc.lng },
         map,
         icon: {
           path: window.google.maps.SymbolPath.CIRCLE,
@@ -99,7 +101,7 @@ export default function MapaLugares({ places, userLocation, onPlaceSelect, onClo
 
       new window.google.maps.Circle({
         map,
-        center: { lat: userLocation.lat, lng: userLocation.lng },
+        center: { lat: loc.lat, lng: loc.lng },
         radius: 500,
         fillColor: '#3B82F6',
         fillOpacity: 0.1,
