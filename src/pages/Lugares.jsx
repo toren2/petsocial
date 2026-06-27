@@ -128,24 +128,24 @@ export default function Lugares() {
   }
 
   function openMap() {
-  if (userLocation) {
-    setShowMap(true)
-    return
+    if (userLocation) {
+      setShowMap(true)
+      return
+    }
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+          setShowMap(true)
+        },
+        () => setShowMap(true),
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      )
+    } else {
+      setShowMap(true)
+    }
   }
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }
-        setUserLocation(loc)
-        setTimeout(() => setShowMap(true), 100)
-      },
-      () => setShowMap(true),
-      { enableHighAccuracy: true, timeout: 10000 }
-    )
-  } else {
-    setShowMap(true)
-  }
-}
+
   if (selectedPlace) return <LugarDetalle place={selectedPlace} onBack={() => setSelectedPlace(null)} />
 
   const supabasePlaces = places.filter(p => !String(p.id).startsWith('osm-'))
@@ -325,13 +325,13 @@ export default function Lugares() {
       </div>
 
       {showMap && (
-  <MapaLugares
-    places={places.filter(p => p.lat && p.lng)}
-    userLocation={userLocation}
-    onPlaceSelect={place => { setShowMap(false); setSelectedPlace(place) }}
-    onClose={() => setShowMap(false)}
-  />
-)}
+        <MapaLugares
+          places={places.filter(p => p.lat && p.lng)}
+          userLocation={userLocation}
+          onPlaceSelect={place => { setShowMap(false); setSelectedPlace(place) }}
+          onClose={() => setShowMap(false)}
+        />
+      )}
     </div>
   )
 }
