@@ -34,10 +34,10 @@ function getDistance(lat1, lng1, lat2, lng2) {
   return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1)
 }
 
-export default function Lugares() {
+export default function Lugares({ initialCategory = 'all' }) {
   const [places, setPlaces] = useState([])
   const [loading, setLoading] = useState(true)
-  const [activeCategory, setActiveCategory] = useState('all')
+  const [activeCategory, setActiveCategory] = useState(initialCategory)
   const [activeTab, setActiveTab] = useState('cerca')
   const [search, setSearch] = useState('')
   const [selectedPlace, setSelectedPlace] = useState(null)

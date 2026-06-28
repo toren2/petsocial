@@ -145,7 +145,7 @@ export default function Hub({ onNavigate, unreadCount }) {
             {categories.map(cat => (
               <button
                 key={cat.id}
-                onClick={() => onNavigate('lugares')}
+                onClick={() => onNavigate('lugares', cat.id)}
                 className="flex flex-col items-center gap-2 p-3 rounded-2xl border-0 cursor-pointer"
                 style={{ background: 'white', border: '1px solid #F3F4F6' }}
               >
