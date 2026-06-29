@@ -39,12 +39,13 @@ function ConversationList({ onOpen }) {
   }
 
   async function deleteConversation(matchId) {
-    const match = matches.find(m => m.id === matchId)
-    if (!match) return
-    await supabase.from('messages').delete().or(`and(sender_id.eq.${user.id},receiver_id.eq.${match.otherId}),and(sender_id.eq.${match.otherId},receiver_id.eq.${user.id})`)
-    setMatches(prev => prev.filter(m => m.id !== matchId))
-    setDeletingId(null)
-  }
+  const match = matches.find(m => m.id === matchId)
+  if (!match) return
+  await supabase.from('messages').delete().or(`and(sender_id.eq.${user.id},receiver_id.eq.${match.otherId}),and(sender_id.eq.${match.otherId},receiver_id.eq.${user.id})`)
+  await supabase.from('matches').delete().eq('id', matchId)
+  setMatches(prev => prev.filter(m => m.id !== matchId))
+  setDeletingId(null)
+}
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
