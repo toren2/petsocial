@@ -17,6 +17,7 @@ export default function App() {
   const [screen, setScreen] = useState('splash')
   const [matchedPet, setMatchedPet] = useState(null)
   const [showSplash, setShowSplash] = useState(true)
+  const [initialCategory, setInitialCategory] = useState('all')
 
   if (loading) return (
     <div className="phone-shell items-center justify-center flex">
@@ -63,12 +64,12 @@ export default function App() {
 </div>
 
       <div className="flex flex-col flex-1 overflow-hidden relative">
-        {screen === 'hub'     && <Hub onNavigate={setScreen} unreadCount={0} />}
+        {screen === 'hub'     && <Hub onNavigate={(s, cat) => { if (cat) setInitialCategory(cat); setScreen(s) }} unreadCount={0} />}
         {screen === 'feed'    && <Feed />}
         {screen === 'match'   && <Match onMatch={handleMatch} />}
         {screen === 'chat'    && <Chat />}
         {screen === 'eventos' && <Eventos />}
-        {screen === 'lugares' && <Lugares />}
+        {screen === 'lugares' && <Lugares initialCategory={initialCategory} />}
         {screen === 'perfil'  && <Perfil onSignOut={signOut} />}
 
         {matchedPet && (
