@@ -278,14 +278,15 @@ export default function Eventos() {
   useEffect(() => { fetchEvents() }, [])
 
   async function fetchEvents() {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('events')
-      .select('*, profiles(pet_name, emoji, avatar_url)')
-      .order('date', { ascending: true })
-    if (!error && data) setEvents(data)
-    setLoading(false)
-  }
+  setLoading(true)
+  const { data, error } = await supabase
+    .from('events')
+    .select('*, profiles(pet_name, emoji, avatar_url)')
+    .order('date', { ascending: true })
+  console.log('events data:', data, 'error:', error)
+  if (!error && data) setEvents(data)
+  setLoading(false)
+}
 
   async function createEvent(event) {
     const { data, error } = await supabase
