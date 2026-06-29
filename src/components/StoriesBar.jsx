@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Plus, Send, Trash2, Camera } from 'lucide-react'
+import { X, Plus, Send, Trash2, Camera, Eye } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 
 function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) {
   const [index, setIndex] = useState(startIndex)
   const [progress, setProgress] = useState(0)
+  const [showViewers, setShowViewers] = useState(false)
+  const [viewers, setViewers] = useState([])
   const timerRef = useRef(null)
   const story = stories[index]
 
   useEffect(() => {
     setProgress(0)
+    setShowViewers(false)
     timerRef.current = setInterval(() => {
       setProgress(p => {
         if (p >= 100) {
@@ -28,6 +31,32 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) 
     return () => clearInterval(timerRef.current)
   }, [index])
 
+  useEffect(() => {
+    if (!story) return
+    recordView()
+  }, [story?.id])
+
+  async function recordView() {
+    if (!story || story.user_id === currentUserId) return
+    await supabase.from('story_views').upsert([{ story_id: story.id, viewer_id: currentUserId }], { onConflict: 'story_id,viewer_id' })
+  }
+
+  async function fetchViewers() {
+    const { data } = await supabase
+      .from('story_views')
+      .select('*, profiles(pet_name, emoji, avatar_url)')
+      .eq('story_id', story.id)
+      .order('created_at', { ascending: false })
+    setViewers(data || [])
+  }
+
+  async function handleShowViewers() {
+    if (story.user_id !== currentUserId) return
+    timerRef.current && clearInterval(timerRef.current)
+    await fetchViewers()
+    setShowViewers(true)
+  }
+
   if (!story) return null
 
   async function handleDelete() {
@@ -41,7 +70,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) 
   }
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    <div className="fixed inset-0 bg-black z-50 flex flex-col" style={{ height: '100dvh' }}>
       {/* Progress bars */}
       <div className="flex gap-1 px-3 pt-3 pb-2 flex-shrink-0">
         {stories.map((s, i) => (
@@ -70,19 +99,25 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) 
           </div>
         </div>
         {story.user_id === currentUserId && (
-          <button onClick={handleDelete} className="border-0 bg-transparent cursor-pointer text-white/80 mr-2">
-            <Trash2 size={20} />
-          </button>
+          <>
+            <button onClick={handleShowViewers} className="border-0 bg-transparent cursor-pointer text-white/80 mr-1">
+              <Eye size={20} />
+            </button>
+            <button onClick={handleDelete} className="border-0 bg-transparent cursor-pointer text-white/80 mr-2">
+              <Trash2 size={20} />
+            </button>
+          </>
         )}
         <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-white">
           <X size={24} />
         </button>
       </div>
 
-      {/* Image — object-contain para ver completa sin zoom */}
+      {/* Image */}
       <div
         className="flex-1 relative flex items-center justify-center"
         onClick={e => {
+          if (showViewers) return
           const x = e.clientX / window.innerWidth
           if (x < 0.4) {
             if (index > 0) setIndex(i => i - 1)
@@ -99,6 +134,47 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) 
           </div>
         )}
       </div>
+
+      {/* Panel de vistas */}
+      {showViewers && (
+        <div className="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl z-10 max-h-[60%] flex flex-col">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <Eye size={16} className="text-ps-purple" />
+              <h3 className="font-bold text-gray-900">Visto por {viewers.length}</h3>
+            </div>
+            <button onClick={() => { setShowViewers(false) }} className="border-0 bg-transparent cursor-pointer text-gray-400">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="overflow-y-auto flex-1">
+            {viewers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-2 text-gray-400">
+                <Eye size={32} />
+                <p className="text-sm">Nadie ha visto esta historia aún</p>
+              </div>
+            ) : (
+              viewers.map(v => (
+                <div key={v.id} className="flex items-center gap-3 px-5 py-3 border-b border-gray-50">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-ps-purple-light flex items-center justify-center flex-shrink-0">
+                    {v.profiles?.avatar_url ? (
+                      <img src={v.profiles.avatar_url} className="w-full h-full object-cover" alt={v.profiles.pet_name} />
+                    ) : (
+                      <span className="text-lg">{v.profiles?.emoji || '🐕'}</span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-sm text-gray-900">{v.profiles?.pet_name || 'Mascota'}</div>
+                    <div className="text-xs text-gray-400">
+                      {new Date(v.created_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -139,15 +215,12 @@ function CreateStoryModal({ profile, onClose, onCreate }) {
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex flex-col justify-end">
       <div className="bg-white rounded-t-3xl flex flex-col flex-shrink-0">
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <h3 className="font-bold text-gray-900 text-lg">Nueva historia</h3>
           <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-gray-400">
             <X size={22} />
           </button>
         </div>
-
-        {/* Preview o selector */}
         <div className="px-5 pt-4 pb-2">
           {imagePreview ? (
             <div className="relative rounded-2xl overflow-hidden" style={{ height: 220 }}>
@@ -170,8 +243,6 @@ function CreateStoryModal({ profile, onClose, onCreate }) {
           )}
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
         </div>
-
-        {/* Caption */}
         <div className="px-5 pb-2">
           <input
             className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg"
@@ -180,8 +251,6 @@ function CreateStoryModal({ profile, onClose, onCreate }) {
             onChange={e => setCaption(e.target.value)}
           />
         </div>
-
-        {/* Botón publicar — siempre visible */}
         <div className="px-5 py-4">
           <button
             onClick={submit}
