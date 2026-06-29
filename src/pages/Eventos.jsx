@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, MapPin, Clock, Users, X } from 'lucide-react'
+import { Plus, MapPin, Clock, Users, X, Trash2 } from 'lucide-react'
 import { supabase } from '../supabase'
+import { useAuth } from '../AuthContext'
 import InviteModal from '../components/InviteModal'
 
 const types = [
@@ -18,15 +19,38 @@ const typeColors = {
   cumpleanos: { bg: '#FEF9C3', color: '#CA8A04', label: 'Cumpleaños' },
 }
 
-function EventCard({ event, onToggle, onInvite }) {
+function isPast(dateStr) {
+  if (!dateStr) return false
+  const eventDate = new Date(dateStr)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return eventDate < today
+}
+
+function EventCard({ event, onToggle, onInvite, onDelete, currentUserId }) {
   const tc = typeColors[event.type] || { bg: '#EDE9FE', color: '#7C3AED', label: event.type }
   const maxAttendees = event.max_attendees || event.maxAttendees || 10
   const pct = Math.round((event.attendees / maxAttendees) * 100)
+  const past = isPast(event.date)
 
   return (
-    <div className="bg-white mx-4 my-2 rounded-2xl overflow-hidden border border-gray-100">
-      <div className="flex items-center justify-center text-6xl py-6" style={{ background: event.bg }}>
+    <div className="bg-white mx-4 my-2 rounded-2xl overflow-hidden border border-gray-100" style={{ opacity: past ? 0.6 : 1 }}>
+      <div className="flex items-center justify-center text-6xl py-6 relative" style={{ background: event.bg }}>
         {event.emoji}
+        {past && (
+          <span className="absolute top-2 right-2 text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-800/70 text-white">
+            Finalizado
+          </span>
+        )}
+        {event.user_id === currentUserId && (
+          <button
+            onClick={() => onDelete(event.id)}
+            className="absolute top-2 left-2 w-8 h-8 rounded-full flex items-center justify-center border-0 cursor-pointer"
+            style={{ background: 'rgba(0,0,0,0.4)' }}
+          >
+            <Trash2 size={14} color="white" />
+          </button>
+        )}
       </div>
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-2">
@@ -53,23 +77,27 @@ function EventCard({ event, onToggle, onInvite }) {
         <div className="w-full bg-gray-100 rounded-full h-1.5 mb-3">
           <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, background: tc.color }} />
         </div>
-        <button
-          onClick={() => onInvite(event)}
-          className="w-full py-2.5 rounded-full text-sm font-semibold border-0 cursor-pointer mb-2"
-          style={{ background: '#EDE9FE', color: '#7C3AED' }}
-        >
-          🐾 Invitar amigos
-        </button>
-        <button
-          onClick={() => onToggle(event.id)}
-          className="w-full py-2.5 rounded-full text-sm font-semibold border-0 cursor-pointer transition-all"
-          style={{
-            background: event.joined ? '#F3F4F6' : '#7C3AED',
-            color: event.joined ? '#6B7280' : 'white',
-          }}
-        >
-          {event.joined ? '✓ Apuntado' : 'Me apunto'}
-        </button>
+        {!past && (
+          <>
+            <button
+              onClick={() => onInvite(event)}
+              className="w-full py-2.5 rounded-full text-sm font-semibold border-0 cursor-pointer mb-2"
+              style={{ background: '#EDE9FE', color: '#7C3AED' }}
+            >
+              🐾 Invitar amigos
+            </button>
+            <button
+              onClick={() => onToggle(event.id)}
+              className="w-full py-2.5 rounded-full text-sm font-semibold border-0 cursor-pointer transition-all"
+              style={{
+                background: event.joined ? '#F3F4F6' : '#7C3AED',
+                color: event.joined ? '#6B7280' : 'white',
+              }}
+            >
+              {event.joined ? '✓ Apuntado' : 'Me apunto'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
@@ -168,6 +196,7 @@ function CreateEventModal({ onClose, onCreate }) {
 }
 
 export default function Eventos() {
+  const { user } = useAuth()
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeType, setActiveType] = useState('all')
@@ -178,7 +207,7 @@ export default function Eventos() {
 
   async function fetchEvents() {
     setLoading(true)
-    const { data, error } = await supabase.from('events').select('*').order('created_at', { ascending: false })
+    const { data, error } = await supabase.from('events').select('*').order('date', { ascending: true })
     if (!error && data) setEvents(data)
     setLoading(false)
   }
@@ -191,10 +220,16 @@ export default function Eventos() {
         date: event.date, time: event.time, location: event.location,
         max_attendees: event.maxAttendees, attendees: 1,
         host: 'hoshi_oficial', description: event.description, bg: event.bg,
+        user_id: user.id,
       }])
       .select()
-    console.log('data:', data, 'error:', error)
     if (!error && data) setEvents(prev => [data[0], ...prev])
+  }
+
+  async function deleteEvent(id) {
+    if (!window.confirm('¿Eliminar este evento?')) return
+    await supabase.from('events').delete().eq('id', id)
+    setEvents(prev => prev.filter(e => e.id !== id))
   }
 
   async function toggleAttend(id) {
@@ -206,6 +241,8 @@ export default function Eventos() {
   }
 
   const filtered = activeType === 'all' ? events : events.filter(e => e.type === activeType)
+  const upcoming = filtered.filter(e => !isPast(e.date))
+  const past = filtered.filter(e => isPast(e.date))
 
   if (loading) return (
     <div className="flex flex-col flex-1 items-center justify-center gap-3 text-gray-400">
@@ -233,16 +270,33 @@ export default function Eventos() {
         ))}
       </div>
       <div className="flex-1 overflow-y-auto bg-ps-bg py-2">
-        {filtered.length === 0 ? (
+        {upcoming.length === 0 && past.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
             <span className="text-4xl">📅</span>
             <p className="text-sm">No hay eventos todavía — ¡crea el primero!</p>
           </div>
         ) : (
-          filtered.map(e => <EventCard key={e.id} event={e} onToggle={toggleAttend} onInvite={setInviteEvent} />)
+          <>
+            {upcoming.length > 0 && (
+              <>
+                <div className="px-4 py-2">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Próximos</span>
+                </div>
+                {upcoming.map(e => <EventCard key={e.id} event={e} onToggle={toggleAttend} onInvite={setInviteEvent} onDelete={deleteEvent} currentUserId={user.id} />)}
+              </>
+            )}
+            {past.length > 0 && (
+              <>
+                <div className="px-4 py-2 mt-2">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Finalizados</span>
+                </div>
+                {past.map(e => <EventCard key={e.id} event={e} onToggle={toggleAttend} onInvite={setInviteEvent} onDelete={deleteEvent} currentUserId={user.id} />)}
+              </>
+            )}
+          </>
         )}
       </div>
-     {showCreate && <CreateEventModal onClose={() => setShowCreate(false)} onCreate={createEvent} />}
+      {showCreate && <CreateEventModal onClose={() => setShowCreate(false)} onCreate={createEvent} />}
       {inviteEvent && <InviteModal event={inviteEvent} onClose={() => setInviteEvent(null)} />}
     </div>
   )
