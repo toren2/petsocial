@@ -39,14 +39,15 @@ function ConversationList({ onOpen }) {
   }
 
   async function deleteConversation(matchId) {
-    if (!window.confirm('¿Borrar esta conversación?')) return
-    await supabase.from('messages').delete().or(`and(sender_id.eq.${user.id},receiver_id.eq.${matches.find(m=>m.id===matchId)?.otherId}),and(sender_id.eq.${matches.find(m=>m.id===matchId)?.otherId},receiver_id.eq.${user.id})`)
+    const match = matches.find(m => m.id === matchId)
+    if (!match) return
+    await supabase.from('messages').delete().or(`and(sender_id.eq.${user.id},receiver_id.eq.${match.otherId}),and(sender_id.eq.${match.otherId},receiver_id.eq.${user.id})`)
     setMatches(prev => prev.filter(m => m.id !== matchId))
     setDeletingId(null)
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
         <h2 className="text-xl font-bold text-gray-900">Mensajes</h2>
       </div>
@@ -97,7 +98,6 @@ function ConversationList({ onOpen }) {
         )}
       </div>
 
-      {/* Confirm delete modal */}
       {deletingId && (
         <div className="absolute inset-0 bg-black/50 z-50 flex items-end">
           <div className="bg-white rounded-t-3xl w-full p-6 flex flex-col gap-4">
@@ -131,7 +131,9 @@ function Conversation({ match, onBack }) {
   const [loading, setLoading] = useState(true)
   const [viewingProfile, setViewingProfile] = useState(null)
   const [selectedMsg, setSelectedMsg] = useState(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const bottomRef = useRef(null)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     fetchMessages()
@@ -177,6 +179,22 @@ function Conversation({ match, onBack }) {
       const { data: myProfile } = await supabase.from('profiles').select('pet_name').eq('id', user.id).single()
       await notifyMessage(match.otherId, myProfile?.pet_name || 'Una mascota')
     }
+  }
+
+  async function sendImage(file) {
+    if (!file) return
+    setUploadingImage(true)
+    const ext = file.name.split('.').pop()
+    const path = `${user.id}/${Date.now()}.${ext}`
+    const { error: uploadError } = await supabase.storage.from('chat').upload(path, file)
+    if (uploadError) { setUploadingImage(false); return }
+    const { data: { publicUrl } } = supabase.storage.from('chat').getPublicUrl(path)
+    const { data, error } = await supabase
+      .from('messages')
+      .insert([{ sender_id: user.id, receiver_id: match.otherId, text: '', image_url: publicUrl }])
+      .select()
+    if (!error && data) setMsgs(prev => [...prev, data[0]])
+    setUploadingImage(false)
   }
 
   async function deleteMessage(msgId) {
@@ -228,21 +246,29 @@ function Conversation({ match, onBack }) {
             <div
               key={msg.id}
               className={`flex flex-col ${msg.sender_id === user.id ? 'items-end' : 'items-start'}`}
-              onLongPress={() => msg.sender_id === user.id && setSelectedMsg(msg.id)}
             >
-              <div
-                className="max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed cursor-pointer"
-                style={{
-                  background: msg.sender_id === user.id ? '#7C3AED' : 'white',
-                  color: msg.sender_id === user.id ? 'white' : '#1E1B4B',
-                  borderBottomRightRadius: msg.sender_id === user.id ? 4 : 16,
-                  borderBottomLeftRadius: msg.sender_id === user.id ? 16 : 4,
-                  border: msg.sender_id !== user.id ? '1px solid #E5E7EB' : 'none',
-                }}
-                onClick={() => msg.sender_id === user.id && setSelectedMsg(selectedMsg === msg.id ? null : msg.id)}
-              >
-                {msg.text}
-              </div>
+              {msg.image_url ? (
+                <div
+                  className="max-w-[75%] rounded-2xl overflow-hidden cursor-pointer"
+                  onClick={() => msg.sender_id === user.id && setSelectedMsg(selectedMsg === msg.id ? null : msg.id)}
+                >
+                  <img src={msg.image_url} alt="foto" className="w-full h-auto max-h-64 object-cover" />
+                </div>
+              ) : (
+                <div
+                  className="max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed cursor-pointer"
+                  style={{
+                    background: msg.sender_id === user.id ? '#7C3AED' : 'white',
+                    color: msg.sender_id === user.id ? 'white' : '#1E1B4B',
+                    borderBottomRightRadius: msg.sender_id === user.id ? 4 : 16,
+                    borderBottomLeftRadius: msg.sender_id === user.id ? 16 : 4,
+                    border: msg.sender_id !== user.id ? '1px solid #E5E7EB' : 'none',
+                  }}
+                  onClick={() => msg.sender_id === user.id && setSelectedMsg(selectedMsg === msg.id ? null : msg.id)}
+                >
+                  {msg.text}
+                </div>
+              )}
               <div className="flex items-center gap-2 mt-1 px-1">
                 <span className="text-[10px] text-gray-400">
                   {new Date(msg.created_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
@@ -260,11 +286,28 @@ function Conversation({ match, onBack }) {
             </div>
           ))
         )}
+        {uploadingImage && (
+          <div className="flex items-end justify-end">
+            <div className="px-4 py-2.5 rounded-2xl text-sm text-white" style={{ background: '#7C3AED' }}>
+              Enviando imagen...
+            </div>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
       <div className="flex items-center gap-2 px-4 py-2.5 bg-white border-t border-gray-100 flex-shrink-0">
-        <button className="border-0 bg-transparent cursor-pointer text-gray-400">
+        <input
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          className="hidden"
+          onChange={e => sendImage(e.target.files[0])}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="border-0 bg-transparent cursor-pointer text-gray-400"
+        >
           <Image size={20} />
         </button>
         <input
