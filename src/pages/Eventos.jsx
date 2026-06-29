@@ -59,6 +59,18 @@ function EventCard({ event, onToggle, onInvite, onDelete, currentUserId }) {
             {tc.label}
           </span>
         </div>
+        {event.profiles && (
+  <div className="flex items-center gap-2 mb-2">
+    <div className="w-6 h-6 rounded-full overflow-hidden bg-ps-purple-light flex items-center justify-center flex-shrink-0">
+      {event.profiles.avatar_url ? (
+        <img src={event.profiles.avatar_url} className="w-full h-full object-cover" />
+      ) : (
+        <span className="text-xs">{event.profiles.emoji || '🐕'}</span>
+      )}
+    </div>
+    <span className="text-xs text-gray-500">Creado por <span className="font-semibold text-gray-700">{event.profiles.pet_name}</span></span>
+  </div>
+)}
         <p className="text-sm text-gray-500 mb-3 leading-relaxed">{event.description}</p>
         <div className="flex flex-col gap-1.5 mb-3">
           <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -206,11 +218,14 @@ export default function Eventos() {
   useEffect(() => { fetchEvents() }, [])
 
   async function fetchEvents() {
-    setLoading(true)
-    const { data, error } = await supabase.from('events').select('*').order('date', { ascending: true })
-    if (!error && data) setEvents(data)
-    setLoading(false)
-  }
+  setLoading(true)
+  const { data, error } = await supabase
+    .from('events')
+    .select('*, profiles(pet_name, emoji, avatar_url)')
+    .order('date', { ascending: true })
+  if (!error && data) setEvents(data)
+  setLoading(false)
+}
 
   async function createEvent(event) {
     const { data, error } = await supabase
