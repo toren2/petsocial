@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Search, Bell, Plus, Heart, MessageCircle, Share2, Bookmark, Trash2, X } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Search, Bell, Plus, MessageCircle, Share2, Bookmark, Trash2, X } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import CreatePostModal from '../components/CreatePostModal'
@@ -7,6 +7,18 @@ import StoriesBar from '../components/StoriesBar'
 import Notifications from '../components/Notifications'
 import PerfilPublico from './PerfilPublico'
 import CommentsModal from '../components/CommentsModal'
+
+function PawIcon({ size = 22, filled = false, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <ellipse cx="12" cy="17" rx="5" ry="3.5" />
+      <ellipse cx="7" cy="11" rx="2" ry="2.5" />
+      <ellipse cx="17" cy="11" rx="2" ry="2.5" />
+      <ellipse cx="9.5" cy="7" rx="1.5" ry="2" />
+      <ellipse cx="14.5" cy="7" rx="1.5" ry="2" />
+    </svg>
+  )
+}
 
 function SearchPanel({ onClose, onViewProfile }) {
   const [query, setQuery] = useState('')
@@ -50,7 +62,6 @@ function SearchPanel({ onClose, onViewProfile }) {
           <X size={22} />
         </button>
       </div>
-
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12 text-gray-400">
@@ -100,6 +111,8 @@ function Post({ post, currentUserId, onViewProfile, onDelete }) {
   const [showComments, setShowComments] = useState(false)
   const [commentCount, setCommentCount] = useState(0)
   const [saved, setSaved] = useState(post.saved || false)
+  const [showPaw, setShowPaw] = useState(false)
+  const lastTapRef = useRef(0)
 
   async function toggleSave() {
     const newSaved = !saved
@@ -129,6 +142,16 @@ function Post({ post, currentUserId, onViewProfile, onDelete }) {
     } else {
       await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', currentUserId)
     }
+  }
+
+  function handleDoubleTap() {
+    const now = Date.now()
+    if (now - lastTapRef.current < 300) {
+      if (!liked) toggleLike()
+      setShowPaw(true)
+      setTimeout(() => setShowPaw(false), 900)
+    }
+    lastTapRef.current = now
   }
 
   async function handleShare() {
@@ -170,23 +193,51 @@ function Post({ post, currentUserId, onViewProfile, onDelete }) {
         )}
       </div>
 
-      {post.image_url ? (
-        <div className="w-full" style={{ height: 300 }}>
+      {/* Imagen con doble tap */}
+      <div
+        className="w-full relative"
+        style={{ height: post.image_url ? 300 : 200 }}
+        onClick={handleDoubleTap}
+      >
+        {post.image_url ? (
           <img src={post.image_url} alt="post" className="w-full h-full object-cover" />
-        </div>
-      ) : (
-        <div className="w-full flex items-center justify-center" style={{ height: 200, background: '#EDE9FE', fontSize: 80 }}>
-          {post.pet_emoji || '🐕'}
-        </div>
-      )}
+        ) : (
+          <div className="w-full h-full flex items-center justify-center" style={{ background: '#EDE9FE', fontSize: 80 }}>
+            {post.pet_emoji || '🐕'}
+          </div>
+        )}
+
+        {/* Huellita fading */}
+        {showPaw && (
+          <div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            style={{
+              animation: 'pawFade 0.9s ease-out forwards',
+            }}
+          >
+            <div style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))' }}>
+              <PawIcon size={100} filled color="#7C3AED" />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes pawFade {
+          0%   { opacity: 0; transform: scale(0.5); }
+          30%  { opacity: 1; transform: scale(1.1); }
+          60%  { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(1.05); }
+        }
+      `}</style>
 
       <div className="px-4 pt-2.5 pb-1 flex items-center gap-4">
         <button
           onClick={toggleLike}
           className="border-0 bg-transparent p-0 cursor-pointer flex items-center gap-1 text-sm"
-          style={{ color: liked ? '#EC4899' : '#9CA3AF' }}
+          style={{ color: liked ? '#7C3AED' : '#9CA3AF' }}
         >
-          <Heart size={22} fill={liked ? '#EC4899' : 'none'} />
+          <PawIcon size={22} filled={liked} color={liked ? '#7C3AED' : '#9CA3AF'} />
           <span>{likes}</span>
         </button>
         <button
@@ -301,14 +352,12 @@ export default function Feed() {
           <button
             onClick={() => setShowSearch(true)}
             className="border-0 bg-transparent cursor-pointer text-gray-500"
-            aria-label="Buscar"
           >
             <Search size={22} />
           </button>
           <button
             onClick={() => { setShowNotifications(true); setUnreadCount(0) }}
             className="border-0 bg-transparent cursor-pointer text-gray-500 relative"
-            aria-label="Notificaciones"
           >
             <Bell size={22} />
             {unreadCount > 0 && (
