@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Search, Bell, Plus, Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Search, Bell, Plus, Heart, MessageCircle, Share2, Bookmark, Trash2, X } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import CreatePostModal from '../components/CreatePostModal'
@@ -7,6 +7,92 @@ import StoriesBar from '../components/StoriesBar'
 import Notifications from '../components/Notifications'
 import PerfilPublico from './PerfilPublico'
 import CommentsModal from '../components/CommentsModal'
+
+function SearchPanel({ onClose, onViewProfile }) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
+  const [loading, setLoading] = useState(false)
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); return }
+    const timeout = setTimeout(() => searchUsers(), 400)
+    return () => clearTimeout(timeout)
+  }, [query])
+
+  async function searchUsers() {
+    setLoading(true)
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, pet_name, emoji, avatar_url, breed, location')
+      .ilike('pet_name', `%${query}%`)
+      .neq('id', user.id)
+      .limit(20)
+    setResults(data || [])
+    setLoading(false)
+  }
+
+  return (
+    <div className="absolute inset-0 z-40 bg-white flex flex-col">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+        <div className="flex-1 relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            autoFocus
+            type="text"
+            placeholder="Buscar mascotas..."
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            className="w-full bg-ps-bg border border-gray-200 rounded-full py-2.5 pl-9 pr-4 text-sm outline-none"
+          />
+        </div>
+        <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-gray-500">
+          <X size={22} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="flex items-center justify-center py-12 text-gray-400">
+            <span className="text-sm">Buscando...</span>
+          </div>
+        ) : query.trim() === '' ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
+            <span className="text-4xl">🔍</span>
+            <p className="text-sm">Busca por nombre de mascota</p>
+          </div>
+        ) : results.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
+            <span className="text-4xl">🐾</span>
+            <p className="text-sm">No se encontraron mascotas</p>
+          </div>
+        ) : (
+          results.map(p => (
+            <div
+              key={p.id}
+              onClick={() => { onViewProfile(p.id); onClose() }}
+              className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100 cursor-pointer active:bg-gray-50"
+            >
+              <div className="w-12 h-12 rounded-full bg-ps-purple-light flex items-center justify-center text-2xl overflow-hidden flex-shrink-0">
+                {p.avatar_url ? (
+                  <img src={p.avatar_url} alt={p.pet_name} className="w-full h-full object-cover" />
+                ) : (
+                  p.emoji || '🐕'
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-sm text-gray-900">{p.pet_name}</div>
+                <div className="text-xs text-gray-400 truncate mt-0.5">
+                  {p.breed} {p.location ? `· ${p.location}` : ''}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
 
 function Post({ post, currentUserId, onViewProfile, onDelete }) {
   const [liked, setLiked] = useState(post.liked)
@@ -16,14 +102,14 @@ function Post({ post, currentUserId, onViewProfile, onDelete }) {
   const [saved, setSaved] = useState(post.saved || false)
 
   async function toggleSave() {
-  const newSaved = !saved
-  setSaved(newSaved)
-  if (newSaved) {
-    await supabase.from('saved_posts').insert([{ post_id: post.id, user_id: currentUserId }])
-  } else {
-    await supabase.from('saved_posts').delete().eq('post_id', post.id).eq('user_id', currentUserId)
+    const newSaved = !saved
+    setSaved(newSaved)
+    if (newSaved) {
+      await supabase.from('saved_posts').insert([{ post_id: post.id, user_id: currentUserId }])
+    } else {
+      await supabase.from('saved_posts').delete().eq('post_id', post.id).eq('user_id', currentUserId)
+    }
   }
-}
 
   useEffect(() => {
     supabase
@@ -99,7 +185,6 @@ function Post({ post, currentUserId, onViewProfile, onDelete }) {
           onClick={toggleLike}
           className="border-0 bg-transparent p-0 cursor-pointer flex items-center gap-1 text-sm"
           style={{ color: liked ? '#EC4899' : '#9CA3AF' }}
-          aria-label="Me gusta"
         >
           <Heart size={22} fill={liked ? '#EC4899' : 'none'} />
           <span>{likes}</span>
@@ -118,12 +203,12 @@ function Post({ post, currentUserId, onViewProfile, onDelete }) {
           <Share2 size={20} />
         </button>
         <button
-  onClick={toggleSave}
-  className="border-0 bg-transparent p-0 cursor-pointer ml-auto"
-  style={{ color: saved ? '#7C3AED' : '#9CA3AF' }}
->
-  <Bookmark size={20} fill={saved ? '#7C3AED' : 'none'} />
-</button>
+          onClick={toggleSave}
+          className="border-0 bg-transparent p-0 cursor-pointer ml-auto"
+          style={{ color: saved ? '#7C3AED' : '#9CA3AF' }}
+        >
+          <Bookmark size={20} fill={saved ? '#7C3AED' : 'none'} />
+        </button>
       </div>
 
       <div className="px-4 pb-1 text-sm font-semibold text-gray-900">{likes} me gusta</div>
@@ -151,6 +236,7 @@ export default function Feed() {
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
   const [viewingProfile, setViewingProfile] = useState(null)
   const [unreadCount, setUnreadCount] = useState(0)
 
@@ -182,7 +268,7 @@ export default function Feed() {
       const { data: allLikes } = await supabase.from('post_likes').select('post_id')
       const likedIds = likes?.map(l => l.post_id) || []
       const { data: savedPosts } = await supabase.from('saved_posts').select('post_id').eq('user_id', user.id)
-const savedIds = savedPosts?.map(s => s.post_id) || []
+      const savedIds = savedPosts?.map(s => s.post_id) || []
       const countMap = {}
       allLikes?.forEach(l => { countMap[l.post_id] = (countMap[l.post_id] || 0) + 1 })
       setPosts(data.map(p => ({ ...p, liked: likedIds.includes(p.id), likes: countMap[p.id] || 0, saved: savedIds.includes(p.id) })))
@@ -212,7 +298,11 @@ const savedIds = savedPosts?.map(s => s.post_id) || []
           <span className="text-lg font-bold text-gray-900">PetSocial</span>
         </div>
         <div className="flex gap-3">
-          <button className="border-0 bg-transparent cursor-pointer text-gray-500" aria-label="Buscar">
+          <button
+            onClick={() => setShowSearch(true)}
+            className="border-0 bg-transparent cursor-pointer text-gray-500"
+            aria-label="Buscar"
+          >
             <Search size={22} />
           </button>
           <button
@@ -249,7 +339,6 @@ const savedIds = savedPosts?.map(s => s.post_id) || []
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center justify-center w-9 h-9 rounded-full bg-ps-purple border-0 cursor-pointer"
-            aria-label="Crear post"
           >
             <Plus size={18} color="white" />
           </button>
@@ -276,6 +365,10 @@ const savedIds = savedPosts?.map(s => s.post_id) || []
           posts.map(p => <Post key={p.id} post={p} currentUserId={user.id} onViewProfile={setViewingProfile} onDelete={deletePost} />)
         )}
       </div>
+
+      {showSearch && (
+        <SearchPanel onClose={() => setShowSearch(false)} onViewProfile={setViewingProfile} />
+      )}
 
       {viewingProfile && viewingProfile !== user.id && (
         <div className="absolute inset-0 z-40 bg-ps-bg flex flex-col">
