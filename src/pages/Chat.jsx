@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, MoreVertical, Send, Image, Smile } from 'lucide-react'
+import { ArrowLeft, MoreVertical, Send, Image, Smile, Trash2, X } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { notifyMessage } from '../notifications'
@@ -9,6 +9,7 @@ function ConversationList({ onOpen }) {
   const { user } = useAuth()
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState(null)
 
   useEffect(() => { fetchMatches() }, [])
 
@@ -37,6 +38,13 @@ function ConversationList({ onOpen }) {
     setLoading(false)
   }
 
+  async function deleteConversation(matchId) {
+    if (!window.confirm('¿Borrar esta conversación?')) return
+    await supabase.from('messages').delete().or(`and(sender_id.eq.${user.id},receiver_id.eq.${matches.find(m=>m.id===matchId)?.otherId}),and(sender_id.eq.${matches.find(m=>m.id===matchId)?.otherId},receiver_id.eq.${user.id})`)
+    setMatches(prev => prev.filter(m => m.id !== matchId))
+    setDeletingId(null)
+  }
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
@@ -56,31 +64,62 @@ function ConversationList({ onOpen }) {
           </div>
         ) : (
           matches.map(match => (
-            <div
-              key={match.id}
-              onClick={() => onOpen(match)}
-              className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100 bg-white cursor-pointer active:bg-gray-50"
-            >
-              <div className="w-12 h-12 rounded-full bg-ps-purple-light flex items-center justify-center text-2xl overflow-hidden flex-shrink-0">
-                {match.profile?.avatar_url ? (
-                  <img src={match.profile.avatar_url} alt={match.profile.pet_name} className="w-full h-full object-cover" />
-                ) : (
-                  match.profile?.emoji || '🐕'
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm text-gray-900">{match.profile?.pet_name || 'Mascota'}</div>
-                <div className="text-xs text-gray-400 truncate mt-0.5">
-                  {match.profile?.breed} · {match.profile?.location}
+            <div key={match.id} className="flex items-center border-b border-gray-100 bg-white">
+              <div
+                onClick={() => onOpen(match)}
+                className="flex items-center gap-3 px-4 py-3.5 cursor-pointer active:bg-gray-50 flex-1 min-w-0"
+              >
+                <div className="w-12 h-12 rounded-full bg-ps-purple-light flex items-center justify-center text-2xl overflow-hidden flex-shrink-0">
+                  {match.profile?.avatar_url ? (
+                    <img src={match.profile.avatar_url} alt={match.profile.pet_name} className="w-full h-full object-cover" />
+                  ) : (
+                    match.profile?.emoji || '🐕'
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-sm text-gray-900">{match.profile?.pet_name || 'Mascota'}</div>
+                  <div className="text-xs text-gray-400 truncate mt-0.5">
+                    {match.profile?.breed} · {match.profile?.location}
+                  </div>
+                </div>
+                <div className="text-xs text-gray-400 flex-shrink-0">
+                  {new Date(match.created_at).toLocaleDateString('es', { day: 'numeric', month: 'short' })}
                 </div>
               </div>
-              <div className="text-xs text-gray-400 flex-shrink-0">
-                {new Date(match.created_at).toLocaleDateString('es', { day: 'numeric', month: 'short' })}
-              </div>
+              <button
+                onClick={() => setDeletingId(match.id)}
+                className="border-0 bg-transparent cursor-pointer px-4 py-3.5 text-gray-300 active:text-red-400"
+              >
+                <Trash2 size={17} />
+              </button>
             </div>
           ))
         )}
       </div>
+
+      {/* Confirm delete modal */}
+      {deletingId && (
+        <div className="absolute inset-0 bg-black/50 z-50 flex items-end">
+          <div className="bg-white rounded-t-3xl w-full p-6 flex flex-col gap-4">
+            <h3 className="font-bold text-gray-900 text-lg">¿Borrar conversación?</h3>
+            <p className="text-sm text-gray-500">Se eliminarán todos los mensajes. Esta acción no se puede deshacer.</p>
+            <button
+              onClick={() => deleteConversation(deletingId)}
+              className="w-full py-3 rounded-full font-semibold text-white border-0 cursor-pointer"
+              style={{ background: '#EF4444' }}
+            >
+              Borrar conversación
+            </button>
+            <button
+              onClick={() => setDeletingId(null)}
+              className="w-full py-3 rounded-full font-semibold border-0 cursor-pointer"
+              style={{ background: '#F3F4F6', color: '#6B7280' }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -91,6 +130,7 @@ function Conversation({ match, onBack }) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [viewingProfile, setViewingProfile] = useState(null)
+  const [selectedMsg, setSelectedMsg] = useState(null)
   const bottomRef = useRef(null)
 
   useEffect(() => {
@@ -139,6 +179,12 @@ function Conversation({ match, onBack }) {
     }
   }
 
+  async function deleteMessage(msgId) {
+    await supabase.from('messages').delete().eq('id', msgId)
+    setMsgs(prev => prev.filter(m => m.id !== msgId))
+    setSelectedMsg(null)
+  }
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
@@ -179,9 +225,13 @@ function Conversation({ match, onBack }) {
           <div className="text-center text-sm text-gray-400 py-4">¡Sé el primero en decir hola! 👋</div>
         ) : (
           msgs.map(msg => (
-            <div key={msg.id} className={`flex flex-col ${msg.sender_id === user.id ? 'items-end' : 'items-start'}`}>
+            <div
+              key={msg.id}
+              className={`flex flex-col ${msg.sender_id === user.id ? 'items-end' : 'items-start'}`}
+              onLongPress={() => msg.sender_id === user.id && setSelectedMsg(msg.id)}
+            >
               <div
-                className="max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed"
+                className="max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed cursor-pointer"
                 style={{
                   background: msg.sender_id === user.id ? '#7C3AED' : 'white',
                   color: msg.sender_id === user.id ? 'white' : '#1E1B4B',
@@ -189,12 +239,24 @@ function Conversation({ match, onBack }) {
                   borderBottomLeftRadius: msg.sender_id === user.id ? 16 : 4,
                   border: msg.sender_id !== user.id ? '1px solid #E5E7EB' : 'none',
                 }}
+                onClick={() => msg.sender_id === user.id && setSelectedMsg(selectedMsg === msg.id ? null : msg.id)}
               >
                 {msg.text}
               </div>
-              <span className="text-[10px] text-gray-400 mt-1 px-1">
-                {new Date(msg.created_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
-              </span>
+              <div className="flex items-center gap-2 mt-1 px-1">
+                <span className="text-[10px] text-gray-400">
+                  {new Date(msg.created_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+                {selectedMsg === msg.id && msg.sender_id === user.id && (
+                  <button
+                    onClick={() => deleteMessage(msg.id)}
+                    className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border-0 cursor-pointer"
+                    style={{ background: '#FEE2E2', color: '#EF4444' }}
+                  >
+                    <Trash2 size={10} /> Eliminar
+                  </button>
+                )}
+              </div>
             </div>
           ))
         )}
