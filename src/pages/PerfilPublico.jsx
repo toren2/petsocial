@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, MapPin, Grid3x3, MessageCircle, X, Heart, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, MapPin, Grid3x3, MessageCircle, X, Heart, ChevronLeft, ChevronRight, UserPlus, UserCheck } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 
@@ -68,6 +68,8 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [isMatch, setIsMatch] = useState(false)
+  const [isFollowing, setIsFollowing] = useState(false)
+  const [followerCount, setFollowerCount] = useState(0)
   const [viewingPhoto, setViewingPhoto] = useState(null)
   const [showInfo, setShowInfo] = useState(false)
 
@@ -75,6 +77,8 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
     fetchProfile()
     fetchPosts()
     checkMatch()
+    checkFollowing()
+    fetchFollowerCount()
   }, [userId])
 
   async function fetchProfile() {
@@ -104,6 +108,36 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
       .or(`and(user1_id.eq.${user.id},user2_id.eq.${userId}),and(user1_id.eq.${userId},user2_id.eq.${user.id})`)
       .single()
     if (data) setIsMatch(true)
+  }
+
+  async function checkFollowing() {
+    const { data } = await supabase
+      .from('follows')
+      .select('id')
+      .eq('follower_id', user.id)
+      .eq('following_id', userId)
+      .single()
+    setIsFollowing(!!data)
+  }
+
+  async function fetchFollowerCount() {
+    const { count } = await supabase
+      .from('follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('following_id', userId)
+    setFollowerCount(count || 0)
+  }
+
+  async function toggleFollow() {
+    if (isFollowing) {
+      await supabase.from('follows').delete().eq('follower_id', user.id).eq('following_id', userId)
+      setIsFollowing(false)
+      setFollowerCount(c => c - 1)
+    } else {
+      await supabase.from('follows').insert([{ follower_id: user.id, following_id: userId }])
+      setIsFollowing(true)
+      setFollowerCount(c => c + 1)
+    }
   }
 
   if (loading) return (
@@ -139,7 +173,6 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
       </div>
 
       <div className="flex-1 overflow-y-auto bg-white">
-        {/* Header compacto */}
         <div className="flex items-center gap-4 px-4 py-4">
           <div className="flex-shrink-0">
             {profile.avatar_url ? (
@@ -171,8 +204,8 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
                 <div className="text-xs text-gray-400">Posts</div>
               </div>
               <div className="text-center">
-                <div className="font-bold text-gray-900 text-sm">{profile.energy || '-'}</div>
-                <div className="text-xs text-gray-400">Energía</div>
+                <div className="font-bold text-gray-900 text-sm">{followerCount}</div>
+                <div className="text-xs text-gray-400">Seguidores</div>
               </div>
               <div className="text-center">
                 <div className="font-bold text-gray-900 text-sm">{profile.size || '-'}</div>
@@ -182,14 +215,27 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
           </div>
         </div>
 
-        {/* Bio */}
         {profile.about && (
           <div className="px-4 pb-3">
             <p className="text-sm text-gray-700 leading-relaxed">{profile.about}</p>
           </div>
         )}
 
-        {/* Botón ver info completa */}
+        {/* Botón seguir */}
+        <div className="px-4 pb-3">
+          <button
+            onClick={toggleFollow}
+            className="w-full py-2.5 rounded-xl text-sm font-semibold border-0 cursor-pointer flex items-center justify-center gap-2"
+            style={{
+              background: isFollowing ? '#F3F4F6' : '#7C3AED',
+              color: isFollowing ? '#6B7280' : 'white',
+            }}
+          >
+            {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
+            {isFollowing ? 'Siguiendo' : 'Seguir'}
+          </button>
+        </div>
+
         <div className="px-4 pb-3">
           <button
             onClick={() => setShowInfo(s => !s)}
@@ -199,7 +245,6 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
           </button>
         </div>
 
-        {/* Info expandible */}
         {showInfo && (
           <div className="mx-4 mb-3 rounded-2xl border border-gray-100 overflow-hidden">
             {[
@@ -220,12 +265,10 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
           </div>
         )}
 
-        {/* Divisor */}
         <div className="border-t border-gray-100 flex items-center justify-center py-2 mb-1">
           <Grid3x3 size={16} className="text-gray-400" />
         </div>
 
-        {/* Grid de fotos */}
         {posts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
             <span className="text-4xl">📸</span>
