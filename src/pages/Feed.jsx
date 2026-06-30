@@ -271,7 +271,7 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
   <CommentsModal
     post={post}
     onClose={() => { setShowComments(false); supabase.from('post_comments').select('*', { count: 'exact', head: true }).eq('post_id', post.id).then(({ count }) => setCommentCount(count || 0)) }}
-    onViewProfile={onViewProfile}
+    onViewProfile={id => { setShowComments(false); onViewProfile(id) }}
   />
 )}
     </div>
