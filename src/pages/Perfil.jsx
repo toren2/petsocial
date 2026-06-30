@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Save, X, ChevronLeft, ChevronRight, Heart } from 'lucide-react'
+import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 
@@ -45,8 +45,11 @@ export default function Perfil({ onSignOut }) {
   const [uploadingPetPhoto, setUploadingPetPhoto] = useState(false)
   const [stats, setStats] = useState({ posts: 0, matches: 0, reviews: 0 })
   const [myPosts, setMyPosts] = useState([])
+  const [savedPosts, setSavedPosts] = useState([])
+  const [activeTab, setActiveTab] = useState('posts')
   const [petPhotos, setPetPhotos] = useState([])
   const [viewingPhoto, setViewingPhoto] = useState(null)
+  const [viewingSavedPhoto, setViewingSavedPhoto] = useState(null)
   const [showInfo, setShowInfo] = useState(false)
   const fileInputRef = useRef(null)
   const petPhotoRef = useRef(null)
@@ -57,7 +60,7 @@ export default function Perfil({ onSignOut }) {
     location: '', about: '', emoji: '🐕', avatar_url: '',
   })
 
-  useEffect(() => { fetchProfile(); fetchStats(); fetchMyPosts(); fetchPetPhotos() }, [])
+  useEffect(() => { fetchProfile(); fetchStats(); fetchMyPosts(); fetchPetPhotos(); fetchSavedPosts() }, [])
 
   async function fetchProfile() {
     setLoading(true)
@@ -99,6 +102,17 @@ export default function Perfil({ onSignOut }) {
     if (data) setMyPosts(data)
   }
 
+  async function fetchSavedPosts() {
+    const { data: saves } = await supabase.from('saved_posts').select('post_id').eq('user_id', user.id).order('created_at', { ascending: false })
+    if (!saves || saves.length === 0) { setSavedPosts([]); return }
+    const ids = saves.map(s => s.post_id)
+    const { data: posts } = await supabase.from('posts').select('*').in('id', ids)
+    if (posts) {
+      const ordered = ids.map(id => posts.find(p => p.id === id)).filter(Boolean)
+      setSavedPosts(ordered)
+    }
+  }
+
   async function fetchPetPhotos() {
     const { data } = await supabase.from('pet_photos').select('*').eq('user_id', user.id).order('order_index', { ascending: true })
     if (data) setPetPhotos(data)
@@ -113,6 +127,11 @@ export default function Perfil({ onSignOut }) {
     }
     setMyPosts(prev => prev.filter(p => p.id !== post.id))
     setStats(s => ({ ...s, posts: s.posts - 1 }))
+  }
+
+  async function unsavePost(postId) {
+    await supabase.from('saved_posts').delete().eq('post_id', postId).eq('user_id', user.id)
+    setSavedPosts(prev => prev.filter(p => p.id !== postId))
   }
 
   async function uploadPhoto(file) {
@@ -281,7 +300,6 @@ export default function Perfil({ onSignOut }) {
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex-1 overflow-y-auto bg-white">
-        {/* Header */}
         <div className="flex items-center gap-4 px-4 py-4">
           <div className="relative flex-shrink-0 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
             {profile.avatar_url ? (
@@ -383,34 +401,74 @@ export default function Perfil({ onSignOut }) {
           )}
         </div>
 
-        {/* Posts */}
-        <div className="border-t border-gray-100 flex items-center justify-center py-2 mb-1">
-          <Grid3x3 size={16} className="text-gray-400" />
+        {/* Tabs Posts / Guardados */}
+        <div className="border-t border-gray-100 flex items-center justify-center">
+          <button
+            onClick={() => setActiveTab('posts')}
+            className="flex-1 flex items-center justify-center py-2.5 border-0 bg-transparent cursor-pointer border-b-2"
+            style={{ borderBottomColor: activeTab === 'posts' ? '#7C3AED' : 'transparent' }}
+          >
+            <Grid3x3 size={16} color={activeTab === 'posts' ? '#7C3AED' : '#9CA3AF'} />
+          </button>
+          <button
+            onClick={() => setActiveTab('saved')}
+            className="flex-1 flex items-center justify-center py-2.5 border-0 bg-transparent cursor-pointer border-b-2"
+            style={{ borderBottomColor: activeTab === 'saved' ? '#7C3AED' : 'transparent' }}
+          >
+            <Bookmark size={16} color={activeTab === 'saved' ? '#7C3AED' : '#9CA3AF'} />
+          </button>
         </div>
 
-        {myPosts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
-            <span className="text-4xl">📸</span>
-            <p className="text-sm">Aún no has publicado nada</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-0.5">
-            {myPosts.map((p, i) => (
-              <div key={p.id} className="aspect-square overflow-hidden relative" style={{ background: '#EDE9FE' }}>
-                <div onClick={() => setViewingPhoto(i)} className="w-full h-full cursor-pointer">
-                  {p.image_url ? <img src={p.image_url} alt="post" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-4xl">{p.pet_emoji || '🐕'}</div>}
+        {activeTab === 'posts' && (
+          myPosts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
+              <span className="text-4xl">📸</span>
+              <p className="text-sm">Aún no has publicado nada</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-0.5">
+              {myPosts.map((p, i) => (
+                <div key={p.id} className="aspect-square overflow-hidden relative" style={{ background: '#EDE9FE' }}>
+                  <div onClick={() => setViewingPhoto(i)} className="w-full h-full cursor-pointer">
+                    {p.image_url ? <img src={p.image_url} alt="post" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-4xl">{p.pet_emoji || '🐕'}</div>}
+                  </div>
+                  <button onClick={e => { e.stopPropagation(); deletePost(p) }} className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center border-0 cursor-pointer" style={{ background: 'rgba(0,0,0,0.5)' }}>
+                    <span style={{ color: 'white', fontSize: 12 }}>✕</span>
+                  </button>
                 </div>
-                <button onClick={e => { e.stopPropagation(); deletePost(p) }} className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center border-0 cursor-pointer" style={{ background: 'rgba(0,0,0,0.5)' }}>
-                  <span style={{ color: 'white', fontSize: 12 }}>✕</span>
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {activeTab === 'saved' && (
+          savedPosts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
+              <Bookmark size={36} className="text-gray-200" />
+              <p className="text-sm">No tienes posts guardados</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-0.5">
+              {savedPosts.map((p, i) => (
+                <div key={p.id} className="aspect-square overflow-hidden relative" style={{ background: '#EDE9FE' }}>
+                  <div onClick={() => setViewingSavedPhoto(i)} className="w-full h-full cursor-pointer">
+                    {p.image_url ? <img src={p.image_url} alt="post" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-4xl">{p.pet_emoji || '🐕'}</div>}
+                  </div>
+                  <button onClick={e => { e.stopPropagation(); unsavePost(p.id) }} className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center border-0 cursor-pointer" style={{ background: 'rgba(0,0,0,0.5)' }}>
+                    <Bookmark size={11} color="white" fill="white" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )
         )}
       </div>
 
       {viewingPhoto !== null && (
         <PhotoViewer posts={myPosts} startIndex={viewingPhoto} onClose={() => setViewingPhoto(null)} />
+      )}
+      {viewingSavedPhoto !== null && (
+        <PhotoViewer posts={savedPosts} startIndex={viewingSavedPhoto} onClose={() => setViewingSavedPhoto(null)} />
       )}
     </div>
   )
