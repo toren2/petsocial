@@ -4,6 +4,8 @@ import { supabase } from '../supabase'
 import LugarDetalle from './LugarDetalle'
 import MapaLugares from '../components/MapaLugares'
 
+const NEARBY_RADIUS_KM = 10
+
 const categories = [
   { id: 'all',        label: 'Todos',        Icon: MapPin,         bg: '#EDE9FE', color: '#7C3AED' },
   { id: 'vet',        label: 'Veterinarias', Icon: Stethoscope,    bg: '#EDE9FE', color: '#7C3AED' },
@@ -55,10 +57,6 @@ export default function Lugares({ initialCategory = 'all' }) {
     }
   }, [])
 
-  useEffect(() => {
-    if (userLocation) fetchNearbyPlaces()
-  }, [userLocation])
-
   // Recalcular distancias reales cuando tengamos ubicación
   useEffect(() => {
     if (!userLocation) return
@@ -77,62 +75,10 @@ export default function Lugares({ initialCategory = 'all' }) {
     setLoading(false)
   }
 
-  async function fetchNearbyPlaces() {
-    if (!userLocation) return
-    const { lat, lng } = userLocation
-    const radius = 5000
-    const query = `
-      [out:json][timeout:25];
-      (
-        node["amenity"="veterinary"](around:${radius},${lat},${lng});
-        node["amenity"="dog_park"](around:${radius},${lat},${lng});
-        node["leisure"="dog_park"](around:${radius},${lat},${lng});
-        node["shop"="pet"](around:${radius},${lat},${lng});
-        node["amenity"="grooming"](around:${radius},${lat},${lng});
-      );
-      out body;
-    `
-    try {
-      const res = await fetch('/api/overpass', { method: 'POST', body: query })
-      const data = await res.json()
-      if (data.elements && data.elements.length > 0) {
-        const mapped = data.elements
-          .filter(el => el.tags?.name)
-          .map(el => {
-            const category = el.tags.amenity === 'veterinary' ? 'vet'
-              : el.tags.shop === 'pet' ? 'shop'
-              : el.tags.amenity === 'grooming' ? 'groom'
-              : 'park'
-            return {
-              id: `osm-${el.id}`,
-              name: el.tags.name,
-              type: category === 'vet' ? 'Veterinaria' : category === 'shop' ? 'Pet Shop' : category === 'groom' ? 'Grooming' : 'Parque pet-friendly',
-              category,
-              rating: (Math.random() * 1.5 + 3.5).toFixed(1),
-              reviews: Math.floor(Math.random() * 100 + 10),
-              distance: parseFloat(getDistance(lat, lng, el.lat, el.lon)),
-              address: el.tags['addr:street'] ? `${el.tags['addr:street']} ${el.tags['addr:housenumber'] || ''}`.trim() : 'Panamá',
-              open: true,
-              hours: 'Ver horario en Google Maps',
-              lat: el.lat,
-              lng: el.lon,
-            }
-          })
-          .sort((a, b) => a.distance - b.distance)
-        setPlaces(prev => {
-          const existingNames = prev.map(p => p.name.toLowerCase())
-          return [...prev, ...mapped.filter(p => !existingNames.includes(p.name.toLowerCase()))]
-        })
-      }
-    } catch (err) {
-      console.log('Overpass error:', err)
-    }
-  }
-
   function refreshLocation() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        pos => { setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setPlaces([]); fetchPlaces() },
+        pos => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
         () => console.log('No se pudo obtener ubicación')
       )
     }
@@ -159,16 +105,20 @@ export default function Lugares({ initialCategory = 'all' }) {
 
   if (selectedPlace) return <LugarDetalle place={selectedPlace} onBack={() => setSelectedPlace(null)} />
 
-  const supabasePlaces = places.filter(p => !String(p.id).startsWith('osm-'))
-  const sourcePlaces = activeTab === 'todos' ? supabasePlaces : places
-  let filtered = sourcePlaces.filter(p => {
+  let filtered = places.filter(p => {
     const matchCat    = activeCategory === 'all' || p.category === activeCategory
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.type.toLowerCase().includes(search.toLowerCase())
     return matchCat && matchSearch
   })
 
-  if (activeTab === 'cerca' && userLocation) {
-    filtered = [...filtered].sort((a, b) => (a.distance || 999) - (b.distance || 999))
+  if (activeTab === 'cerca') {
+    if (userLocation) {
+      filtered = filtered
+        .filter(p => p.distance != null && p.distance <= NEARBY_RADIUS_KM)
+        .sort((a, b) => (a.distance || 999) - (b.distance || 999))
+    } else {
+      filtered = []
+    }
   }
 
   return (
@@ -240,7 +190,7 @@ export default function Lugares({ initialCategory = 'all' }) {
             <div className="px-3 py-2 bg-ps-teal-light flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5">
                 <MapPin size={12} className="text-ps-teal flex-shrink-0" />
-                <span className="text-xs text-ps-teal font-medium">Cerca de ti</span>
+                <span className="text-xs text-ps-teal font-medium">Dentro de {NEARBY_RADIUS_KM} km</span>
               </div>
               <button
                 onClick={refreshLocation}
@@ -268,7 +218,7 @@ export default function Lugares({ initialCategory = 'all' }) {
 
           <div className="px-3 py-2 bg-white border-b border-gray-100">
             <span className="font-semibold text-xs text-gray-900">
-              {loading ? 'Cargando...' : `${filtered.length} lugar${filtered.length !== 1 ? 'es' : ''} ${activeTab === 'todos' ? 'en directorio' : 'cerca de ti'}`}
+              {loading ? 'Cargando...' : `${filtered.length} lugar${filtered.length !== 1 ? 'es' : ''} ${activeTab === 'todos' ? 'en directorio' : `a menos de ${NEARBY_RADIUS_KM} km`}`}
             </span>
           </div>
 
@@ -280,7 +230,9 @@ export default function Lugares({ initialCategory = 'all' }) {
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
               <span className="text-4xl">📍</span>
-              <p className="text-sm">No hay lugares aquí</p>
+              <p className="text-sm">
+                {activeTab === 'cerca' && !userLocation ? 'Esperando tu ubicación...' : 'No hay lugares aquí'}
+              </p>
             </div>
           ) : (
             filtered.map(place => {
