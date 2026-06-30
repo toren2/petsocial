@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { X, Send, Heart } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import { notifyComment } from '../notifications'
 
 export default function CommentsModal({ post, onClose }) {
   const { user } = useAuth()
@@ -72,7 +73,10 @@ export default function CommentsModal({ post, onClose }) {
         parent_id: replyingTo?.id || null,
       }])
       .select()
-    if (!error && data) setComments(prev => [...prev, data[0]])
+    if (!error && data) {
+      setComments(prev => [...prev, data[0]])
+      await notifyComment(post.user_id, user.id, profile?.pet_name || 'Alguien', post.id)
+    }
     setReplyingTo(null)
     setSending(false)
   }

@@ -7,6 +7,7 @@ import StoriesBar from '../components/StoriesBar'
 import Notifications from '../components/Notifications'
 import PerfilPublico from './PerfilPublico'
 import CommentsModal from '../components/CommentsModal'
+import { notifyLike } from '../notifications'
 
 function PawIcon({ size = 22, filled = false, color = 'currentColor' }) {
   return (
@@ -105,7 +106,7 @@ function SearchPanel({ onClose, onViewProfile }) {
   )
 }
 
-function Post({ post, currentUserId, onViewProfile, onDelete }) {
+function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
   const [liked, setLiked] = useState(post.liked)
   const [likes, setLikes] = useState(post.likes)
   const [showComments, setShowComments] = useState(false)
@@ -132,17 +133,18 @@ function Post({ post, currentUserId, onViewProfile, onDelete }) {
       .then(({ count }) => setCommentCount(count || 0))
   }, [])
 
-  async function toggleLike() {
-    const newLiked = !liked
-    const newLikes = newLiked ? likes + 1 : likes - 1
-    setLiked(newLiked)
-    setLikes(newLikes)
-    if (newLiked) {
-      await supabase.from('post_likes').insert([{ post_id: post.id, user_id: currentUserId }])
-    } else {
-      await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', currentUserId)
-    }
+ async function toggleLike() {
+  const newLiked = !liked
+  const newLikes = newLiked ? likes + 1 : likes - 1
+  setLiked(newLiked)
+  setLikes(newLikes)
+  if (newLiked) {
+    await supabase.from('post_likes').insert([{ post_id: post.id, user_id: currentUserId }])
+    await notifyLike(post.user_id, currentUserId, myPetName || 'Alguien', post.id)
+  } else {
+    await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', currentUserId)
   }
+}
 
   function handleDoubleTap() {
     const now = Date.now()
@@ -411,7 +413,7 @@ export default function Feed() {
             </button>
           </div>
         ) : (
-          posts.map(p => <Post key={p.id} post={p} currentUserId={user.id} onViewProfile={setViewingProfile} onDelete={deletePost} />)
+         posts.map(p => <Post key={p.id} post={p} currentUserId={user.id} myPetName={profile?.pet_name} onViewProfile={setViewingProfile} onDelete={deletePost} />)
         )}
       </div>
 

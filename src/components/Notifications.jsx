@@ -7,6 +7,8 @@ function NotificationIcon({ type }) {
   if (type === 'match') return <Heart size={18} color="white" />
   if (type === 'message') return <MessageCircle size={18} color="white" />
   if (type === 'event_invite') return <Calendar size={18} color="white" />
+  if (type === 'like') return <Heart size={18} color="white" />
+  if (type === 'comment') return <MessageCircle size={18} color="white" />
   return <Bell size={18} color="white" />
 }
 
@@ -14,6 +16,8 @@ function iconBg(type) {
   if (type === 'match') return '#EC4899'
   if (type === 'message') return '#7C3AED'
   if (type === 'event_invite') return '#0F9B8E'
+  if (type === 'like') return '#EC4899'
+  if (type === 'comment') return '#D97706'
   return '#6B7280'
 }
 

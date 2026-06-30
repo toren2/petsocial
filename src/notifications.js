@@ -40,3 +40,25 @@ export async function notifyEventInvite(receiverId, senderPetName, eventTitle) {
     {}
   )
 }
+
+export async function notifyLike(postOwnerId, likerId, likerPetName, postId) {
+  if (postOwnerId === likerId) return
+  await createNotification(
+    postOwnerId,
+    'like',
+    'Nuevo like en tu post ❤️',
+    `A ${likerPetName} le gustó tu publicación`,
+    { postId }
+  )
+}
+
+export async function notifyComment(postOwnerId, commenterId, commenterPetName, postId) {
+  if (postOwnerId === commenterId) return
+  await createNotification(
+    postOwnerId,
+    'comment',
+    'Nuevo comentario 💬',
+    `${commenterPetName} comentó tu publicación`,
+    { postId }
+  )
+}
