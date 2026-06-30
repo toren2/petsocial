@@ -1,38 +1,51 @@
 import React, { useState, useRef } from 'react'
-import { X, Image, Send } from 'lucide-react'
+import { X, Image, Send, Video } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 
 export default function CreatePostModal({ profile, onClose, onCreate }) {
   const { user } = useAuth()
   const [caption, setCaption] = useState('')
-  const [imageFile, setImageFile] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
+  const [mediaFile, setMediaFile] = useState(null)
+  const [mediaPreview, setMediaPreview] = useState(null)
+  const [mediaType, setMediaType] = useState(null) // 'image' | 'video'
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef(null)
 
-  function handleImage(e) {
+  function handleMedia(e) {
     const file = e.target.files?.[0]
     if (!file) return
-    setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
+    const isVideo = file.type.startsWith('video/')
+    setMediaFile(file)
+    setMediaPreview(URL.createObjectURL(file))
+    setMediaType(isVideo ? 'video' : 'image')
+  }
+
+  function clearMedia() {
+    setMediaFile(null)
+    setMediaPreview(null)
+    setMediaType(null)
   }
 
   async function submit() {
-    if (!caption.trim() && !imageFile) return
+    if (!caption.trim() && !mediaFile) return
     setLoading(true)
 
     let image_url = null
+    let video_url = null
 
-    if (imageFile) {
-      const ext = imageFile.name.split('.').pop()
+    if (mediaFile) {
+      const ext = mediaFile.name.split('.').pop()
       const path = `${user.id}/${Date.now()}.${ext}`
-      const { error } = await supabase.storage
-        .from('posts')
-        .upload(path, imageFile)
+      const bucket = mediaType === 'video' ? 'videos' : 'posts'
+      const { error } = await supabase.storage.from(bucket).upload(path, mediaFile)
       if (!error) {
-        const { data } = supabase.storage.from('posts').getPublicUrl(path)
-        image_url = data.publicUrl
+        const { data } = supabase.storage.from(bucket).getPublicUrl(path)
+        if (mediaType === 'video') {
+          video_url = data.publicUrl
+        } else {
+          image_url = data.publicUrl
+        }
       }
     }
 
@@ -45,6 +58,7 @@ export default function CreatePostModal({ profile, onClose, onCreate }) {
         pet_breed: profile?.breed || '',
         avatar_url: profile?.avatar_url || null,
         image_url,
+        video_url,
         caption: caption.trim(),
         likes: 0,
       }])
@@ -66,36 +80,47 @@ export default function CreatePostModal({ profile, onClose, onCreate }) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
-          {/* Preview de imagen */}
-          {imagePreview ? (
+          {mediaPreview ? (
             <div className="relative rounded-2xl overflow-hidden" style={{ height: 240 }}>
-              <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
+              {mediaType === 'video' ? (
+                <video src={mediaPreview} className="w-full h-full object-cover" controls />
+              ) : (
+                <img src={mediaPreview} alt="preview" className="w-full h-full object-cover" />
+              )}
               <button
-                onClick={() => { setImageFile(null); setImagePreview(null) }}
+                onClick={clearMedia}
                 className="absolute top-2 right-2 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center border-0 cursor-pointer"
               >
                 <X size={16} color="white" />
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-gray-200 rounded-2xl py-10 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
-            >
-              <Image size={32} className="text-gray-300" />
-              <span className="text-sm text-gray-400">Toca para agregar una foto</span>
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { fileInputRef.current.accept = 'image/*'; fileInputRef.current?.click() }}
+                className="flex-1 border-2 border-dashed border-gray-200 rounded-2xl py-8 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
+              >
+                <Image size={28} className="text-gray-300" />
+                <span className="text-xs text-gray-400">Foto</span>
+              </button>
+              <button
+                onClick={() => { fileInputRef.current.accept = 'video/*'; fileInputRef.current?.click() }}
+                className="flex-1 border-2 border-dashed border-gray-200 rounded-2xl py-8 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
+              >
+                <Video size={28} className="text-gray-300" />
+                <span className="text-xs text-gray-400">Video</span>
+              </button>
+            </div>
           )}
 
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,video/*"
             className="hidden"
-            onChange={handleImage}
+            onChange={handleMedia}
           />
 
-          {/* Header del post */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center overflow-hidden flex-shrink-0">
               {profile?.avatar_url ? (
@@ -122,9 +147,9 @@ export default function CreatePostModal({ profile, onClose, onCreate }) {
         <div className="px-5 py-4 border-t border-gray-100">
           <button
             onClick={submit}
-            disabled={loading || (!caption.trim() && !imageFile)}
+            disabled={loading || (!caption.trim() && !mediaFile)}
             className="w-full py-3.5 rounded-full font-semibold text-white text-base border-0 cursor-pointer flex items-center justify-center gap-2"
-            style={{ background: loading || (!caption.trim() && !imageFile) ? '#C4B5FD' : '#7C3AED' }}
+            style={{ background: loading || (!caption.trim() && !mediaFile) ? '#C4B5FD' : '#7C3AED' }}
           >
             <Send size={16} />
             {loading ? 'Publicando...' : 'Publicar'}

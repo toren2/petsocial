@@ -200,14 +200,15 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
         style={{ height: post.image_url ? 300 : 200 }}
         onClick={handleDoubleTap}
       >
-        {post.image_url ? (
-          <img src={post.image_url} alt="post" className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ background: '#EDE9FE', fontSize: 80 }}>
-            {post.pet_emoji || '🐕'}
-          </div>
-        )}
-
+        {post.video_url ? (
+  <video src={post.video_url} className="w-full h-full object-cover" controls playsInline />
+) : post.image_url ? (
+  <img src={post.image_url} alt="post" className="w-full h-full object-cover" />
+) : (
+  <div className="w-full h-full flex items-center justify-center" style={{ background: '#EDE9FE', fontSize: 80 }}>
+    {post.pet_emoji || '🐕'}
+  </div>
+)}
         {showPaw && (
           <div
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
