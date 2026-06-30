@@ -98,7 +98,11 @@ export default function CommentsModal({ post, onClose }) {
       await supabase.from('post_comments').update({ likes: newLikes }).eq('id', comment.id)
     }
   }
-
+async function deleteComment(commentId) {
+  if (!window.confirm('¿Eliminar este comentario?')) return
+  await supabase.from('post_comments').delete().eq('id', commentId)
+  setComments(prev => prev.filter(c => c.id !== commentId && c.parent_id !== commentId))
+}
   const topComments = comments.filter(c => !c.parent_id)
   const replies = (parentId) => comments.filter(c => c.parent_id === parentId)
 
@@ -118,19 +122,27 @@ export default function CommentsModal({ post, onClose }) {
             <span className="font-semibold text-gray-900">{c.pet_name} </span>
             <span className="text-gray-700">{c.text}</span>
           </div>
-          <div className="flex items-center gap-3 mt-1">
-            <span className="text-xs text-gray-400">
-              {new Date(c.created_at).toLocaleDateString('es', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-            </span>
-            {!isReply && (
-              <button
-                onClick={() => setReplyingTo(replyingTo?.id === c.id ? null : c)}
-                className="text-xs font-semibold text-gray-400 border-0 bg-transparent cursor-pointer"
-              >
-                Responder
-              </button>
-            )}
-          </div>
+        <div className="flex items-center gap-3 mt-1">
+  <span className="text-xs text-gray-400">
+    {new Date(c.created_at).toLocaleDateString('es', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+  </span>
+  {!isReply && (
+    <button
+      onClick={() => setReplyingTo(replyingTo?.id === c.id ? null : c)}
+      className="text-xs font-semibold text-gray-400 border-0 bg-transparent cursor-pointer"
+    >
+      Responder
+    </button>
+  )}
+  {c.user_id === user.id && (
+    <button
+      onClick={() => deleteComment(c.id)}
+      className="text-xs font-semibold text-red-400 border-0 bg-transparent cursor-pointer"
+    >
+      Eliminar
+    </button>
+  )}
+</div>
           {replies(c.id).length > 0 && (
             <div className="mt-2">
               {replies(c.id).map(r => <CommentItem key={r.id} c={r} isReply />)}
