@@ -59,6 +59,17 @@ export default function Lugares({ initialCategory = 'all' }) {
     if (userLocation) fetchNearbyPlaces()
   }, [userLocation])
 
+  // Recalcular distancias reales cuando tengamos ubicación
+  useEffect(() => {
+    if (!userLocation) return
+    setPlaces(prev => prev.map(p => {
+      if (p.lat && p.lng) {
+        return { ...p, distance: parseFloat(getDistance(userLocation.lat, userLocation.lng, parseFloat(p.lat), parseFloat(p.lng))) }
+      }
+      return p
+    }))
+  }, [userLocation])
+
   async function fetchPlaces() {
     setLoading(true)
     const { data } = await supabase.from('places').select('*').order('rating', { ascending: false })
@@ -99,7 +110,7 @@ export default function Lugares({ initialCategory = 'all' }) {
               category,
               rating: (Math.random() * 1.5 + 3.5).toFixed(1),
               reviews: Math.floor(Math.random() * 100 + 10),
-              distance: getDistance(lat, lng, el.lat, el.lon),
+              distance: parseFloat(getDistance(lat, lng, el.lat, el.lon)),
               address: el.tags['addr:street'] ? `${el.tags['addr:street']} ${el.tags['addr:housenumber'] || ''}`.trim() : 'Panamá',
               open: true,
               hours: 'Ver horario en Google Maps',
@@ -150,11 +161,15 @@ export default function Lugares({ initialCategory = 'all' }) {
 
   const supabasePlaces = places.filter(p => !String(p.id).startsWith('osm-'))
   const sourcePlaces = activeTab === 'todos' ? supabasePlaces : places
-  const filtered = sourcePlaces.filter(p => {
+  let filtered = sourcePlaces.filter(p => {
     const matchCat    = activeCategory === 'all' || p.category === activeCategory
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.type.toLowerCase().includes(search.toLowerCase())
     return matchCat && matchSearch
   })
+
+  if (activeTab === 'cerca' && userLocation) {
+    filtered = [...filtered].sort((a, b) => (a.distance || 999) - (b.distance || 999))
+  }
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
@@ -286,7 +301,7 @@ export default function Lugares({ initialCategory = 'all' }) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-1">
                       <div className="font-semibold text-sm text-gray-900 leading-tight">{place.name}</div>
-                      {place.distance && (
+                      {place.distance != null && (
                         <div className="text-xs text-gray-400 font-medium flex-shrink-0">{place.distance} km</div>
                       )}
                     </div>
