@@ -13,18 +13,18 @@
   }
 }
 
-@layer components {
-  .phone-shell {
-    width: 375px;
-    min-height: 812px;
-    background: #F8F7FF;
-    border-radius: 44px;
-    overflow: hidden;
-    box-shadow: 0 40px 80px rgba(0,0,0,0.3), 0 0 0 2px #D1D5DB;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-  }
+.phone-shell {
+  width: 375px;
+  height: 812px;
+  max-height: 100vh;
+  background: #F8F7FF;
+  border-radius: 44px;
+  overflow: hidden;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.3), 0 0 0 2px #D1D5DB;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
   .btn-purple {
     @apply w-full py-3.5 rounded-full bg-ps-purple text-white font-semibold text-base border-0 cursor-pointer;
   }
