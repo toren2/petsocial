@@ -267,13 +267,13 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
           {post.caption}
         </div>
       )}
-
-      {showComments && (
-        <CommentsModal
-          post={post}
-          onClose={() => { setShowComments(false); supabase.from('post_comments').select('*', { count: 'exact', head: true }).eq('post_id', post.id).then(({ count }) => setCommentCount(count || 0)) }}
-        />
-      )}
+{showComments && (
+  <CommentsModal
+    post={post}
+    onClose={() => { setShowComments(false); supabase.from('post_comments').select('*', { count: 'exact', head: true }).eq('post_id', post.id).then(({ count }) => setCommentCount(count || 0)) }}
+    onViewProfile={onViewProfile}
+  />
+)}
     </div>
   )
 }
