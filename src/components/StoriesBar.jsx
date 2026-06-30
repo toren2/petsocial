@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Plus, Send, Trash2, Camera, Eye, Repeat } from 'lucide-react'
+import { X, Plus, Send, Trash2, Camera, Eye, Repeat, Video } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 
@@ -11,10 +11,14 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
   const [sharing, setSharing] = useState(false)
   const timerRef = useRef(null)
   const story = stories[index]
+  const isVideo = !!story?.video_url
 
   useEffect(() => {
     setProgress(0)
     setShowViewers(false)
+
+    if (isVideo) return // no auto-avanzar en videos
+
     timerRef.current = setInterval(() => {
       setProgress(p => {
         if (p >= 100) {
@@ -83,7 +87,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
           <div key={s.id} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
             <div
               className="h-full bg-white rounded-full transition-none"
-              style={{ width: i < index ? '100%' : i === index ? `${progress}%` : '0%' }}
+              style={{ width: i < index ? '100%' : i === index ? (isVideo ? '100%' : `${progress}%`) : '0%' }}
             />
           </div>
         ))}
@@ -124,7 +128,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
       <div
         className="flex-1 relative flex items-center justify-center"
         onClick={e => {
-          if (showViewers) return
+          if (showViewers || isVideo) return
           const x = e.clientX / window.innerWidth
           if (x < 0.4) {
             if (index > 0) setIndex(i => i - 1)
@@ -134,7 +138,21 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
           }
         }}
       >
-        <img src={story.image_url} alt="story" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+        {isVideo ? (
+          <video
+            src={story.video_url}
+            style={{ maxWidth: '100%', maxHeight: '100%' }}
+            controls
+            playsInline
+            autoPlay
+            onEnded={() => {
+              if (index < stories.length - 1) setIndex(i => i + 1)
+              else onClose()
+            }}
+          />
+        ) : (
+          <img src={story.image_url} alt="story" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+        )}
         {story.caption && (
           <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/70 to-transparent">
             <p className="text-white text-sm">{story.caption}</p>
@@ -192,31 +210,43 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
 
 function CreateStoryModal({ profile, onClose, onCreate }) {
   const { user } = useAuth()
-  const [imageFile, setImageFile] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
+  const [mediaFile, setMediaFile] = useState(null)
+  const [mediaPreview, setMediaPreview] = useState(null)
+  const [mediaType, setMediaType] = useState(null) // 'image' | 'video'
   const [caption, setCaption] = useState('')
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef(null)
 
-  function handleImage(e) {
+  function handleMedia(e) {
     const file = e.target.files?.[0]
     if (!file) return
-    setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
+    const isVideo = file.type.startsWith('video/')
+    setMediaFile(file)
+    setMediaPreview(URL.createObjectURL(file))
+    setMediaType(isVideo ? 'video' : 'image')
+  }
+
+  function clearMedia() {
+    setMediaFile(null)
+    setMediaPreview(null)
+    setMediaType(null)
   }
 
   async function submit() {
-    if (!imageFile) return
+    if (!mediaFile) return
     setLoading(true)
-    const ext = imageFile.name.split('.').pop()
+    const ext = mediaFile.name.split('.').pop()
     const path = `${user.id}/${Date.now()}.${ext}`
-    const { error: uploadError } = await supabase.storage.from('stories').upload(path, imageFile)
+    const bucket = mediaType === 'video' ? 'videos' : 'stories'
+    const { error: uploadError } = await supabase.storage.from(bucket).upload(path, mediaFile)
     if (!uploadError) {
-      const { data } = supabase.storage.from('stories').getPublicUrl(path)
-      const { data: story, error } = await supabase
-        .from('stories')
-        .insert([{ user_id: user.id, image_url: data.publicUrl, caption: caption.trim() }])
-        .select()
+      const { data } = supabase.storage.from(bucket).getPublicUrl(path)
+      const insertData = {
+        user_id: user.id,
+        caption: caption.trim(),
+        ...(mediaType === 'video' ? { video_url: data.publicUrl, image_url: null } : { image_url: data.publicUrl }),
+      }
+      const { data: story, error } = await supabase.from('stories').insert([insertData]).select()
       if (!error && story) onCreate(story[0])
     }
     setLoading(false)
@@ -233,26 +263,39 @@ function CreateStoryModal({ profile, onClose, onCreate }) {
           </button>
         </div>
         <div className="px-5 pt-4 pb-2">
-          {imagePreview ? (
+          {mediaPreview ? (
             <div className="relative rounded-2xl overflow-hidden" style={{ height: 220 }}>
-              <img src={imagePreview} alt="preview" className="w-full h-full object-contain bg-gray-100" />
+              {mediaType === 'video' ? (
+                <video src={mediaPreview} className="w-full h-full object-cover" controls />
+              ) : (
+                <img src={mediaPreview} alt="preview" className="w-full h-full object-contain bg-gray-100" />
+              )}
               <button
-                onClick={() => { setImageFile(null); setImagePreview(null) }}
+                onClick={clearMedia}
                 className="absolute top-2 right-2 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center border-0 cursor-pointer"
               >
                 <X size={16} color="white" />
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-gray-200 rounded-2xl py-8 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
-            >
-              <Camera size={32} className="text-gray-300" />
-              <span className="text-sm text-gray-400">Toca para agregar una foto</span>
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { fileInputRef.current.accept = 'image/*'; fileInputRef.current?.click() }}
+                className="flex-1 border-2 border-dashed border-gray-200 rounded-2xl py-8 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
+              >
+                <Camera size={28} className="text-gray-300" />
+                <span className="text-xs text-gray-400">Foto</span>
+              </button>
+              <button
+                onClick={() => { fileInputRef.current.accept = 'video/*'; fileInputRef.current?.click() }}
+                className="flex-1 border-2 border-dashed border-gray-200 rounded-2xl py-8 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
+              >
+                <Video size={28} className="text-gray-300" />
+                <span className="text-xs text-gray-400">Video</span>
+              </button>
+            </div>
           )}
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
+          <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleMedia} />
         </div>
         <div className="px-5 pb-2">
           <input
@@ -265,9 +308,9 @@ function CreateStoryModal({ profile, onClose, onCreate }) {
         <div className="px-5 py-4">
           <button
             onClick={submit}
-            disabled={loading || !imageFile}
+            disabled={loading || !mediaFile}
             className="w-full py-3.5 rounded-full font-semibold text-white text-base border-0 cursor-pointer flex items-center justify-center gap-2"
-            style={{ background: loading || !imageFile ? '#C4B5FD' : '#7C3AED' }}
+            style={{ background: loading || !mediaFile ? '#C4B5FD' : '#7C3AED' }}
           >
             <Send size={16} />
             {loading ? 'Publicando...' : 'Publicar historia'}
@@ -323,8 +366,10 @@ export default function StoriesBar({ profile }) {
   }
 
   async function deleteStory(story) {
-    const path = story.image_url.split('/stories/')[1]
-    if (path) await supabase.storage.from('stories').remove([path])
+    const bucket = story.video_url ? 'videos' : 'stories'
+    const url = story.video_url || story.image_url
+    const path = url?.split(`/${bucket}/`)[1]
+    if (path) await supabase.storage.from(bucket).remove([path])
     await supabase.from('stories').delete().eq('id', story.id)
     fetchStories()
   }
@@ -332,7 +377,8 @@ export default function StoriesBar({ profile }) {
   async function shareStoryAsPost(story) {
     await supabase.from('posts').insert([{
       user_id: user.id,
-      image_url: story.image_url,
+      image_url: story.image_url || null,
+      video_url: story.video_url || null,
       caption: story.caption || '',
       pet_name: profile?.pet_name || 'Mascota',
       pet_emoji: profile?.emoji || '🐕',
