@@ -133,18 +133,18 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
       .then(({ count }) => setCommentCount(count || 0))
   }, [])
 
- async function toggleLike() {
-  const newLiked = !liked
-  const newLikes = newLiked ? likes + 1 : likes - 1
-  setLiked(newLiked)
-  setLikes(newLikes)
-  if (newLiked) {
-    await supabase.from('post_likes').insert([{ post_id: post.id, user_id: currentUserId }])
-    await notifyLike(post.user_id, currentUserId, myPetName || 'Alguien', post.id)
-  } else {
-    await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', currentUserId)
+  async function toggleLike() {
+    const newLiked = !liked
+    const newLikes = newLiked ? likes + 1 : likes - 1
+    setLiked(newLiked)
+    setLikes(newLikes)
+    if (newLiked) {
+      await supabase.from('post_likes').insert([{ post_id: post.id, user_id: currentUserId }])
+      await notifyLike(post.user_id, currentUserId, myPetName || 'Alguien', post.id)
+    } else {
+      await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', currentUserId)
+    }
   }
-}
 
   function handleDoubleTap() {
     const now = Date.now()
@@ -195,7 +195,6 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
         )}
       </div>
 
-      {/* Imagen con doble tap */}
       <div
         className="w-full relative"
         style={{ height: post.image_url ? 300 : 200 }}
@@ -209,13 +208,10 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
           </div>
         )}
 
-        {/* Huellita fading */}
         {showPaw && (
           <div
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
-            style={{
-              animation: 'pawFade 0.9s ease-out forwards',
-            }}
+            style={{ animation: 'pawFade 0.9s ease-out forwards' }}
           >
             <div style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))' }}>
               <PawIcon size={100} filled color="#7C3AED" />
@@ -292,16 +288,24 @@ export default function Feed() {
   const [showSearch, setShowSearch] = useState(false)
   const [viewingProfile, setViewingProfile] = useState(null)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [feedTab, setFeedTab] = useState('all')
+  const [followingIds, setFollowingIds] = useState([])
 
   useEffect(() => {
     fetchPosts()
     fetchProfile()
     fetchUnreadCount()
+    fetchFollowing()
   }, [])
 
   async function fetchProfile() {
     const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     if (data) setProfile(data)
+  }
+
+  async function fetchFollowing() {
+    const { data } = await supabase.from('follows').select('following_id').eq('follower_id', user.id)
+    if (data) setFollowingIds(data.map(f => f.following_id))
   }
 
   async function fetchUnreadCount() {
@@ -343,6 +347,10 @@ export default function Feed() {
     setPosts(prev => prev.filter(p => p.id !== postId))
   }
 
+  const displayedPosts = feedTab === 'following'
+    ? posts.filter(p => followingIds.includes(p.user_id))
+    : posts
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
@@ -369,6 +377,24 @@ export default function Feed() {
             )}
           </button>
         </div>
+      </div>
+
+      {/* Toggle Todos / Siguiendo */}
+      <div className="flex bg-white border-b border-gray-100 flex-shrink-0">
+        <button
+          onClick={() => setFeedTab('all')}
+          className="flex-1 py-2.5 text-sm font-medium border-0 bg-transparent cursor-pointer border-b-2 transition-colors"
+          style={{ color: feedTab === 'all' ? '#7C3AED' : '#9CA3AF', borderBottomColor: feedTab === 'all' ? '#7C3AED' : 'transparent' }}
+        >
+          Todos
+        </button>
+        <button
+          onClick={() => setFeedTab('following')}
+          className="flex-1 py-2.5 text-sm font-medium border-0 bg-transparent cursor-pointer border-b-2 transition-colors"
+          style={{ color: feedTab === 'following' ? '#7C3AED' : '#9CA3AF', borderBottomColor: feedTab === 'following' ? '#7C3AED' : 'transparent' }}
+        >
+          Siguiendo
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-ps-bg">
@@ -400,20 +426,24 @@ export default function Feed() {
             <span className="text-4xl">🐾</span>
             <p className="text-sm">Cargando posts...</p>
           </div>
-        ) : posts.length === 0 ? (
+        ) : displayedPosts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
             <span className="text-4xl">📸</span>
-            <p className="text-sm">No hay posts todavía</p>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="text-xs font-semibold px-4 py-2 rounded-full border-0 cursor-pointer"
-              style={{ background: '#EDE9FE', color: '#7C3AED' }}
-            >
-              ¡Sé el primero en publicar!
-            </button>
+            <p className="text-sm">
+              {feedTab === 'following' ? 'No sigues a nadie todavía' : 'No hay posts todavía'}
+            </p>
+            {feedTab === 'all' && (
+              <button
+                onClick={() => setShowCreate(true)}
+                className="text-xs font-semibold px-4 py-2 rounded-full border-0 cursor-pointer"
+                style={{ background: '#EDE9FE', color: '#7C3AED' }}
+              >
+                ¡Sé el primero en publicar!
+              </button>
+            )}
           </div>
         ) : (
-         posts.map(p => <Post key={p.id} post={p} currentUserId={user.id} myPetName={profile?.pet_name} onViewProfile={setViewingProfile} onDelete={deletePost} />)
+          displayedPosts.map(p => <Post key={p.id} post={p} currentUserId={user.id} myPetName={profile?.pet_name} onViewProfile={setViewingProfile} onDelete={deletePost} />)
         )}
       </div>
 
