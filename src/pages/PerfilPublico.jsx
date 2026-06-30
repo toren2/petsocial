@@ -83,7 +83,10 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
 }, [userId])
 
 useEffect(() => {
-  if (scrollRef.current) scrollRef.current.scrollTop = 0
+  const id = requestAnimationFrame(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0
+  })
+  return () => cancelAnimationFrame(id)
 }, [profile, posts])
 
   async function fetchProfile() {
