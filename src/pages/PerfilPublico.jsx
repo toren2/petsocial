@@ -75,13 +75,16 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
   const [showInfo, setShowInfo] = useState(false)
 
  useEffect(() => {
-    fetchProfile()
-    fetchPosts()
-    checkMatch()
-    checkFollowing()
-    fetchFollowerCount()
-    if (scrollRef.current) scrollRef.current.scrollTop = 0
-  }, [userId])
+  fetchProfile()
+  fetchPosts()
+  checkMatch()
+  checkFollowing()
+  fetchFollowerCount()
+}, [userId])
+
+useEffect(() => {
+  if (scrollRef.current) scrollRef.current.scrollTop = 0
+}, [profile, posts])
 
   async function fetchProfile() {
     setLoading(true)
