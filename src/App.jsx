@@ -15,7 +15,7 @@ import AdminSeed from './pages/AdminSeed'
 
 export default function App() {
   const { user, loading, signOut } = useAuth()
-  const [screen, setScreen] = useState('adminseed')
+  const [screen, setScreen] = useState('splash')
   const [matchedPet, setMatchedPet] = useState(null)
   const [showSplash, setShowSplash] = useState(true)
   const [initialCategory, setInitialCategory] = useState('all')
