@@ -273,9 +273,9 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
           post={post}
           onClose={() => { setShowComments(false); supabase.from('post_comments').select('*', { count: 'exact', head: true }).eq('post_id', post.id).then(({ count }) => setCommentCount(count || 0)) }}
           onViewProfile={id => {
-            setShowComments(false)
-            setTimeout(() => onViewProfile(id), 50)
-          }}
+  setShowComments(false)
+  onViewProfile(id)
+}}
         />
       )}
     </div>

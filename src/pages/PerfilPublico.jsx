@@ -65,6 +65,7 @@ function PhotoViewer({ posts, startIndex, onClose }) {
 export default function PerfilPublico({ userId, onBack, onChat }) {
   const { user } = useAuth()
   const scrollRef = React.useRef(null)
+  const topRef = React.useRef(null)
   const [profile, setProfile] = useState(null)
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -83,11 +84,15 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
 }, [userId])
 
 useEffect(() => {
-  const id = requestAnimationFrame(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = 0
-  })
-  return () => cancelAnimationFrame(id)
-}, [profile, posts])
+  const timeout = setTimeout(() => {
+    if (topRef.current) {
+      topRef.current.scrollIntoView({ block: 'start' })
+    } else if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0
+    }
+  }, 100)
+  return () => clearTimeout(timeout)
+}, [userId, profile])
 
   async function fetchProfile() {
     setLoading(true)
@@ -181,6 +186,7 @@ useEffect(() => {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto bg-white">
+  <div ref={topRef} />
         <div className="flex items-center gap-4 px-4 py-4">
           <div className="flex-shrink-0">
             {profile.avatar_url ? (
