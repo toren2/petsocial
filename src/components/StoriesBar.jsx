@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Plus, Send, Trash2, Camera, Eye } from 'lucide-react'
+import { X, Plus, Send, Trash2, Camera, Eye, Repeat } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 
-function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) {
+function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, currentUserId }) {
   const [index, setIndex] = useState(startIndex)
   const [progress, setProgress] = useState(0)
   const [showViewers, setShowViewers] = useState(false)
   const [viewers, setViewers] = useState([])
+  const [sharing, setSharing] = useState(false)
   const timerRef = useRef(null)
   const story = stories[index]
 
@@ -57,6 +58,12 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) 
     setShowViewers(true)
   }
 
+  async function handleShareAsPost() {
+    setSharing(true)
+    await onShareAsPost(story)
+    setSharing(false)
+  }
+
   if (!story) return null
 
   async function handleDelete() {
@@ -71,7 +78,6 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) 
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col" style={{ height: '100dvh' }}>
-      {/* Progress bars */}
       <div className="flex gap-1 px-3 pt-3 pb-2 flex-shrink-0">
         {stories.map((s, i) => (
           <div key={s.id} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
@@ -83,7 +89,6 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) 
         ))}
       </div>
 
-      {/* Header */}
       <div className="flex items-center gap-3 px-4 py-2 flex-shrink-0">
         <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 flex items-center justify-center flex-shrink-0">
           {story.avatar_url ? (
@@ -100,6 +105,9 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) 
         </div>
         {story.user_id === currentUserId && (
           <>
+            <button onClick={handleShareAsPost} disabled={sharing} className="border-0 bg-transparent cursor-pointer text-white/80 mr-1">
+              <Repeat size={20} />
+            </button>
             <button onClick={handleShowViewers} className="border-0 bg-transparent cursor-pointer text-white/80 mr-1">
               <Eye size={20} />
             </button>
@@ -113,7 +121,6 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) 
         </button>
       </div>
 
-      {/* Image */}
       <div
         className="flex-1 relative flex items-center justify-center"
         onClick={e => {
@@ -133,9 +140,13 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, currentUserId }) 
             <p className="text-white text-sm">{story.caption}</p>
           </div>
         )}
+        {sharing && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/70 px-4 py-2 rounded-full">
+            <span className="text-white text-sm">Compartiendo...</span>
+          </div>
+        )}
       </div>
 
-      {/* Panel de vistas */}
       {showViewers && (
         <div className="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl z-10 max-h-[60%] flex flex-col">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -318,6 +329,19 @@ export default function StoriesBar({ profile }) {
     fetchStories()
   }
 
+  async function shareStoryAsPost(story) {
+    await supabase.from('posts').insert([{
+      user_id: user.id,
+      image_url: story.image_url,
+      caption: story.caption || '',
+      pet_name: profile?.pet_name || 'Mascota',
+      pet_emoji: profile?.emoji || '🐕',
+      pet_breed: profile?.breed || '',
+      avatar_url: profile?.avatar_url || null,
+    }])
+    alert('¡Historia compartida como post! 🐾')
+  }
+
   return (
     <>
       <div className="flex gap-3 px-4 py-3 bg-white border-b border-gray-100 overflow-x-auto">
@@ -360,6 +384,7 @@ export default function StoriesBar({ profile }) {
           startIndex={0}
           onClose={() => { setViewingStories(null); fetchStories() }}
           onDelete={deleteStory}
+          onShareAsPost={shareStoryAsPost}
           currentUserId={user.id}
         />
       )}
