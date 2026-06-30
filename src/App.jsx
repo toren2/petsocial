@@ -11,7 +11,7 @@ import Chat from './pages/Chat'
 import BottomNav from './components/BottomNav'
 import MatchModal from './components/MatchModal'
 import Hub from './pages/Hub'
-import AdminSeed from './pages/AdminSeed'
+
 
 export default function App() {
   const { user, loading, signOut } = useAuth()
@@ -72,7 +72,7 @@ export default function App() {
         {screen === 'eventos' && <Eventos />}
         {screen === 'lugares' && <Lugares initialCategory={initialCategory} />}
         {screen === 'perfil'  && <Perfil onSignOut={signOut} />}
-        {screen === 'adminseed' && <AdminSeed />}
+        
 
         {matchedPet && (
           <MatchModal
