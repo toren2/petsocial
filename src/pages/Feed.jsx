@@ -267,13 +267,17 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
           {post.caption}
         </div>
       )}
-{showComments && (
-  <CommentsModal
-    post={post}
-    onClose={() => { setShowComments(false); supabase.from('post_comments').select('*', { count: 'exact', head: true }).eq('post_id', post.id).then(({ count }) => setCommentCount(count || 0)) }}
-    onViewProfile={id => { setShowComments(false); onViewProfile(id) }}
-  />
-)}
+
+      {showComments && (
+        <CommentsModal
+          post={post}
+          onClose={() => { setShowComments(false); supabase.from('post_comments').select('*', { count: 'exact', head: true }).eq('post_id', post.id).then(({ count }) => setCommentCount(count || 0)) }}
+          onViewProfile={id => {
+            setShowComments(false)
+            setTimeout(() => onViewProfile(id), 50)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -379,7 +383,6 @@ export default function Feed() {
         </div>
       </div>
 
-      {/* Toggle Todos / Siguiendo */}
       <div className="flex bg-white border-b border-gray-100 flex-shrink-0">
         <button
           onClick={() => setFeedTab('all')}
@@ -452,10 +455,10 @@ export default function Feed() {
       )}
 
       {viewingProfile && viewingProfile !== user.id && (
-  <div className="absolute inset-0 z-40 bg-ps-bg flex flex-col" style={{ top: 0 }}>
-    <PerfilPublico key={viewingProfile} userId={viewingProfile} onBack={() => setViewingProfile(null)} />
-  </div>
-)}
+        <div className="absolute inset-0 z-40 bg-ps-bg flex flex-col">
+          <PerfilPublico key={viewingProfile} userId={viewingProfile} onBack={() => setViewingProfile(null)} />
+        </div>
+      )}
 
       {showNotifications && (
         <Notifications onClose={() => setShowNotifications(false)} />
