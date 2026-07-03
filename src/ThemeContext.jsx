@@ -4,7 +4,7 @@ const ThemeContext = createContext()
 
 export function ThemeProvider({ children }) {
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('petsocial-theme')
+    const saved = localStorage.getItem('snoutt-theme')
     return saved === 'dark'
   })
 
@@ -14,7 +14,7 @@ export function ThemeProvider({ children }) {
     } else {
       document.documentElement.classList.remove('dark')
     }
-    localStorage.setItem('petsocial-theme', darkMode ? 'dark' : 'light')
+    localStorage.setItem('snoutt-theme', darkMode ? 'dark' : 'light')
   }, [darkMode])
 
   function toggleDarkMode() {

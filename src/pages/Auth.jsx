@@ -26,8 +26,7 @@ export default function Auth() {
       style={{ background: 'linear-gradient(160deg, #6D28D9 0%, #7C3AED 50%, #0F9B8E 100%)' }}
     >
       <div className="text-center">
-        <div className="text-5xl mb-2">🐾</div>
-        <h1 className="text-4xl font-bold text-white tracking-tight">Snoutt</h1>
+        <img src="/snoutt-logo.png" alt="Snoutt" className="h-16 mb-2" />
         <p className="text-white/80 mt-1 text-sm">La red social de mascotas</p>
       </div>
 

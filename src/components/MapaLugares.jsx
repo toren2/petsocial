@@ -144,7 +144,7 @@ if (loc) {
             <div style="font-size:11px;color:${color};margin-top:2px">${place.type}</div>
             <div style="font-size:11px;color:#6B7280;margin-top:2px">⭐ ${place.rating} · ${place.reviews} reseñas</div>
             ${place.distance ? `<div style="font-size:11px;color:#6B7280">${place.distance} km</div>` : ''}
-            <button onclick="window._petsocialSelectPlace('${place.id}')" style="margin-top:8px;background:${color};color:white;border:none;border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;width:100%">Ver detalle</button>
+            <button onclick="window._snouttSelectPlace('${place.id}')" style="margin-top:8px;background:${color};color:white;border:none;border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;width:100%">Ver detalle</button>
           </div>
         `
       })
@@ -154,7 +154,7 @@ if (loc) {
       })
     })
 
-    window._petsocialSelectPlace = (placeId) => {
+    window._snouttSelectPlace = (placeId) => {
       const place = places.find(p => String(p.id) === String(placeId))
       if (place) onPlaceSelect(place)
     }

@@ -7,11 +7,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.ico', 'snoutt-icon.png', 'snoutt-logo.png'],
       manifest: {
-        name: 'PetSocial',
-        short_name: 'PetSocial',
-        description: 'La comunidad de mascotas de Panamá',
+        name: 'Snoutt',
+        short_name: 'Snoutt',
+        description: 'La red social de mascotas',
         theme_color: '#7C3AED',
         background_color: '#F8F7FF',
         display: 'standalone',
@@ -20,17 +20,17 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: 'snoutt-icon.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'snoutt-icon.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'snoutt-icon.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
