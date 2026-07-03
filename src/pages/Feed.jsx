@@ -159,7 +159,7 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
   async function handleShare() {
     const url = `${window.location.origin}?post=${post.id}`
     if (navigator.share) {
-      await navigator.share({ title: `${post.pet_name} en PetSocial`, text: post.caption || '', url })
+      await navigator.share({ title: `${post.pet_name} en Snoutt`, text: post.caption || '', url })
     } else {
       await navigator.clipboard.writeText(url)
       alert('Link copiado al portapapeles')
@@ -361,7 +361,7 @@ export default function Feed() {
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🐾</span>
-          <span className="text-lg font-bold text-gray-900">PetSocial</span>
+          <span className="text-lg font-bold text-gray-900">Snoutt</span>
         </div>
         <div className="flex gap-3">
           <button

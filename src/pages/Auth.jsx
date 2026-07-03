@@ -27,8 +27,8 @@ export default function Auth() {
     >
       <div className="text-center">
         <div className="text-5xl mb-2">🐾</div>
-        <h1 className="text-4xl font-bold text-white tracking-tight">PetSocial</h1>
-        <p className="text-white/80 mt-1 text-sm">La comunidad de mascotas de Panamá</p>
+        <h1 className="text-4xl font-bold text-white tracking-tight">Snoutt</h1>
+        <p className="text-white/80 mt-1 text-sm">La red social de mascotas</p>
       </div>
 
       <div className="w-full bg-white rounded-3xl p-6 flex flex-col gap-4">
