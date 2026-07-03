@@ -359,10 +359,18 @@ export default function Feed() {
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🐾</span>
-          <span className="text-lg font-bold text-gray-900">Snoutt</span>
-        </div>
+    <div style={{ overflow: 'hidden', height: '32px', display: 'flex', alignItems: 'center' }}>
+  <img 
+    src="/snoutt-logo.png" 
+    alt="Snoutt" 
+    style={{ 
+      height: '120px',
+      width: 'auto',
+      transform: 'scale(1)',
+      transformOrigin: 'left center',
+    }} 
+  />
+</div>
         <div className="flex gap-3">
           <button
             onClick={() => setShowSearch(true)}
