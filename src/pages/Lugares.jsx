@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Map, MapPin, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Search, Heart, UtensilsCrossed } from 'lucide-react'
+import { Map, MapPin, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Search, Heart, UtensilsCrossed, Navigation } from 'lucide-react'
 import { supabase } from '../supabase'
 import LugarDetalle from './LugarDetalle'
 import MapaLugares from '../components/MapaLugares'
@@ -57,7 +57,6 @@ export default function Lugares({ initialCategory = 'all' }) {
     }
   }, [])
 
-  // Recalcular distancias reales cuando tengamos ubicación
   useEffect(() => {
     if (!userLocation) return
     setPlaces(prev => prev.map(p => {
@@ -85,16 +84,10 @@ export default function Lugares({ initialCategory = 'all' }) {
   }
 
   function openMap() {
-    if (userLocation) {
-      setShowMap(true)
-      return
-    }
+    if (userLocation) { setShowMap(true); return }
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        pos => {
-          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
-          setShowMap(true)
-        },
+        pos => { setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setShowMap(true) },
         () => setShowMap(true),
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       )
@@ -121,18 +114,23 @@ export default function Lugares({ initialCategory = 'all' }) {
     }
   }
 
+  // Top lugar destacado
+  const featuredPlace = filtered[0]
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">Lugares 🐾</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Descubre los mejores lugares para tu mascota</p>
+          <h2 className="text-xl font-bold text-gray-900">Lugares 🐾</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Descubre lugares para tu mascota</p>
         </div>
         <button onClick={openMap} className="border-0 bg-transparent cursor-pointer text-ps-purple" aria-label="Ver mapa">
           <Map size={22} />
         </button>
       </div>
 
+      {/* Tabs */}
       <div className="flex bg-white border-b border-gray-100 flex-shrink-0">
         <button
           onClick={() => setActiveTab('cerca')}
@@ -150,6 +148,7 @@ export default function Lugares({ initialCategory = 'all' }) {
         </button>
       </div>
 
+      {/* Search */}
       <div className="px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -164,6 +163,7 @@ export default function Lugares({ initialCategory = 'all' }) {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar categorías */}
         <div className="flex flex-col bg-white border-r border-gray-100 overflow-y-auto flex-shrink-0" style={{ width: 72 }}>
           {categories.map(({ id, label, Icon, bg, color }) => (
             <button
@@ -172,10 +172,7 @@ export default function Lugares({ initialCategory = 'all' }) {
               className="flex flex-col items-center gap-1 py-3 px-1 border-0 cursor-pointer flex-shrink-0 transition-colors"
               style={{ background: activeCategory === id ? '#F5F3FF' : 'white' }}
             >
-              <div
-                className="w-11 h-11 rounded-2xl flex items-center justify-center"
-                style={{ background: activeCategory === id ? color : bg }}
-              >
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: activeCategory === id ? color : bg }}>
                 <Icon size={20} color={activeCategory === id ? 'white' : color} />
               </div>
               <span className="text-[9px] text-center leading-tight font-medium" style={{ color: activeCategory === id ? color : '#9CA3AF' }}>
@@ -185,38 +182,77 @@ export default function Lugares({ initialCategory = 'all' }) {
           ))}
         </div>
 
+        {/* Lista */}
         <div className="flex-1 overflow-y-auto bg-ps-bg">
+
+          {/* Banner mapa */}
+          {activeTab === 'cerca' && (
+            <div
+              onClick={openMap}
+              className="mx-3 mt-3 rounded-2xl overflow-hidden cursor-pointer relative flex items-center justify-center"
+              style={{ height: 120, background: 'linear-gradient(135deg, #6D28D9, #0F9B8E)' }}
+            >
+              <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                <Map size={80} color="white" />
+              </div>
+              <div className="z-10 flex flex-col items-center gap-2">
+                <div className="flex items-center gap-2 bg-white/20 rounded-full px-4 py-2">
+                  <Navigation size={14} color="white" />
+                  <span className="text-white text-xs font-semibold">Ver mapa completo</span>
+                </div>
+                {userLocation && (
+                  <span className="text-white/70 text-[10px]">Mostrando lugares a {NEARBY_RADIUS_KM} km de ti</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Lugar destacado */}
+          {featuredPlace && activeTab === 'cerca' && (
+            <div className="px-3 pt-3">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">⭐ Mejor valorado cerca</p>
+              <div
+                onClick={() => setSelectedPlace(featuredPlace)}
+                className="bg-white rounded-2xl overflow-hidden border border-gray-100 cursor-pointer active:opacity-80"
+              >
+                <div className="flex items-center gap-3 p-3">
+                  <div className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: catColors[featuredPlace.category]?.bg || '#EDE9FE' }}>
+                    {React.createElement(catIcons[featuredPlace.category] || MapPin, { size: 28, color: catColors[featuredPlace.category]?.color || '#7C3AED' })}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-1">
+                      <p className="font-bold text-sm text-gray-900 leading-tight">{featuredPlace.name}</p>
+                      {featuredPlace.distance != null && (
+                        <span className="text-xs text-gray-400 flex-shrink-0">{featuredPlace.distance} km</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5">{featuredPlace.type}</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Star size={11} fill="#F59E0B" color="#F59E0B" />
+                      <span className="text-xs text-yellow-500 font-medium">{featuredPlace.rating}</span>
+                      <span className="text-xs text-gray-400">({featuredPlace.reviews})</span>
+                    </div>
+                    <p className="text-xs text-gray-400 truncate mt-0.5">{featuredPlace.address}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Info cerca */}
           {activeTab === 'cerca' && userLocation && (
-            <div className="px-3 py-2 bg-ps-teal-light flex items-center justify-between gap-2">
+            <div className="px-3 py-2 mt-2 flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5">
                 <MapPin size={12} className="text-ps-teal flex-shrink-0" />
                 <span className="text-xs text-ps-teal font-medium">Dentro de {NEARBY_RADIUS_KM} km</span>
               </div>
-              <button
-                onClick={refreshLocation}
-                className="text-xs font-semibold border-0 cursor-pointer px-2 py-1 rounded-full"
-                style={{ background: '#0F9B8E', color: 'white' }}
-              >
+              <button onClick={refreshLocation} className="text-xs font-semibold border-0 cursor-pointer px-2 py-1 rounded-full" style={{ background: '#0F9B8E', color: 'white' }}>
                 Actualizar
               </button>
             </div>
           )}
 
-          {activeTab === 'cerca' && (
-            <div
-              onClick={openMap}
-              style={{ height: 140, background: 'linear-gradient(135deg, #DBEAFE, #EDE9FE)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '0.5px solid #E5E7EB', cursor: 'pointer' }}
-            >
-              <span style={{ position: 'absolute', fontSize: 20, top: 25, left: 40 }}>📍</span>
-              <span style={{ position: 'absolute', fontSize: 20, top: 40, right: 50 }}>📍</span>
-              <span style={{ position: 'absolute', fontSize: 20, bottom: 20, left: 90 }}>📍</span>
-              <button className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs font-medium text-gray-700 cursor-pointer z-10">
-                <MapPin size={12} className="text-ps-purple" /> Ver mapa completo
-              </button>
-            </div>
-          )}
-
-          <div className="px-3 py-2 bg-white border-b border-gray-100">
+          <div className="px-3 py-2 bg-white border-b border-gray-100 mt-2">
             <span className="font-semibold text-xs text-gray-900">
               {loading ? 'Cargando...' : `${filtered.length} lugar${filtered.length !== 1 ? 'es' : ''} ${activeTab === 'todos' ? 'en directorio' : `a menos de ${NEARBY_RADIUS_KM} km`}`}
             </span>
@@ -230,23 +266,18 @@ export default function Lugares({ initialCategory = 'all' }) {
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
               <span className="text-4xl">📍</span>
-              <p className="text-sm">
-                {activeTab === 'cerca' && !userLocation ? 'Esperando tu ubicación...' : 'No hay lugares aquí'}
-              </p>
+              <p className="text-sm">{activeTab === 'cerca' && !userLocation ? 'Esperando tu ubicación...' : 'No hay lugares aquí'}</p>
             </div>
           ) : (
-            filtered.map(place => {
+            filtered.map((place, i) => {
+              if (i === 0 && activeTab === 'cerca') return null // ya se muestra como destacado
               const CatIcon = catIcons[place.category] || MapPin
               const { bg, color } = catColors[place.category] || { bg: '#EDE9FE', color: '#7C3AED' }
               return (
                 <div key={place.id} onClick={() => setSelectedPlace(place)} className="flex gap-3 px-3 py-3 border-b border-gray-100 bg-white cursor-pointer active:bg-gray-50">
                   <div className="relative flex-shrink-0 rounded-2xl flex items-center justify-center" style={{ width: 80, height: 80, background: bg }}>
                     <CatIcon size={28} color={color} />
-                    <button
-                      className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center border-0 cursor-pointer"
-                      style={{ background: 'rgba(255,255,255,0.9)' }}
-                      onClick={e => e.stopPropagation()}
-                    >
+                    <button className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center border-0 cursor-pointer" style={{ background: 'rgba(255,255,255,0.9)' }} onClick={e => e.stopPropagation()}>
                       <Heart size={12} color="#9CA3AF" />
                     </button>
                   </div>
@@ -258,12 +289,8 @@ export default function Lugares({ initialCategory = 'all' }) {
                       )}
                     </div>
                     <div className="flex items-center gap-1 mt-1 flex-wrap">
-                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: bg, color }}>
-                        {place.type}
-                      </span>
-                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: '#DCFCE7', color: '#16A34A' }}>
-                        🐾 Dog Friendly
-                      </span>
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: bg, color }}>{place.type}</span>
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: '#DCFCE7', color: '#16A34A' }}>🐾 Dog Friendly</span>
                     </div>
                     <div className="flex items-center gap-1 mt-1">
                       <Star size={10} fill="#F59E0B" color="#F59E0B" />
@@ -273,10 +300,7 @@ export default function Lugares({ initialCategory = 'all' }) {
                     <div className="text-xs text-gray-400 mt-0.5 truncate">{place.address}</div>
                     <div className="text-xs mt-0.5">
                       {place.hours === 'Ver horario en Google Maps' ? (
-                        <button
-                          onClick={e => { e.stopPropagation(); window.open(`https://www.google.com/maps/search/${encodeURIComponent(place.name)}`, '_blank') }}
-                          style={{ color: '#7C3AED', fontWeight: 500, border: 0, background: 'transparent', cursor: 'pointer', padding: 0, fontSize: 11 }}
-                        >
+                        <button onClick={e => { e.stopPropagation(); window.open(`https://www.google.com/maps/search/${encodeURIComponent(place.name)}`, '_blank') }} style={{ color: '#7C3AED', fontWeight: 500, border: 0, background: 'transparent', cursor: 'pointer', padding: 0, fontSize: 11 }}>
                           Ver en Google Maps
                         </button>
                       ) : (
