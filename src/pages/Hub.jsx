@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Bell, Heart, MapPin, Calendar, MessageCircle, Newspaper, Stethoscope, Scissors, Trees, ShoppingBag, Building2, UtensilsCrossed } from 'lucide-react'
+import { Bell, MapPin, Calendar, MessageCircle, Newspaper, Stethoscope, Scissors, Trees, ShoppingBag, Building2, UtensilsCrossed, Heart, ChevronRight } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 
@@ -19,32 +19,94 @@ const quickActions = [
   { id: 'eventos',  label: 'Eventos',  Icon: Calendar,       color: '#D97706', bg: '#FEF3C7' },
 ]
 
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return '¡Buenos días'
+  if (hour < 18) return '¡Buenas tardes'
+  return '¡Buenas noches'
+}
+
+function getDailyTips() {
+  const hour = new Date().getHours()
+  const tips = []
+  if (hour >= 10 && hour <= 16) {
+    tips.push({ emoji: '☀️', color: '#D97706', bg: '#FEF3C7', title: 'Hace calor', body: 'No olvides llevar agua y cuidar las patitas.' })
+  } else if (hour < 8 || hour > 19) {
+    tips.push({ emoji: '🌙', color: '#7C3AED', bg: '#EDE9FE', title: 'Hora de descansar', body: 'Asegúrate de que tu mascota esté cómoda.' })
+  } else {
+    tips.push({ emoji: '🌤️', color: '#0F9B8E', bg: '#E0F7F4', title: 'Buen momento', body: 'Ideal para un paseo con tu mascota.' })
+  }
+  tips.push({ emoji: '💧', color: '#3B82F6', bg: '#DBEAFE', title: 'Hidratación', body: 'Recuerda cambiar el agua de tu mascota hoy.' })
+  return tips
+}
+
 export default function Hub({ onNavigate, unreadCount }) {
   const { user } = useAuth()
   const [profile, setProfile] = useState(null)
+  const [nearbyMatches, setNearbyMatches] = useState([])
+  const [nearbyPlaces, setNearbyPlaces] = useState([])
+  const [userLocation, setUserLocation] = useState(null)
 
   useEffect(() => {
-    supabase.from('profiles').select('pet_name, emoji, avatar_url').eq('id', user.id).single()
-      .then(({ data }) => { if (data) setProfile(data) })
+    fetchProfile()
+    fetchNearbyMatches()
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {}
+      )
+    }
   }, [])
+
+  useEffect(() => {
+    if (userLocation) fetchNearbyPlaces()
+  }, [userLocation])
+
+  async function fetchProfile() {
+    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+    if (data) setProfile(data)
+  }
+
+  async function fetchNearbyMatches() {
+    const { data: existingMatches } = await supabase
+      .from('matches')
+      .select('user1_id, user2_id')
+      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+    const matchedIds = existingMatches?.map(m => m.user1_id === user.id ? m.user2_id : m.user1_id) || []
+
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, pet_name, breed, age, emoji, avatar_url, location')
+      .neq('id', user.id)
+      .not('id', 'in', `(${[user.id, ...matchedIds].join(',')})`)
+      .limit(6)
+    if (data) setNearbyMatches(data)
+  }
+
+  async function fetchNearbyPlaces() {
+    const { data } = await supabase
+      .from('places')
+      .select('*')
+      .order('rating', { ascending: false })
+      .limit(5)
+    if (data) setNearbyPlaces(data)
+  }
+
+  const tips = getDailyTips()
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
+      {/* Header */}
       <div
         className="px-5 pt-5 pb-6 flex-shrink-0"
         style={{ background: 'linear-gradient(160deg, #6D28D9, #7C3AED)' }}
       >
-        {/* Logo Snoutt */}
+        {/* Logo */}
         <div style={{ overflow: 'hidden', height: '50px', display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
           <img
             src="/snoutt-logo.png"
             alt="Snoutt"
-            style={{
-              height: '90px',
-              width: 'auto',
-              filter: 'brightness(0) invert(1)',
-              transformOrigin: 'left center',
-            }}
+            style={{ height: '90px', width: 'auto', filter: 'brightness(0) invert(1)', transformOrigin: '45% center' }}
           />
         </div>
 
@@ -58,24 +120,22 @@ export default function Hub({ onNavigate, unreadCount }) {
               )}
             </div>
             <div>
-              <p className="text-white/70 text-xs">Bienvenido de vuelta</p>
-              <p className="text-white font-bold text-base">{profile?.pet_name || 'Mi mascota'} 🐾</p>
+              <p className="text-white/70 text-xs">{getGreeting()}, {profile?.pet_name || 'amigo'}! 🐾</p>
+              <p className="text-white font-bold text-base">¿Qué aventura hoy?</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => onNavigate('feed')}
-              className="relative w-9 h-9 rounded-full flex items-center justify-center border-0 cursor-pointer"
-              style={{ background: 'rgba(255,255,255,0.15)' }}
-            >
-              <Bell size={18} color="white" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-ps-pink rounded-full border border-white flex items-center justify-center text-white text-[9px] font-bold">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-          </div>
+          <button
+            onClick={() => onNavigate('feed')}
+            className="relative w-9 h-9 rounded-full flex items-center justify-center border-0 cursor-pointer"
+            style={{ background: 'rgba(255,255,255,0.15)' }}
+          >
+            <Bell size={18} color="white" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-ps-pink rounded-full border border-white flex items-center justify-center text-white text-[9px] font-bold">
+                {unreadCount}
+              </span>
+            )}
+          </button>
         </div>
 
         <div
@@ -89,7 +149,25 @@ export default function Hub({ onNavigate, unreadCount }) {
       </div>
 
       <div className="flex-1 overflow-y-auto bg-ps-bg">
+
+        {/* Tips del día */}
         <div className="px-4 pt-4 pb-2">
+          <h3 className="text-sm font-bold text-gray-900 mb-3">Para hoy 🌟</h3>
+          <div className="flex flex-col gap-2">
+            {tips.map((tip, i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: tip.bg }}>
+                <span className="text-2xl flex-shrink-0">{tip.emoji}</span>
+                <div>
+                  <p className="text-xs font-bold" style={{ color: tip.color }}>{tip.title}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{tip.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Acciones rápidas */}
+        <div className="px-4 py-2">
           <h3 className="text-sm font-bold text-gray-900 mb-3">Acciones rápidas</h3>
           <div className="grid grid-cols-4 gap-2">
             {quickActions.map(({ id, label, Icon, color, bg }) => (
@@ -106,8 +184,74 @@ export default function Hub({ onNavigate, unreadCount }) {
           </div>
         </div>
 
-        <div className="px-4 py-2">
-          <h3 className="text-sm font-bold text-gray-900 mb-3">Lugares por categoría</h3>
+        {/* Matches cercanos */}
+        {nearbyMatches.length > 0 && (
+          <div className="px-4 py-2">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-gray-900">Match cerca de ti ❤️</h3>
+              <button onClick={() => onNavigate('match')} className="flex items-center gap-1 text-xs font-medium border-0 bg-transparent cursor-pointer" style={{ color: '#7C3AED' }}>
+                Ver todos <ChevronRight size={14} />
+              </button>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {nearbyMatches.map(pet => (
+                <div key={pet.id} className="flex-shrink-0 bg-white rounded-2xl overflow-hidden border border-gray-100" style={{ width: 110 }}>
+                  <div className="flex items-center justify-center" style={{ height: 90, background: '#EDE9FE', fontSize: 48 }}>
+                    {pet.avatar_url ? (
+                      <img src={pet.avatar_url} alt={pet.pet_name} className="w-full h-full object-cover" />
+                    ) : (
+                      pet.emoji || '🐕'
+                    )}
+                  </div>
+                  <div className="p-2">
+                    <p className="text-xs font-bold text-gray-900 truncate">{pet.pet_name}</p>
+                    <p className="text-[10px] text-gray-400 truncate">{pet.age} años · {pet.breed}</p>
+                    <button
+                      onClick={() => onNavigate('match')}
+                      className="mt-1.5 w-full flex items-center justify-center gap-1 py-1 rounded-full border-0 cursor-pointer text-[10px] font-semibold"
+                      style={{ background: '#FCE7F3', color: '#EC4899' }}
+                    >
+                      <Heart size={10} /> Match
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Lugares recomendados */}
+        {nearbyPlaces.length > 0 && (
+          <div className="px-4 py-2 pb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-gray-900">Lugares recomendados 📍</h3>
+              <button onClick={() => onNavigate('lugares')} className="flex items-center gap-1 text-xs font-medium border-0 bg-transparent cursor-pointer" style={{ color: '#7C3AED' }}>
+                Ver todos <ChevronRight size={14} />
+              </button>
+            </div>
+            <div className="flex flex-col gap-2">
+              {nearbyPlaces.map(place => (
+                <div key={place.id} onClick={() => onNavigate('lugares')} className="flex items-center gap-3 bg-white rounded-2xl px-3 py-3 border border-gray-100 cursor-pointer active:bg-gray-50">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#EDE9FE' }}>
+                    <MapPin size={18} color="#7C3AED" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{place.name}</p>
+                    <p className="text-xs text-gray-400 truncate">{place.type}</p>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <span className="text-xs text-yellow-500">⭐</span>
+                    <span className="text-xs font-medium text-gray-700">{place.rating}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Categorías */}
+        <div className="px-4 py-2 pb-4">
+          <h3 className="text-sm font-bold text-gray-900 mb-3">Explorar por categoría</h3>
           <div className="grid grid-cols-3 gap-2">
             {categories.map(({ id, label, Icon, color, bg }) => (
               <button
@@ -122,6 +266,7 @@ export default function Hub({ onNavigate, unreadCount }) {
             ))}
           </div>
         </div>
+
       </div>
     </div>
   )
