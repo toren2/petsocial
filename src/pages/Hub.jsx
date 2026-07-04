@@ -13,10 +13,10 @@ const categories = [
 ]
 
 const quickActions = [
-  { id: 'feed',     label: 'Feed',     Icon: Newspaper,      color: '#7C3AED', bg: '#EDE9FE' },
-  { id: 'match',    label: 'Match',    Icon: Heart,          color: '#EC4899', bg: '#FCE7F3' },
-  { id: 'chat',     label: 'Chat',     Icon: MessageCircle,  color: '#0F9B8E', bg: '#E0F7F4' },
-  { id: 'eventos',  label: 'Eventos',  Icon: Calendar,       color: '#D97706', bg: '#FEF3C7' },
+  { id: 'feed',    label: 'Feed',    Icon: Newspaper,     color: '#7C3AED', bg: '#EDE9FE' },
+  { id: 'match',   label: 'Match',   Icon: Heart,         color: '#EC4899', bg: '#FCE7F3' },
+  { id: 'chat',    label: 'Chat',    Icon: MessageCircle, color: '#0F9B8E', bg: '#E0F7F4' },
+  { id: 'eventos', label: 'Eventos', Icon: Calendar,      color: '#D97706', bg: '#FEF3C7' },
 ]
 
 function getGreeting() {
@@ -26,18 +26,22 @@ function getGreeting() {
   return '¡Buenas noches'
 }
 
-function getDailyTips() {
-  const hour = new Date().getHours()
-  const tips = []
-  if (hour >= 10 && hour <= 16) {
-    tips.push({ emoji: '☀️', color: '#D97706', bg: '#FEF3C7', title: 'Hace calor', body: 'No olvides llevar agua y cuidar las patitas.' })
-  } else if (hour < 8 || hour > 19) {
-    tips.push({ emoji: '🌙', color: '#7C3AED', bg: '#EDE9FE', title: 'Hora de descansar', body: 'Asegúrate de que tu mascota esté cómoda.' })
+function getWeatherTip(weather) {
+  if (!weather) return null
+  const temp = weather.main?.temp
+  const condition = weather.weather?.[0]?.main
+
+  if (condition === 'Rain' || condition === 'Thunderstorm' || condition === 'Drizzle') {
+    return { emoji: '🌧️', color: '#3B82F6', bg: '#DBEAFE', title: 'Lluvia hoy', body: 'Mejor quedarse en casa o llevar impermeable para tu mascota.' }
+  } else if (temp >= 32) {
+    return { emoji: '🌡️', color: '#DC2626', bg: '#FEE2E2', title: `Mucho calor · ${Math.round(temp)}°C`, body: 'Evita paseos en horas pico. Lleva agua y cuida las patitas.' }
+  } else if (temp >= 27) {
+    return { emoji: '☀️', color: '#D97706', bg: '#FEF3C7', title: `Calor · ${Math.round(temp)}°C`, body: 'No olvides llevar agua y cuidar las patitas de tu mascota.' }
+  } else if (temp < 20) {
+    return { emoji: '🧥', color: '#7C3AED', bg: '#EDE9FE', title: `Fresco · ${Math.round(temp)}°C`, body: 'Buen clima para pasear, considera abrigo para razas pequeñas.' }
   } else {
-    tips.push({ emoji: '🌤️', color: '#0F9B8E', bg: '#E0F7F4', title: 'Buen momento', body: 'Ideal para un paseo con tu mascota.' })
+    return { emoji: '🌤️', color: '#0F9B8E', bg: '#E0F7F4', title: `Buen clima · ${Math.round(temp)}°C`, body: 'Perfecto para un paseo con tu mascota hoy.' }
   }
-  tips.push({ emoji: '💧', color: '#3B82F6', bg: '#DBEAFE', title: 'Hidratación', body: 'Recuerda cambiar el agua de tu mascota hoy.' })
-  return tips
 }
 
 export default function Hub({ onNavigate, unreadCount }) {
@@ -46,13 +50,25 @@ export default function Hub({ onNavigate, unreadCount }) {
   const [nearbyMatches, setNearbyMatches] = useState([])
   const [nearbyPlaces, setNearbyPlaces] = useState([])
   const [userLocation, setUserLocation] = useState(null)
+  const [weather, setWeather] = useState(null)
 
   useEffect(() => {
     fetchProfile()
     fetchNearbyMatches()
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        pos => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        async pos => {
+          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+          setUserLocation(loc)
+          try {
+            const apiKey = import.meta.env.VITE_OPENWEATHER_KEY
+            const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${loc.lat}&lon=${loc.lng}&units=metric&appid=${apiKey}`)
+            const data = await res.json()
+            setWeather(data)
+          } catch (err) {
+            console.log('Weather error:', err)
+          }
+        },
         () => {}
       )
     }
@@ -92,16 +108,18 @@ export default function Hub({ onNavigate, unreadCount }) {
     if (data) setNearbyPlaces(data)
   }
 
-  const tips = getDailyTips()
+  const weatherTip = getWeatherTip(weather)
+  const tips = [
+    weatherTip,
+    { emoji: '💧', color: '#3B82F6', bg: '#DBEAFE', title: 'Hidratación', body: 'Recuerda cambiar el agua de tu mascota hoy.' }
+  ].filter(Boolean)
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      {/* Header */}
       <div
         className="px-5 pt-5 pb-6 flex-shrink-0"
         style={{ background: 'linear-gradient(160deg, #6D28D9, #7C3AED)' }}
       >
-        {/* Logo */}
         <div style={{ overflow: 'hidden', height: '50px', display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
           <img
             src="/snoutt-logo.png"
@@ -150,7 +168,6 @@ export default function Hub({ onNavigate, unreadCount }) {
 
       <div className="flex-1 overflow-y-auto bg-ps-bg">
 
-        {/* Tips del día */}
         <div className="px-4 pt-4 pb-2">
           <h3 className="text-sm font-bold text-gray-900 mb-3">Para hoy 🌟</h3>
           <div className="flex flex-col gap-2">
@@ -166,7 +183,6 @@ export default function Hub({ onNavigate, unreadCount }) {
           </div>
         </div>
 
-        {/* Acciones rápidas */}
         <div className="px-4 py-2">
           <h3 className="text-sm font-bold text-gray-900 mb-3">Acciones rápidas</h3>
           <div className="grid grid-cols-4 gap-2">
@@ -184,7 +200,6 @@ export default function Hub({ onNavigate, unreadCount }) {
           </div>
         </div>
 
-        {/* Matches cercanos */}
         {nearbyMatches.length > 0 && (
           <div className="px-4 py-2">
             <div className="flex items-center justify-between mb-3">
@@ -220,7 +235,6 @@ export default function Hub({ onNavigate, unreadCount }) {
           </div>
         )}
 
-        {/* Lugares recomendados */}
         {nearbyPlaces.length > 0 && (
           <div className="px-4 py-2 pb-4">
             <div className="flex items-center justify-between mb-3">
@@ -249,7 +263,6 @@ export default function Hub({ onNavigate, unreadCount }) {
           </div>
         )}
 
-        {/* Categorías */}
         <div className="px-4 py-2 pb-4">
           <h3 className="text-sm font-bold text-gray-900 mb-3">Explorar por categoría</h3>
           <div className="grid grid-cols-3 gap-2">
