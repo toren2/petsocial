@@ -26,7 +26,13 @@ export default function Auth() {
       style={{ background: 'linear-gradient(160deg, #6D28D9 0%, #7C3AED 50%, #0F9B8E 100%)' }}
     >
       <div className="text-center">
-        <img src="/snoutt-logo.png" alt="Snoutt" className="h-16 mb-2" />
+        <div style={{ height: 84, width: 210, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+          <img
+            src="/snoutt-logo.png"
+            alt="Snoutt"
+            style={{ height: 230, width: 'auto', filter: 'brightness(0) invert(1)', flexShrink: 0 }}
+          />
+        </div>
         <p className="text-white/80 mt-1 text-sm">La red social de mascotas</p>
       </div>
 
