@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, MoreVertical, Send, Image, Smile, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Send, Image, Smile, Trash2, X } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { notifyMessage } from '../notifications'
 import PerfilPublico from './PerfilPublico'
+import UserActionsMenu from '../components/UserActionsMenu'
+import VerifiedBadge from '../components/VerifiedBadge'
 
 function ConversationList({ onOpen }) {
   const { user } = useAuth()
@@ -28,10 +30,17 @@ function ConversationList({ onOpen }) {
         .select('id, pet_name, emoji, breed, location, avatar_url')
         .in('id', otherIds)
 
+      const { data: verifiedRows } = await supabase
+        .from('verification_requests')
+        .select('user_id')
+        .in('user_id', otherIds)
+        .eq('status', 'aprobado')
+      const verifiedIds = new Set(verifiedRows?.map(v => v.user_id) || [])
+
       const matchesWithProfiles = data.map(m => {
         const otherId = m.user1_id === user.id ? m.user2_id : m.user1_id
         const profile = profiles?.find(p => p.id === otherId)
-        return { ...m, otherId, profile }
+        return { ...m, otherId, profile, verified: verifiedIds.has(otherId) }
       })
       setMatches(matchesWithProfiles)
     }
@@ -79,7 +88,9 @@ function ConversationList({ onOpen }) {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm text-gray-900">{match.profile?.pet_name || 'Mascota'}</div>
+                  <div className="font-semibold text-sm text-gray-900 flex items-center gap-1">
+                    {match.profile?.pet_name || 'Mascota'} <VerifiedBadge verified={match.verified} size={13} />
+                  </div>
                   <div className="text-xs text-gray-400 truncate mt-0.5">
                     {match.profile?.breed} · {match.profile?.location}
                   </div>
@@ -221,12 +232,17 @@ function Conversation({ match, onBack }) {
           )}
         </div>
         <div className="flex-1 cursor-pointer" onClick={() => setViewingProfile(match.otherId)}>
-          <div className="font-semibold text-gray-900 text-base">{match.profile?.pet_name || 'Mascota'}</div>
+          <div className="font-semibold text-gray-900 text-base flex items-center gap-1">
+            {match.profile?.pet_name || 'Mascota'} <VerifiedBadge verified={match.verified} size={14} />
+          </div>
           <div className="text-xs text-gray-400">{match.profile?.breed}</div>
         </div>
-        <button className="border-0 bg-transparent cursor-pointer text-gray-400">
-          <MoreVertical size={20} />
-        </button>
+        <UserActionsMenu
+          targetUserId={match.otherId}
+          targetPetName={match.profile?.pet_name}
+          matchId={match.id}
+          onBlocked={onBack}
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-2.5 bg-ps-bg">

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { ArrowLeft, MapPin, Grid3x3, MessageCircle, X, Heart, ChevronLeft, ChevronRight, UserPlus, UserCheck } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import UserActionsMenu from '../components/UserActionsMenu'
+import VerifiedBadge from '../components/VerifiedBadge'
 
 function PhotoViewer({ posts, startIndex, onClose }) {
   const [index, setIndex] = useState(startIndex)
@@ -70,6 +72,8 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [isMatch, setIsMatch] = useState(false)
+  const [matchId, setMatchId] = useState(null)
+  const [isVerified, setIsVerified] = useState(false)
   const [isFollowing, setIsFollowing] = useState(false)
   const [followerCount, setFollowerCount] = useState(0)
   const [viewingPhoto, setViewingPhoto] = useState(null)
@@ -81,6 +85,7 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
   checkMatch()
   checkFollowing()
   fetchFollowerCount()
+  checkVerified()
 }, [userId])
 
 useEffect(() => {
@@ -120,7 +125,7 @@ useEffect(() => {
       .select('id')
       .or(`and(user1_id.eq.${user.id},user2_id.eq.${userId}),and(user1_id.eq.${userId},user2_id.eq.${user.id})`)
       .single()
-    if (data) setIsMatch(true)
+    if (data) { setIsMatch(true); setMatchId(data.id) }
   }
 
   async function checkFollowing() {
@@ -139,6 +144,16 @@ useEffect(() => {
       .select('*', { count: 'exact', head: true })
       .eq('following_id', userId)
     setFollowerCount(count || 0)
+  }
+
+  async function checkVerified() {
+    const { data } = await supabase
+      .from('verification_requests')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'aprobado')
+      .maybeSingle()
+    setIsVerified(!!data)
   }
 
   async function toggleFollow() {
@@ -173,7 +188,9 @@ useEffect(() => {
         <button onClick={onBack} className="border-0 bg-transparent cursor-pointer text-ps-purple">
           <ArrowLeft size={22} />
         </button>
-        <h2 className="font-bold text-gray-900 text-base flex-1">{profile.pet_name}</h2>
+        <h2 className="font-bold text-gray-900 text-base flex-1 flex items-center gap-1">
+          {profile.pet_name} <VerifiedBadge verified={isVerified} size={15} />
+        </h2>
         {isMatch && onChat && (
           <button
             onClick={onChat}
@@ -183,6 +200,12 @@ useEffect(() => {
             <MessageCircle size={14} /> Mensaje
           </button>
         )}
+        <UserActionsMenu
+          targetUserId={userId}
+          targetPetName={profile.pet_name}
+          matchId={matchId}
+          onBlocked={onBack}
+        />
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto bg-white">
@@ -205,7 +228,9 @@ useEffect(() => {
             )}
           </div>
           <div className="flex-1">
-            <div className="font-bold text-gray-900 text-lg">{profile.pet_name}</div>
+            <div className="font-bold text-gray-900 text-lg flex items-center gap-1">
+              {profile.pet_name} <VerifiedBadge verified={isVerified} size={16} />
+            </div>
             <div className="text-sm text-gray-500">{profile.breed} · {profile.age} años · {profile.sex}</div>
             {profile.location && (
               <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">

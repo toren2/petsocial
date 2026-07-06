@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import Vacunas from '../components/Vacunas'
+import Verificacion from '../components/Verificacion'
+import VerifiedBadge from '../components/VerifiedBadge'
 
 const SPECIES  = ['Perro', 'Gato', 'Conejo', 'Ave', 'Otro']
 const SIZES    = ['Pequeño', 'Mediano', 'Grande']
@@ -51,6 +54,7 @@ export default function Perfil({ onSignOut }) {
   const [viewingPhoto, setViewingPhoto] = useState(null)
   const [viewingSavedPhoto, setViewingSavedPhoto] = useState(null)
   const [showInfo, setShowInfo] = useState(false)
+  const [isVerified, setIsVerified] = useState(false)
   const fileInputRef = useRef(null)
   const petPhotoRef = useRef(null)
   const [form, setForm] = useState({
@@ -313,7 +317,9 @@ export default function Perfil({ onSignOut }) {
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadPhoto(e.target.files[0])} />
           </div>
           <div className="flex-1">
-            <div className="font-bold text-gray-900 text-lg">{profile.pet_name}</div>
+            <div className="font-bold text-gray-900 text-lg flex items-center gap-1">
+              {profile.pet_name} <VerifiedBadge verified={isVerified} size={16} />
+            </div>
             <div className="text-sm text-gray-500">{profile.breed} · {profile.age} años · {profile.sex}</div>
             {profile.location && <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5"><MapPin size={11} /> {profile.location}</div>}
             <div className="flex gap-4 mt-2">
@@ -357,6 +363,10 @@ export default function Perfil({ onSignOut }) {
             ))}
           </div>
         )}
+
+        <Vacunas />
+
+        <Verificacion onStatusChange={setIsVerified} />
 
         {/* Fotos de match */}
         <div className="px-4 pb-3">

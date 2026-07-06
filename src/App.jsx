@@ -7,6 +7,7 @@ import Match from './pages/Match'
 import Lugares from './pages/Lugares'
 import Perfil from './pages/Perfil'
 import Eventos from './pages/Eventos'
+import Perdidos from './pages/Perdidos'
 import Chat from './pages/Chat'
 import BottomNav from './components/BottomNav'
 import MatchModal from './components/MatchModal'
@@ -70,6 +71,7 @@ export default function App() {
         {screen === 'match'   && <Match onMatch={handleMatch} />}
         {screen === 'chat'    && <Chat />}
         {screen === 'eventos' && <Eventos />}
+        {screen === 'perdidos' && <Perdidos onNavigate={(s) => setScreen(s)} />}
         {screen === 'lugares' && <Lugares initialCategory={initialCategory} />}
         {screen === 'perfil'  && <Perfil onSignOut={signOut} />}
         

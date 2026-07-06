@@ -3,6 +3,7 @@ import { SlidersHorizontal, X, Heart, Star, Bookmark } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { notifyMatch } from '../notifications'
+import VerifiedBadge from '../components/VerifiedBadge'
 
 const tagColors = {
   'Muy activo':   'bg-green-100 text-green-800',
@@ -224,6 +225,12 @@ export default function Match({ onMatch }) {
     const savedIds = savedData?.map(s => s.saved_user_id) || []
     setSaved(savedIds)
 
+    const { data: blocks } = await supabase
+      .from('blocked_users')
+      .select('blocker_id, blocked_id')
+      .or(`blocker_id.eq.${user.id},blocked_id.eq.${user.id}`)
+    const blockedIds = blocks?.map(b => b.blocker_id === user.id ? b.blocked_id : b.blocker_id) || []
+
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const { count } = await supabase
@@ -239,8 +246,16 @@ export default function Match({ onMatch }) {
       .neq('id', user.id)
 
     if (profiles && profiles.length > 0) {
+      const candidateIds = profiles.map(p => p.id)
+      const { data: verifiedRows } = await supabase
+        .from('verification_requests')
+        .select('user_id')
+        .in('user_id', candidateIds)
+        .eq('status', 'aprobado')
+      const verifiedIds = new Set(verifiedRows?.map(v => v.user_id) || [])
+
       const filtered = profiles
-        .filter(p => !matchedIds.includes(p.id) && !likedIds.includes(p.id))
+        .filter(p => !matchedIds.includes(p.id) && !likedIds.includes(p.id) && !blockedIds.includes(p.id))
         .map(p => ({
           id: p.id,
           name: p.pet_name,
@@ -257,6 +272,7 @@ export default function Match({ onMatch }) {
           online: Math.random() > 0.5,
           bg: '#EDE9FE',
           realUser: true,
+          verified: verifiedIds.has(p.id),
         }))
       setAllCandidates(filtered)
       await fetchPetPhotos(filtered.map(p => p.id))
@@ -360,8 +376,8 @@ export default function Match({ onMatch }) {
               location={pet.location}
             />
             <div className="p-4">
-              <div className="text-xl font-bold text-gray-900 mb-0.5">
-                {pet.name} {pet.sex === 'Macho' ? '♂' : '♀'}
+              <div className="text-xl font-bold text-gray-900 mb-0.5 flex items-center gap-1.5">
+                {pet.name} {pet.sex === 'Macho' ? '♂' : '♀'} <VerifiedBadge verified={pet.verified} size={17} />
               </div>
               <div className="text-sm text-gray-500 mb-3">
                 {pet.age} {pet.age === 1 ? 'año' : 'años'} · {pet.breed}

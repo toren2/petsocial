@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Bell, MapPin, Calendar, MessageCircle, Newspaper, Stethoscope, Scissors, Trees, ShoppingBag, Building2, UtensilsCrossed, Heart, ChevronRight } from 'lucide-react'
+import { Bell, MapPin, Calendar, MessageCircle, Newspaper, Stethoscope, Scissors, Trees, ShoppingBag, Building2, UtensilsCrossed, Heart, ChevronRight, AlertTriangle } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import VerifiedBadge from '../components/VerifiedBadge'
 
 const categories = [
   { id: 'vet',        label: 'Veterinarias', Icon: Stethoscope,     color: '#7C3AED', bg: '#EDE9FE' },
@@ -13,10 +14,11 @@ const categories = [
 ]
 
 const quickActions = [
-  { id: 'feed',    label: 'Feed',    Icon: Newspaper,     color: '#7C3AED', bg: '#EDE9FE' },
-  { id: 'match',   label: 'Match',   Icon: Heart,         color: '#EC4899', bg: '#FCE7F3' },
-  { id: 'chat',    label: 'Chat',    Icon: MessageCircle, color: '#0F9B8E', bg: '#E0F7F4' },
-  { id: 'eventos', label: 'Eventos', Icon: Calendar,      color: '#D97706', bg: '#FEF3C7' },
+  { id: 'feed',     label: 'Feed',     Icon: Newspaper,     color: '#7C3AED', bg: '#EDE9FE' },
+  { id: 'match',    label: 'Match',    Icon: Heart,         color: '#EC4899', bg: '#FCE7F3' },
+  { id: 'chat',     label: 'Chat',     Icon: MessageCircle, color: '#0F9B8E', bg: '#E0F7F4' },
+  { id: 'eventos',  label: 'Eventos',  Icon: Calendar,      color: '#D97706', bg: '#FEF3C7' },
+  { id: 'perdidos', label: 'Perdidos', Icon: AlertTriangle, color: '#DC2626', bg: '#FEE2E2' },
 ]
 
 function getGreeting() {
@@ -24,6 +26,86 @@ function getGreeting() {
   if (hour < 12) return '¡Buenos días'
   if (hour < 18) return '¡Buenas tardes'
   return '¡Buenas noches'
+}
+
+const GENERAL_TIPS = [
+  { emoji: '💧', color: '#3B82F6', bg: '#DBEAFE', title: 'Hidratación', body: 'Recuerda cambiar el agua de tu mascota hoy.' },
+  { emoji: '🦷', color: '#0F9B8E', bg: '#E0F7F4', title: 'Higiene dental', body: 'Cepilla los dientes de tu mascota 2-3 veces por semana.' },
+  { emoji: '🐾', color: '#D97706', bg: '#FEF3C7', title: 'Cuida sus patitas', body: 'Revisa las almohadillas después de cada paseo, sobre todo en pavimento caliente.' },
+  { emoji: '✂️', color: '#EC4899', bg: '#FCE7F3', title: 'Uñas al día', body: 'Corta las uñas cada 3-4 semanas para evitar molestias al caminar.' },
+  { emoji: '🪮', color: '#7C3AED', bg: '#EDE9FE', title: 'Cepillado', body: 'Cepilla su pelaje regularmente para evitar nudos y caída excesiva.' },
+  { emoji: '🦟', color: '#16A34A', bg: '#DCFCE7', title: 'Antipulgas y garrapatas', body: 'Revisa que su tratamiento antiparasitario esté vigente.' },
+  { emoji: '🏃', color: '#DC2626', bg: '#FEE2E2', title: 'Ejercicio diario', body: 'Al menos 30 minutos de actividad física al día ayudan a su salud física y mental.' },
+  { emoji: '🍖', color: '#D97706', bg: '#FEF3C7', title: 'Porciones correctas', body: 'Evita darle sobras de comida humana, puede afectar su digestión.' },
+  { emoji: '🩺', color: '#7C3AED', bg: '#EDE9FE', title: 'Chequeo veterinario', body: 'Una visita anual al veterinario ayuda a detectar problemas a tiempo.' },
+  { emoji: '🎾', color: '#EC4899', bg: '#FCE7F3', title: 'Estimulación mental', body: 'Los juguetes interactivos previenen el aburrimiento y la ansiedad.' },
+  { emoji: '🏷️', color: '#0F9B8E', bg: '#E0F7F4', title: 'Identificación', body: 'Verifica que su placa o chip tenga tus datos de contacto actualizados.' },
+  { emoji: '🚗', color: '#DC2626', bg: '#FEE2E2', title: 'Nunca en el carro', body: 'No dejes a tu mascota sola dentro del carro, ni con las ventanas abiertas.' },
+]
+
+function getDailyTip(date = new Date()) {
+  const start = new Date(date.getFullYear(), 0, 0)
+  const dayOfYear = Math.floor((date - start) / 86400000)
+  return GENERAL_TIPS[dayOfYear % GENERAL_TIPS.length]
+}
+
+function getDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+const LOST_PET_ALERT_RADIUS_KM = 5
+
+function getLostPetTip(lostPets, userLocation) {
+  if (!lostPets || lostPets.length === 0) return null
+
+  let nearest = null
+  if (userLocation) {
+    for (const p of lostPets) {
+      if (p.last_seen_lat == null || p.last_seen_lng == null) continue
+      const dist = getDistance(userLocation.lat, userLocation.lng, p.last_seen_lat, p.last_seen_lng)
+      if (dist <= LOST_PET_ALERT_RADIUS_KM && (!nearest || dist < nearest.distance)) {
+        nearest = { ...p, distance: dist }
+      }
+    }
+  }
+
+  if (!nearest) return null
+  return {
+    emoji: '🚨',
+    color: '#DC2626',
+    bg: '#FEE2E2',
+    title: 'Mascota perdida cerca',
+    body: `${nearest.pet_name} se perdió a ${nearest.distance.toFixed(1)} km de ti. Toca "Perdidos" para ver los detalles.`,
+  }
+}
+
+function getVaccineTip(vaccines) {
+  if (!vaccines || vaccines.length === 0) return null
+  const withDates = vaccines.filter(v => v.next_due_date)
+  if (withDates.length === 0) return null
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const sorted = [...withDates].sort((a, b) => new Date(a.next_due_date) - new Date(b.next_due_date))
+  const next = sorted[0]
+  const dueDate = new Date(`${next.next_due_date}T00:00:00`)
+  const diffDays = Math.round((dueDate - today) / 86400000)
+
+  if (diffDays < 0) {
+    const days = Math.abs(diffDays)
+    return { emoji: '💉', color: '#DC2626', bg: '#FEE2E2', title: 'Vacuna vencida', body: `${next.name} venció hace ${days} día${days === 1 ? '' : 's'}. Agenda una cita pronto.` }
+  } else if (diffDays === 0) {
+    return { emoji: '💉', color: '#DC2626', bg: '#FEE2E2', title: 'Vacuna hoy', body: `${next.name} vence hoy.` }
+  } else if (diffDays <= 14) {
+    return { emoji: '💉', color: '#D97706', bg: '#FEF3C7', title: 'Vacuna próxima', body: `${next.name} vence en ${diffDays} día${diffDays === 1 ? '' : 's'}.` }
+  }
+  return null
 }
 
 function getWeatherTip(weather) {
@@ -51,10 +133,14 @@ export default function Hub({ onNavigate, unreadCount }) {
   const [nearbyPlaces, setNearbyPlaces] = useState([])
   const [userLocation, setUserLocation] = useState(null)
   const [weather, setWeather] = useState(null)
+  const [vaccines, setVaccines] = useState([])
+  const [lostPets, setLostPets] = useState([])
 
   useEffect(() => {
     fetchProfile()
     fetchNearbyMatches()
+    fetchVaccines()
+    fetchLostPets()
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async pos => {
@@ -90,13 +176,44 @@ export default function Hub({ onNavigate, unreadCount }) {
       .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
     const matchedIds = existingMatches?.map(m => m.user1_id === user.id ? m.user2_id : m.user1_id) || []
 
+    const { data: blocks } = await supabase
+      .from('blocked_users')
+      .select('blocker_id, blocked_id')
+      .or(`blocker_id.eq.${user.id},blocked_id.eq.${user.id}`)
+    const blockedIds = blocks?.map(b => b.blocker_id === user.id ? b.blocked_id : b.blocker_id) || []
+
     const { data } = await supabase
       .from('profiles')
       .select('id, pet_name, breed, age, emoji, avatar_url, location')
       .neq('id', user.id)
-      .not('id', 'in', `(${[user.id, ...matchedIds].join(',')})`)
+      .not('id', 'in', `(${[user.id, ...matchedIds, ...blockedIds].join(',')})`)
       .limit(6)
-    if (data) setNearbyMatches(data)
+
+    if (data && data.length > 0) {
+      const ids = data.map(p => p.id)
+      const { data: verifiedRows } = await supabase
+        .from('verification_requests')
+        .select('user_id')
+        .in('user_id', ids)
+        .eq('status', 'aprobado')
+      const verifiedIds = new Set(verifiedRows?.map(v => v.user_id) || [])
+      setNearbyMatches(data.map(p => ({ ...p, verified: verifiedIds.has(p.id) })))
+    } else {
+      setNearbyMatches([])
+    }
+  }
+
+  async function fetchVaccines() {
+    const { data } = await supabase.from('vaccines').select('*').eq('user_id', user.id)
+    if (data) setVaccines(data)
+  }
+
+  async function fetchLostPets() {
+    const { data } = await supabase
+      .from('lost_pets')
+      .select('id, pet_name, last_seen_lat, last_seen_lng, created_at')
+      .eq('status', 'perdido')
+    if (data) setLostPets(data)
   }
 
   async function fetchNearbyPlaces() {
@@ -108,11 +225,11 @@ export default function Hub({ onNavigate, unreadCount }) {
     if (data) setNearbyPlaces(data)
   }
 
+  const lostPetTip = getLostPetTip(lostPets, userLocation)
+  const vaccineTip = getVaccineTip(vaccines)
   const weatherTip = getWeatherTip(weather)
-  const tips = [
-    weatherTip,
-    { emoji: '💧', color: '#3B82F6', bg: '#DBEAFE', title: 'Hidratación', body: 'Recuerda cambiar el agua de tu mascota hoy.' }
-  ].filter(Boolean)
+  const dailyTip = getDailyTip()
+  const tips = [lostPetTip, vaccineTip, weatherTip, dailyTip].filter(Boolean)
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -185,7 +302,7 @@ export default function Hub({ onNavigate, unreadCount }) {
 
         <div className="px-4 py-2">
           <h3 className="text-sm font-bold text-gray-900 mb-3">Acciones rápidas</h3>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-5 gap-2">
             {quickActions.map(({ id, label, Icon, color, bg }) => (
               <button
                 key={id}
@@ -219,7 +336,9 @@ export default function Hub({ onNavigate, unreadCount }) {
                     )}
                   </div>
                   <div className="p-2">
-                    <p className="text-xs font-bold text-gray-900 truncate">{pet.pet_name}</p>
+                    <p className="text-xs font-bold text-gray-900 truncate flex items-center gap-0.5">
+                      {pet.pet_name} <VerifiedBadge verified={pet.verified} size={11} />
+                    </p>
                     <p className="text-[10px] text-gray-400 truncate">{pet.age} años · {pet.breed}</p>
                     <button
                       onClick={() => onNavigate('match')}
