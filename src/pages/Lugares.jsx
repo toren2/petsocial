@@ -3,6 +3,7 @@ import { Map, MapPin, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2
 import { supabase } from '../supabase'
 import LugarDetalle from './LugarDetalle'
 import MapaLugares from '../components/MapaLugares'
+import MiniMapaLugares from '../components/MiniMapaLugares'
 
 const NEARBY_RADIUS_KM = 10
 
@@ -66,6 +67,13 @@ export default function Lugares({ initialCategory = 'all' }) {
       return p
     }))
   }, [userLocation])
+
+  const nearbyForMinimap = userLocation
+    ? places
+        .filter(p => p.lat && p.lng && p.distance != null && p.distance <= NEARBY_RADIUS_KM)
+        .sort((a, b) => (a.distance || 999) - (b.distance || 999))
+        .slice(0, 8)
+    : []
 
   async function fetchPlaces() {
     setLoading(true)
@@ -186,15 +194,14 @@ export default function Lugares({ initialCategory = 'all' }) {
         <div className="flex-1 overflow-y-auto bg-ps-bg">
 
           {/* Banner mapa */}
-          {activeTab === 'cerca' && (
+          {activeTab === 'cerca' && !showMap && (
             <div
               onClick={openMap}
               className="mx-3 mt-3 rounded-2xl overflow-hidden cursor-pointer relative flex items-center justify-center"
-              style={{ height: 120, background: 'linear-gradient(135deg, #6D28D9, #0F9B8E)' }}
+              style={{ height: 120, background: 'linear-gradient(135deg, #6D28D9, #0F9B8E)', isolation: 'isolate' }}
             >
-              <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                <Map size={80} color="white" />
-              </div>
+              <MiniMapaLugares userLocation={userLocation} places={nearbyForMinimap} />
+              <div className="absolute inset-0" style={{ background: 'rgba(15,23,42,0.3)' }} />
               <div className="z-10 flex flex-col items-center gap-2">
                 <div className="flex items-center gap-2 bg-white/20 rounded-full px-4 py-2">
                   <Navigation size={14} color="white" />
