@@ -30,7 +30,7 @@ export default function Auth() {
           <img
             src="/snoutt-logo.png"
             alt="Snoutt"
-            style={{ height: 230, width: 'auto', filter: 'brightness(0) invert(1)', flexShrink: 0 }}
+            style={{ height: 230, width: 'auto', maxWidth: 'none', filter: 'brightness(0) invert(1)', flexShrink: 0 }}
           />
         </div>
         <p className="text-white/80 mt-1 text-sm">La red social de mascotas</p>
