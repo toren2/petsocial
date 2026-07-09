@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useAuth } from './AuthContext'
 import { useLanguage } from './LanguageContext'
 import Auth from './pages/Auth'
+import ResetPassword from './pages/ResetPassword'
 import Splash from './pages/Splash'
 import Feed from './pages/Feed'
 import Match from './pages/Match'
@@ -16,7 +17,7 @@ import Hub from './pages/Hub'
 
 
 export default function App() {
-  const { user, loading, signOut } = useAuth()
+  const { user, loading, signOut, isPasswordRecovery } = useAuth()
   const { t } = useLanguage()
   const [screen, setScreen] = useState('splash')
   const [matchedPet, setMatchedPet] = useState(null)
@@ -28,6 +29,14 @@ export default function App() {
       <div className="text-4xl">🐾</div>
     </div>
   )
+
+  if (isPasswordRecovery) {
+    return (
+      <div className="phone-shell">
+        <ResetPassword />
+      </div>
+    )
+  }
 
   if (showSplash && !user) {
     return (
