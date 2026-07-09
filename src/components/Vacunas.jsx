@@ -40,7 +40,7 @@ function getStatus(nextDueDate, t) {
   return { label: t('vacunas.statusOk'), color: '#16A34A', bg: '#DCFCE7' }
 }
 
-export default function Vacunas() {
+export default function Vacunas({ hideTitle = false }) {
   const { user } = useAuth()
   const { t, language } = useLanguage()
   const [vaccines, setVaccines] = useState([])
@@ -110,10 +110,12 @@ export default function Vacunas() {
 
   return (
     <div className="px-4 pb-3">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
-          <Syringe size={15} className="text-ps-purple" /> {t('vacunas.title')}
-        </h3>
+      <div className={`flex items-center mb-2 ${hideTitle ? 'justify-end' : 'justify-between'}`}>
+        {!hideTitle && (
+          <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
+            <Syringe size={15} className="text-ps-purple" /> {t('vacunas.title')}
+          </h3>
+        )}
         <button
           onClick={() => setShowForm(s => !s)}
           className="text-xs font-semibold border-0 cursor-pointer px-3 py-1.5 rounded-full flex items-center gap-1"

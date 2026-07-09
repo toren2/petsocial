@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart } from 'lucide-react'
+import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -42,7 +42,7 @@ function PhotoViewer({ posts, startIndex, onClose }) {
 
 export default function Perfil({ onSignOut }) {
   const { user } = useAuth()
-  const { language, setLanguage, t } = useLanguage()
+  const { t } = useLanguage()
   const [profile, setProfile] = useState(null)
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -58,6 +58,7 @@ export default function Perfil({ onSignOut }) {
   const [viewingSavedPhoto, setViewingSavedPhoto] = useState(null)
   const [showInfo, setShowInfo] = useState(false)
   const [isVerified, setIsVerified] = useState(false)
+  const [showVacunasModal, setShowVacunasModal] = useState(false)
   const fileInputRef = useRef(null)
   const petPhotoRef = useRef(null)
   const [form, setForm] = useState({
@@ -341,16 +342,6 @@ export default function Perfil({ onSignOut }) {
         <div className="px-4 pb-3 flex gap-2">
           <button onClick={() => setEditing(true)} className="flex-1 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-gray-50 cursor-pointer text-gray-700">{t('perfil.editProfile')}</button>
           <button onClick={() => setShowInfo(s => !s)} className="flex-1 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-gray-50 cursor-pointer text-gray-700">{showInfo ? t('perfil.hideInfo') : t('perfil.viewInfo')}</button>
-          <div className="inline-flex rounded-xl border border-gray-200 overflow-hidden flex-shrink-0">
-            <button
-              onClick={() => setLanguage('es')}
-              className={`px-2.5 py-2 text-xs font-semibold border-0 cursor-pointer ${language === 'es' ? 'bg-ps-purple text-white' : 'bg-gray-50 text-gray-500'}`}
-            >ES</button>
-            <button
-              onClick={() => setLanguage('en')}
-              className={`px-2.5 py-2 text-xs font-semibold border-0 cursor-pointer ${language === 'en' ? 'bg-ps-purple text-white' : 'bg-gray-50 text-gray-500'}`}
-            >EN</button>
-          </div>
           <button onClick={onSignOut} className="py-2 px-3 rounded-xl text-xs font-semibold border border-gray-200 bg-gray-50 cursor-pointer text-gray-500">{t('perfil.exit')}</button>
         </div>
 
@@ -377,52 +368,17 @@ export default function Perfil({ onSignOut }) {
           </div>
         )}
 
-        <Vacunas />
+        <button
+          onClick={() => setShowVacunasModal(true)}
+          className="w-full flex items-center justify-between px-4 py-2.5 border-0 bg-transparent cursor-pointer text-left"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <Syringe size={15} className="text-ps-purple" /> {t('vacunas.title')}
+          </span>
+          <ChevronRight size={16} className="text-gray-300" />
+        </button>
 
         <Verificacion onStatusChange={setIsVerified} />
-
-        {/* Fotos de match */}
-        <div className="px-4 pb-3">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-900">{t('perfil.matchPhotos', { count: petPhotos.length })}</h3>
-            {petPhotos.length < 5 && (
-              <button
-                onClick={() => petPhotoRef.current?.click()}
-                className="text-xs font-semibold border-0 cursor-pointer px-3 py-1.5 rounded-full"
-                style={{ background: '#EDE9FE', color: '#7C3AED' }}
-              >
-                {uploadingPetPhoto ? t('perfil.uploading') : t('perfil.addPhoto')}
-              </button>
-            )}
-            <input ref={petPhotoRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadPetPhoto(e.target.files[0])} />
-          </div>
-          {petPhotos.length === 0 ? (
-            <div onClick={() => petPhotoRef.current?.click()} className="flex flex-col items-center justify-center gap-2 rounded-2xl cursor-pointer border-2 border-dashed border-gray-200 py-6">
-              <span className="text-3xl">📸</span>
-              <p className="text-xs text-gray-400 text-center">{t('perfil.addUpToPhotos')}</p>
-            </div>
-          ) : (
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {petPhotos.map(photo => (
-                <div key={photo.id} className="relative flex-shrink-0" style={{ width: 100, height: 100 }}>
-                  <img src={photo.photo_url} alt="pet" className="w-full h-full object-cover rounded-2xl" />
-                  <button
-                    onClick={() => deletePetPhoto(photo)}
-                    className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center border-0 cursor-pointer"
-                    style={{ background: 'rgba(0,0,0,0.5)' }}
-                  >
-                    <span style={{ color: 'white', fontSize: 12 }}>✕</span>
-                  </button>
-                </div>
-              ))}
-              {petPhotos.length < 5 && (
-                <div onClick={() => petPhotoRef.current?.click()} className="flex-shrink-0 flex items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 cursor-pointer" style={{ width: 100, height: 100 }}>
-                  <span className="text-2xl text-gray-300">+</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
 
         {/* Tabs Posts / Guardados */}
         <div className="border-t border-gray-100 flex items-center justify-center">
@@ -485,6 +441,49 @@ export default function Perfil({ onSignOut }) {
             </div>
           )
         )}
+
+        {/* Fotos de match */}
+        <div className="px-4 pt-4 pb-3 border-t border-gray-100 mt-2">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-gray-900">{t('perfil.matchPhotos', { count: petPhotos.length })}</h3>
+            {petPhotos.length < 5 && (
+              <button
+                onClick={() => petPhotoRef.current?.click()}
+                className="text-xs font-semibold border-0 cursor-pointer px-3 py-1.5 rounded-full"
+                style={{ background: '#EDE9FE', color: '#7C3AED' }}
+              >
+                {uploadingPetPhoto ? t('perfil.uploading') : t('perfil.addPhoto')}
+              </button>
+            )}
+            <input ref={petPhotoRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadPetPhoto(e.target.files[0])} />
+          </div>
+          {petPhotos.length === 0 ? (
+            <div onClick={() => petPhotoRef.current?.click()} className="flex flex-col items-center justify-center gap-2 rounded-2xl cursor-pointer border-2 border-dashed border-gray-200 py-6">
+              <span className="text-3xl">📸</span>
+              <p className="text-xs text-gray-400 text-center">{t('perfil.addUpToPhotos')}</p>
+            </div>
+          ) : (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {petPhotos.map(photo => (
+                <div key={photo.id} className="relative flex-shrink-0" style={{ width: 100, height: 100 }}>
+                  <img src={photo.photo_url} alt="pet" className="w-full h-full object-cover rounded-2xl" />
+                  <button
+                    onClick={() => deletePetPhoto(photo)}
+                    className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center border-0 cursor-pointer"
+                    style={{ background: 'rgba(0,0,0,0.5)' }}
+                  >
+                    <span style={{ color: 'white', fontSize: 12 }}>✕</span>
+                  </button>
+                </div>
+              ))}
+              {petPhotos.length < 5 && (
+                <div onClick={() => petPhotoRef.current?.click()} className="flex-shrink-0 flex items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 cursor-pointer" style={{ width: 100, height: 100 }}>
+                  <span className="text-2xl text-gray-300">+</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {viewingPhoto !== null && (
@@ -492,6 +491,22 @@ export default function Perfil({ onSignOut }) {
       )}
       {viewingSavedPhoto !== null && (
         <PhotoViewer posts={savedPosts} startIndex={viewingSavedPhoto} onClose={() => setViewingSavedPhoto(null)} />
+      )}
+
+      {showVacunasModal && (
+        <div className="absolute inset-0 bg-white z-50 flex flex-col">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 flex-shrink-0">
+            <button onClick={() => setShowVacunasModal(false)} className="border-0 bg-transparent cursor-pointer text-ps-purple">
+              <ArrowLeft size={22} />
+            </button>
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-1.5">
+              <Syringe size={17} className="text-ps-purple" /> {t('vacunas.title')}
+            </h2>
+          </div>
+          <div className="flex-1 overflow-y-auto bg-white pt-3">
+            <Vacunas hideTitle />
+          </div>
+        </div>
       )}
     </div>
   )

@@ -112,7 +112,7 @@ function getWeatherTip(t, weather) {
 
 export default function Hub({ onNavigate, unreadCount }) {
   const { user } = useAuth()
-  const { t } = useLanguage()
+  const { t, language, setLanguage } = useLanguage()
   const [profile, setProfile] = useState(null)
   const [nearbyMatches, setNearbyMatches] = useState([])
   const [nearbyPlaces, setNearbyPlaces] = useState([])
@@ -268,18 +268,27 @@ export default function Hub({ onNavigate, unreadCount }) {
               <p className="text-white font-bold text-base">{t('hub.whatAdventure')}</p>
             </div>
           </div>
-          <button
-            onClick={() => onNavigate('feed')}
-            className="relative w-9 h-9 rounded-full flex items-center justify-center border-0 cursor-pointer"
-            style={{ background: 'rgba(255,255,255,0.15)' }}
-          >
-            <Bell size={18} color="white" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-ps-pink rounded-full border border-white flex items-center justify-center text-white text-[9px] font-bold">
-                {unreadCount}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
+              className="border-0 cursor-pointer rounded-full px-2.5 py-1 text-[11px] font-bold text-white"
+              style={{ background: 'rgba(255,255,255,0.15)' }}
+            >
+              {language === 'es' ? 'EN' : 'ES'}
+            </button>
+            <button
+              onClick={() => onNavigate('feed')}
+              className="relative w-9 h-9 rounded-full flex items-center justify-center border-0 cursor-pointer"
+              style={{ background: 'rgba(255,255,255,0.15)' }}
+            >
+              <Bell size={18} color="white" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-ps-pink rounded-full border border-white flex items-center justify-center text-white text-[9px] font-bold">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
         <div

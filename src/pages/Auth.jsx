@@ -4,7 +4,7 @@ import { useLanguage } from '../LanguageContext'
 
 export default function Auth() {
   const { signIn, signUp } = useAuth()
-  const { t } = useLanguage()
+  const { t, language, setLanguage } = useLanguage()
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -24,9 +24,17 @@ export default function Auth() {
 
   return (
     <div
-      className="flex flex-col items-center justify-center gap-6 px-8 flex-1"
+      className="relative flex flex-col items-center justify-center gap-6 px-8 flex-1"
       style={{ background: 'linear-gradient(160deg, #6D28D9 0%, #7C3AED 50%, #0F9B8E 100%)' }}
     >
+      <button
+        onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
+        className="absolute top-4 right-4 border-0 cursor-pointer rounded-full px-2.5 py-1 text-[11px] font-bold text-white"
+        style={{ background: 'rgba(255,255,255,0.15)' }}
+      >
+        {language === 'es' ? 'EN' : 'ES'}
+      </button>
+
       <div className="text-center">
         <div style={{ height: 84, width: 210, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
           <img
