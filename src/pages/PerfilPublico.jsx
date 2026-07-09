@@ -203,12 +203,14 @@ useEffect(() => {
             <MessageCircle size={14} /> {t('perfilPublico.message')}
           </button>
         )}
-        <UserActionsMenu
-          targetUserId={userId}
-          targetPetName={profile.pet_name}
-          matchId={matchId}
-          onBlocked={onBack}
-        />
+        {userId !== user.id && (
+          <UserActionsMenu
+            targetUserId={userId}
+            targetPetName={profile.pet_name}
+            matchId={matchId}
+            onBlocked={onBack}
+          />
+        )}
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto bg-white">
@@ -264,19 +266,21 @@ useEffect(() => {
         )}
 
         {/* Botón seguir */}
-        <div className="px-4 pb-3">
-          <button
-            onClick={toggleFollow}
-            className="w-full py-2.5 rounded-xl text-sm font-semibold border-0 cursor-pointer flex items-center justify-center gap-2"
-            style={{
-              background: isFollowing ? '#F3F4F6' : '#7C3AED',
-              color: isFollowing ? '#6B7280' : 'white',
-            }}
-          >
-            {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
-            {isFollowing ? t('perfilPublico.following') : t('perfilPublico.follow')}
-          </button>
-        </div>
+        {userId !== user.id && (
+          <div className="px-4 pb-3">
+            <button
+              onClick={toggleFollow}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold border-0 cursor-pointer flex items-center justify-center gap-2"
+              style={{
+                background: isFollowing ? '#F3F4F6' : '#7C3AED',
+                color: isFollowing ? '#6B7280' : 'white',
+              }}
+            >
+              {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
+              {isFollowing ? t('perfilPublico.following') : t('perfilPublico.follow')}
+            </button>
+          </div>
+        )}
 
         <div className="px-4 pb-3">
           <button

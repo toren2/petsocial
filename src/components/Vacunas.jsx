@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Syringe, Plus, X, Calendar } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Syringe, Plus, X, Calendar, ChevronLeft, Camera } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -40,6 +40,17 @@ function getStatus(nextDueDate, t) {
   return { label: t('vacunas.statusOk'), color: '#16A34A', bg: '#DCFCE7' }
 }
 
+function getCategory(nextDueDate) {
+  if (!nextDueDate) return 'uptodate'
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const due = new Date(`${nextDueDate}T00:00:00`)
+  const diffDays = Math.round((due - today) / 86400000)
+  if (diffDays <= 0) return 'overdue'
+  if (diffDays <= 14) return 'upcoming'
+  return 'uptodate'
+}
+
 export default function Vacunas({ hideTitle = false }) {
   const { user } = useAuth()
   const { t, language } = useLanguage()
@@ -47,12 +58,19 @@ export default function Vacunas({ hideTitle = false }) {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState('all')
+  const [viewingVaccine, setViewingVaccine] = useState(null)
+  const [uploadingReceipt, setUploadingReceipt] = useState(false)
+  const receiptInputRef = useRef(null)
   const [form, setForm] = useState({
     name: VACCINE_PRESETS[0].name,
     customName: '',
     date_given: new Date().toISOString().slice(0, 10),
     next_due_date: '',
+    vet_clinic: '',
+    lot_number: '',
     notes: '',
+    receipt_url: '',
   })
 
   useEffect(() => { fetchVaccines() }, [])
@@ -83,6 +101,18 @@ export default function Vacunas({ hideTitle = false }) {
     })
   }
 
+  async function uploadReceipt(file) {
+    setUploadingReceipt(true)
+    const ext = file.name.split('.').pop()
+    const path = `${user.id}/vaccine-receipt-${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('pet-photos').upload(path, file)
+    if (!error) {
+      const { data } = supabase.storage.from('pet-photos').getPublicUrl(path)
+      handle('receipt_url', data.publicUrl)
+    }
+    setUploadingReceipt(false)
+  }
+
   async function saveVaccine() {
     const name = form.name === 'Otra' ? form.customName.trim() : form.name
     if (!name || !form.date_given) return
@@ -92,10 +122,16 @@ export default function Vacunas({ hideTitle = false }) {
       name,
       date_given: form.date_given,
       next_due_date: form.next_due_date || null,
+      vet_clinic: form.vet_clinic.trim() || null,
+      lot_number: form.lot_number.trim() || null,
       notes: form.notes || null,
+      receipt_url: form.receipt_url || null,
     }])
     if (!error) {
-      setForm({ name: VACCINE_PRESETS[0].name, customName: '', date_given: new Date().toISOString().slice(0, 10), next_due_date: '', notes: '' })
+      setForm({
+        name: VACCINE_PRESETS[0].name, customName: '', date_given: new Date().toISOString().slice(0, 10),
+        next_due_date: '', vet_clinic: '', lot_number: '', notes: '', receipt_url: '',
+      })
       setShowForm(false)
       fetchVaccines()
     }
@@ -106,6 +142,79 @@ export default function Vacunas({ hideTitle = false }) {
     if (!window.confirm(t('vacunas.deleteConfirm'))) return
     await supabase.from('vaccines').delete().eq('id', id)
     setVaccines(prev => prev.filter(v => v.id !== id))
+    setViewingVaccine(null)
+  }
+
+  const tabs = [
+    ['all', t('vacunas.tabAll')],
+    ['uptodate', t('vacunas.tabUpToDate')],
+    ['upcoming', t('vacunas.tabUpcoming')],
+    ['overdue', t('vacunas.tabOverdue')],
+  ]
+  const filteredVaccines = activeTab === 'all' ? vaccines : vaccines.filter(v => getCategory(v.next_due_date) === activeTab)
+
+  // Vista de detalle de una vacuna
+  if (viewingVaccine) {
+    const status = getStatus(viewingVaccine.next_due_date, t)
+    const rows = [
+      [Calendar, t('vacunas.dateGiven'), formatDate(viewingVaccine.date_given, language)],
+      [Calendar, t('vacunas.nextDose'), viewingVaccine.next_due_date ? formatDate(viewingVaccine.next_due_date, language) : '—'],
+      ['🏥', t('vacunas.vetClinic'), viewingVaccine.vet_clinic || '—'],
+      ['🏷️', t('vacunas.lotNumber'), viewingVaccine.lot_number || '—'],
+      ['📝', t('vacunas.notes'), viewingVaccine.notes || '—'],
+    ]
+    return (
+      <div className="px-4 pb-3">
+        <button
+          onClick={() => setViewingVaccine(null)}
+          className="flex items-center gap-1 text-xs font-medium text-ps-purple border-0 bg-transparent cursor-pointer mb-3 p-0"
+        >
+          <ChevronLeft size={14} /> {t('vacunas.backAria')}
+        </button>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#EDE9FE' }}>
+            <Syringe size={20} color="#7C3AED" />
+          </div>
+          <div>
+            <p className="text-base font-bold text-gray-900">{viewingVaccine.name}</p>
+            {status && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full inline-block mt-1" style={{ background: status.bg, color: status.color }}>
+                {status.label}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-gray-100 overflow-hidden">
+          {rows.map(([icon, label, value]) => (
+            <div key={label} className="flex justify-between items-center px-4 py-2.5 border-b border-gray-100 last:border-0 text-sm bg-white">
+              <span className="text-gray-400 flex items-center gap-2">
+                {typeof icon === 'string' ? <span>{icon}</span> : React.createElement(icon, { size: 15 })}
+                {label}
+              </span>
+              <span className="font-medium text-gray-800 text-right max-w-[55%]">{value}</span>
+            </div>
+          ))}
+        </div>
+        {viewingVaccine.receipt_url && (
+          <a
+            href={viewingVaccine.receipt_url}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 flex items-center gap-2 text-xs font-semibold no-underline"
+            style={{ color: '#7C3AED' }}
+          >
+            <Camera size={13} /> {t('vacunas.viewPhoto')}
+          </a>
+        )}
+        <button
+          onClick={() => deleteVaccine(viewingVaccine.id)}
+          className="w-full py-2.5 mt-4 rounded-full text-sm font-semibold border-0 cursor-pointer"
+          style={{ background: '#FEE2E2', color: '#DC2626' }}
+        >
+          {t('vacunas.deleteVaccineBtn')}
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -173,6 +282,26 @@ export default function Vacunas({ hideTitle = false }) {
           </div>
 
           <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('vacunas.vetClinic')}</label>
+            <input
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none bg-white"
+              placeholder={t('vacunas.vetClinicPlaceholder')}
+              value={form.vet_clinic}
+              onChange={e => handle('vet_clinic', e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('vacunas.lotNumber')}</label>
+            <input
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none bg-white"
+              placeholder={t('vacunas.lotNumberPlaceholder')}
+              value={form.lot_number}
+              onChange={e => handle('lot_number', e.target.value)}
+            />
+          </div>
+
+          <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">{t('vacunas.notes')}</label>
             <input
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none bg-white"
@@ -180,6 +309,27 @@ export default function Vacunas({ hideTitle = false }) {
               value={form.notes}
               onChange={e => handle('notes', e.target.value)}
             />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('vacunas.receipt')}</label>
+            <div className="flex items-center gap-3">
+              <div
+                className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden"
+                style={{ background: '#EFF6FF' }}
+                onClick={() => receiptInputRef.current?.click()}
+              >
+                {form.receipt_url ? <img src={form.receipt_url} alt="comprobante" className="w-full h-full object-cover" /> : <Camera size={18} color="#3B82F6" />}
+              </div>
+              <button
+                onClick={() => receiptInputRef.current?.click()}
+                className="text-xs font-semibold border-0 cursor-pointer px-3 py-1.5 rounded-full"
+                style={{ background: '#EDE9FE', color: '#7C3AED' }}
+              >
+                {uploadingReceipt ? t('verificacion.uploading') : t('vacunas.uploadReceipt')}
+              </button>
+              <input ref={receiptInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadReceipt(e.target.files[0])} />
+            </div>
           </div>
 
           <button
@@ -193,6 +343,21 @@ export default function Vacunas({ hideTitle = false }) {
         </div>
       )}
 
+      {!loading && vaccines.length > 0 && (
+        <div className="flex gap-2 mb-2 overflow-x-auto pb-1">
+          {tabs.map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border-0 cursor-pointer"
+              style={{ background: activeTab === key ? '#7C3AED' : '#F3F4F6', color: activeTab === key ? 'white' : '#6B7280' }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center justify-center py-6 text-gray-400 text-xs">{t('common.loading')}</div>
       ) : vaccines.length === 0 ? (
@@ -202,27 +367,31 @@ export default function Vacunas({ hideTitle = false }) {
             <p className="text-xs text-gray-400 text-center">{t('vacunas.emptyState')}</p>
           </div>
         )
+      ) : filteredVaccines.length === 0 ? (
+        <div className="flex items-center justify-center py-6 text-gray-400 text-xs">{t('vacunas.emptyTab')}</div>
       ) : (
         <div className="flex flex-col gap-2">
-          {vaccines.map(v => {
+          {filteredVaccines.map(v => {
             const status = getStatus(v.next_due_date, t)
             return (
               <div key={v.id} className="flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-gray-100 bg-white">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#EDE9FE' }}>
-                  <Syringe size={16} color="#7C3AED" />
+                <div onClick={() => setViewingVaccine(v)} className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#EDE9FE' }}>
+                    <Syringe size={16} color="#7C3AED" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{v.name}</p>
+                    <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                      <Calendar size={10} /> {t('vacunas.applied')}: {formatDate(v.date_given, language)}
+                      {v.next_due_date && <> · {t('vacunas.next')}: {formatDate(v.next_due_date, language)}</>}
+                    </p>
+                  </div>
+                  {status && (
+                    <span className="text-[10px] font-semibold px-2 py-1 rounded-full flex-shrink-0" style={{ background: status.bg, color: status.color }}>
+                      {status.label}
+                    </span>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{v.name}</p>
-                  <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                    <Calendar size={10} /> {t('vacunas.applied')}: {formatDate(v.date_given, language)}
-                    {v.next_due_date && <> · {t('vacunas.next')}: {formatDate(v.next_due_date, language)}</>}
-                  </p>
-                </div>
-                {status && (
-                  <span className="text-[10px] font-semibold px-2 py-1 rounded-full flex-shrink-0" style={{ background: status.bg, color: status.color }}>
-                    {status.label}
-                  </span>
-                )}
                 <button onClick={() => deleteVaccine(v.id)} className="border-0 bg-transparent cursor-pointer text-gray-300 flex-shrink-0" aria-label={t('common.delete')}>
                   <X size={14} />
                 </button>

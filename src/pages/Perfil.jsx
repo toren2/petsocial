@@ -1,11 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft } from 'lucide-react'
+import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft, CheckCircle2, ArrowRight } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import Vacunas from '../components/Vacunas'
 import Verificacion from '../components/Verificacion'
 import VerifiedBadge from '../components/VerifiedBadge'
+import PerfilPublico from './PerfilPublico'
+
+function isVaccinesUpToDate(list) {
+  if (!list || list.length === 0) return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return !list.some(v => v.next_due_date && new Date(`${v.next_due_date}T00:00:00`) < today)
+}
 
 const SPECIES  = ['Perro', 'Gato', 'Conejo', 'Ave', 'Otro']
 const SIZES    = ['Pequeño', 'Mediano', 'Grande']
@@ -59,6 +67,8 @@ export default function Perfil({ onSignOut }) {
   const [showInfo, setShowInfo] = useState(false)
   const [isVerified, setIsVerified] = useState(false)
   const [showVacunasModal, setShowVacunasModal] = useState(false)
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
+  const [vaccinesUpToDate, setVaccinesUpToDate] = useState(false)
   const fileInputRef = useRef(null)
   const petPhotoRef = useRef(null)
   const [form, setForm] = useState({
@@ -66,9 +76,15 @@ export default function Perfil({ onSignOut }) {
     size: 'Mediano', sex: 'Macho', energy: 'Activo',
     good_with: 'Perros y personas', purpose: 'Amigos',
     location: '', about: '', emoji: '🐕', avatar_url: '',
+    esterilizado: false,
   })
 
-  useEffect(() => { fetchProfile(); fetchStats(); fetchMyPosts(); fetchPetPhotos(); fetchSavedPosts() }, [])
+  useEffect(() => { fetchProfile(); fetchStats(); fetchMyPosts(); fetchPetPhotos(); fetchSavedPosts(); fetchVaccinesStatus() }, [])
+
+  async function fetchVaccinesStatus() {
+    const { data } = await supabase.from('vaccines').select('next_due_date').eq('user_id', user.id)
+    setVaccinesUpToDate(isVaccinesUpToDate(data))
+  }
 
   async function fetchProfile() {
     setLoading(true)
@@ -89,6 +105,7 @@ export default function Perfil({ onSignOut }) {
         about:      data.about      || '',
         emoji:      data.emoji      || '🐕',
         avatar_url: data.avatar_url || '',
+        esterilizado: data.esterilizado || false,
       })
     } else {
       setEditing(true)
@@ -289,6 +306,19 @@ export default function Perfil({ onSignOut }) {
             <label className="text-xs font-medium text-gray-500 mb-1 block">{t('perfil.about')}</label>
             <textarea className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg resize-none" placeholder={t('perfil.aboutPlaceholder')} rows={3} value={form.about} onChange={e => handle('about', e.target.value)} />
           </div>
+          <button
+            onClick={() => handle('esterilizado', !form.esterilizado)}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-gray-200 bg-ps-bg cursor-pointer"
+            style={{ border: 'none' }}
+          >
+            <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+              <CheckCircle2 size={16} className={form.esterilizado ? 'text-green-600' : 'text-gray-300'} />
+              {t('perfil.sterilizedToggle')}
+            </span>
+            <div className="w-10 h-6 rounded-full relative transition-colors" style={{ background: form.esterilizado ? '#16A34A' : '#D1D5DB' }}>
+              <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform" style={{ left: form.esterilizado ? 18 : 2 }} />
+            </div>
+          </button>
         </div>
 
         <button
@@ -326,6 +356,20 @@ export default function Perfil({ onSignOut }) {
             </div>
             <div className="text-sm text-gray-500">{profile.breed} · {t('perfil.ageValue', { age: profile.age })} · {profile.sex}</div>
             {profile.location && <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5"><MapPin size={11} /> {profile.location}</div>}
+            {(profile.esterilizado || vaccinesUpToDate) && (
+              <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                {profile.esterilizado && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#DCFCE7', color: '#16A34A' }}>
+                    <CheckCircle2 size={10} /> {t('perfil.sterilized')}
+                  </span>
+                )}
+                {vaccinesUpToDate && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#DBEAFE', color: '#3B82F6' }}>
+                    <Syringe size={10} /> {t('perfil.vaccinesUpToDate')}
+                  </span>
+                )}
+              </div>
+            )}
             <div className="flex gap-4 mt-2">
               {[['posts', t('perfil.posts')], ['matches', t('perfil.matches')], ['reviews', t('perfil.reviews')]].map(([k, label]) => (
                 <div key={label} className="text-center">
@@ -484,6 +528,21 @@ export default function Perfil({ onSignOut }) {
             </div>
           )}
         </div>
+
+        <div className="px-4 pb-4">
+          <button
+            onClick={() => setShowPreviewModal(true)}
+            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border-0 cursor-pointer text-left"
+            style={{ background: 'linear-gradient(135deg, #7C3AED, #6D28D9)' }}
+          >
+            <Users size={18} color="white" className="flex-shrink-0" />
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-semibold text-white">{t('perfil.viewAsOthers')}</span>
+              <span className="block text-xs text-white/70">{t('perfil.viewAsOthersSubtitle')}</span>
+            </span>
+            <ArrowRight size={16} color="white" className="flex-shrink-0" />
+          </button>
+        </div>
       </div>
 
       {viewingPhoto !== null && (
@@ -506,6 +565,12 @@ export default function Perfil({ onSignOut }) {
           <div className="flex-1 overflow-y-auto bg-white pt-3">
             <Vacunas hideTitle />
           </div>
+        </div>
+      )}
+
+      {showPreviewModal && (
+        <div className="absolute inset-0 bg-white z-50 flex flex-col">
+          <PerfilPublico userId={user.id} onBack={() => setShowPreviewModal(false)} />
         </div>
       )}
     </div>
