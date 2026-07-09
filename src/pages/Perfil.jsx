@@ -8,12 +8,26 @@ import Verificacion from '../components/Verificacion'
 import VerifiedBadge from '../components/VerifiedBadge'
 import PerfilPublico from './PerfilPublico'
 
-function isVaccinesUpToDate(list) {
-  if (!list || list.length === 0) return false
+function getVaccineStatus(list) {
+  if (!list || list.length === 0) return 'none'
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  return !list.some(v => v.next_due_date && new Date(`${v.next_due_date}T00:00:00`) < today)
+  const hasOverdue = list.some(v => v.next_due_date && new Date(`${v.next_due_date}T00:00:00`) < today)
+  return hasOverdue ? 'overdue' : 'ok'
 }
+
+const INTERESTS = [
+  { key: 'playful', emoji: '🎾' },
+  { key: 'walks', emoji: '🚶' },
+  { key: 'beach', emoji: '🏖️' },
+  { key: 'treats', emoji: '🦴' },
+  { key: 'sleepy', emoji: '😴' },
+  { key: 'goodWithKids', emoji: '🧒' },
+  { key: 'social', emoji: '🐾' },
+  { key: 'water', emoji: '💦' },
+  { key: 'hiking', emoji: '🏔️' },
+  { key: 'toys', emoji: '🧸' },
+]
 
 const SPECIES  = ['Perro', 'Gato', 'Conejo', 'Ave', 'Otro']
 const SIZES    = ['Pequeño', 'Mediano', 'Grande']
@@ -68,7 +82,7 @@ export default function Perfil({ onSignOut }) {
   const [isVerified, setIsVerified] = useState(false)
   const [showVacunasModal, setShowVacunasModal] = useState(false)
   const [showPreviewModal, setShowPreviewModal] = useState(false)
-  const [vaccinesUpToDate, setVaccinesUpToDate] = useState(false)
+  const [vaccineStatus, setVaccineStatus] = useState('none')
   const fileInputRef = useRef(null)
   const petPhotoRef = useRef(null)
   const [form, setForm] = useState({
@@ -76,14 +90,21 @@ export default function Perfil({ onSignOut }) {
     size: 'Mediano', sex: 'Macho', energy: 'Activo',
     good_with: 'Perros y personas', purpose: 'Amigos',
     location: '', about: '', emoji: '🐕', avatar_url: '',
-    esterilizado: false,
+    esterilizado: false, interests: [],
   })
 
   useEffect(() => { fetchProfile(); fetchStats(); fetchMyPosts(); fetchPetPhotos(); fetchSavedPosts(); fetchVaccinesStatus() }, [])
 
   async function fetchVaccinesStatus() {
     const { data } = await supabase.from('vaccines').select('next_due_date').eq('user_id', user.id)
-    setVaccinesUpToDate(isVaccinesUpToDate(data))
+    setVaccineStatus(getVaccineStatus(data))
+  }
+
+  function toggleInterest(key) {
+    setForm(f => ({
+      ...f,
+      interests: f.interests.includes(key) ? f.interests.filter(k => k !== key) : [...f.interests, key],
+    }))
   }
 
   async function fetchProfile() {
@@ -106,6 +127,7 @@ export default function Perfil({ onSignOut }) {
         emoji:      data.emoji      || '🐕',
         avatar_url: data.avatar_url || '',
         esterilizado: data.esterilizado || false,
+        interests: data.interests || [],
       })
     } else {
       setEditing(true)
@@ -321,6 +343,26 @@ export default function Perfil({ onSignOut }) {
           </button>
         </div>
 
+        <div className="bg-white rounded-2xl p-4 border border-gray-100">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('perfil.interests')}</h3>
+          <div className="flex gap-2 flex-wrap">
+            {INTERESTS.map(({ key, emoji }) => (
+              <button
+                key={key}
+                onClick={() => toggleInterest(key)}
+                className="text-xs font-medium px-3 py-1.5 rounded-full border-0 cursor-pointer flex items-center gap-1"
+                style={{
+                  background: form.interests.includes(key) ? '#EDE9FE' : '#F3F4F6',
+                  color: form.interests.includes(key) ? '#7C3AED' : '#6B7280',
+                  border: form.interests.includes(key) ? '1.5px solid #7C3AED' : '1.5px solid transparent',
+                }}
+              >
+                <span>{emoji}</span> {t(`perfil.interest_${key}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <button
           onClick={saveProfile}
           disabled={saving || !form.pet_name}
@@ -356,20 +398,28 @@ export default function Perfil({ onSignOut }) {
             </div>
             <div className="text-sm text-gray-500">{profile.breed} · {t('perfil.ageValue', { age: profile.age })} · {profile.sex}</div>
             {profile.location && <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5"><MapPin size={11} /> {profile.location}</div>}
-            {(profile.esterilizado || vaccinesUpToDate) && (
-              <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                {profile.esterilizado && (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#DCFCE7', color: '#16A34A' }}>
-                    <CheckCircle2 size={10} /> {t('perfil.sterilized')}
-                  </span>
-                )}
-                {vaccinesUpToDate && (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#DBEAFE', color: '#3B82F6' }}>
-                    <Syringe size={10} /> {t('perfil.vaccinesUpToDate')}
-                  </span>
-                )}
-              </div>
-            )}
+            <div className="flex gap-1.5 mt-1.5 flex-wrap">
+              {profile.esterilizado && (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#DCFCE7', color: '#16A34A' }}>
+                  <CheckCircle2 size={10} /> {t('perfil.sterilized')}
+                </span>
+              )}
+              {vaccineStatus === 'ok' && (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#DBEAFE', color: '#3B82F6' }}>
+                  <Syringe size={10} /> {t('perfil.vaccinesUpToDate')}
+                </span>
+              )}
+              {vaccineStatus === 'overdue' && (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#FEF3C7', color: '#D97706' }}>
+                  <Syringe size={10} /> {t('perfil.vaccinesOverdue')}
+                </span>
+              )}
+              {vaccineStatus === 'none' && (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#F3F4F6', color: '#9CA3AF' }}>
+                  <Syringe size={10} /> {t('perfil.vaccinesNone')}
+                </span>
+              )}
+            </div>
             <div className="flex gap-4 mt-2">
               {[['posts', t('perfil.posts')], ['matches', t('perfil.matches')], ['reviews', t('perfil.reviews')]].map(([k, label]) => (
                 <div key={label} className="text-center">
@@ -382,6 +432,19 @@ export default function Perfil({ onSignOut }) {
         </div>
 
         {profile.about && <div className="px-4 pb-3"><p className="text-sm text-gray-700 leading-relaxed">{profile.about}</p></div>}
+
+        {profile.interests?.length > 0 && (
+          <div className="px-4 pb-3 flex gap-1.5 flex-wrap">
+            {profile.interests.map(key => {
+              const preset = INTERESTS.find(i => i.key === key)
+              return (
+                <span key={key} className="text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1" style={{ background: '#F3F4F6', color: '#6B7280' }}>
+                  {preset?.emoji} {t(`perfil.interest_${key}`)}
+                </span>
+              )
+            })}
+          </div>
+        )}
 
         <div className="px-4 pb-3 flex gap-2">
           <button onClick={() => setEditing(true)} className="flex-1 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-gray-50 cursor-pointer text-gray-700">{t('perfil.editProfile')}</button>

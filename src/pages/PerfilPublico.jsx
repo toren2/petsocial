@@ -6,6 +6,19 @@ import { useLanguage } from '../LanguageContext'
 import UserActionsMenu from '../components/UserActionsMenu'
 import VerifiedBadge from '../components/VerifiedBadge'
 
+const INTERESTS = [
+  { key: 'playful', emoji: '🎾' },
+  { key: 'walks', emoji: '🚶' },
+  { key: 'beach', emoji: '🏖️' },
+  { key: 'treats', emoji: '🦴' },
+  { key: 'sleepy', emoji: '😴' },
+  { key: 'goodWithKids', emoji: '🧒' },
+  { key: 'social', emoji: '🐾' },
+  { key: 'water', emoji: '💦' },
+  { key: 'hiking', emoji: '🏔️' },
+  { key: 'toys', emoji: '🧸' },
+]
+
 function PhotoViewer({ posts, startIndex, onClose }) {
   const { t } = useLanguage()
   const [index, setIndex] = useState(startIndex)
@@ -262,6 +275,19 @@ useEffect(() => {
         {profile.about && (
           <div className="px-4 pb-3">
             <p className="text-sm text-gray-700 leading-relaxed">{profile.about}</p>
+          </div>
+        )}
+
+        {profile.interests?.length > 0 && (
+          <div className="px-4 pb-3 flex gap-1.5 flex-wrap">
+            {profile.interests.map(key => {
+              const preset = INTERESTS.find(i => i.key === key)
+              return (
+                <span key={key} className="text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1" style={{ background: '#F3F4F6', color: '#6B7280' }}>
+                  {preset?.emoji} {t(`perfil.interest_${key}`)}
+                </span>
+              )
+            })}
           </div>
         )}
 

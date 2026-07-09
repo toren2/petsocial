@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, MapPin, Clock, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, X } from 'lucide-react'
+import { ArrowLeft, MapPin, Clock, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, X, MessageCircle, Instagram, Phone } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -186,6 +186,45 @@ export default function LugarDetalle({ place, onBack }) {
             </div>
           </div>
         </div>
+
+        {(place.category === 'vet' || place.category === 'groom') && (place.whatsapp_number || place.instagram_handle || place.contact_phone) && (
+          <div className="bg-white mx-4 mt-3 rounded-2xl p-4 border border-gray-100">
+            <h4 className="font-semibold text-gray-900 mb-3">{t('lugarDetalle.bookAppointment')}</h4>
+            <div className="flex flex-col gap-2">
+              {place.whatsapp_number && (
+                <a
+                  href={`https://wa.me/${place.whatsapp_number}?text=${encodeURIComponent(t('lugarDetalle.whatsappMessage', { name: place.name }))}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-2 py-3 rounded-full font-semibold text-white text-sm no-underline"
+                  style={{ background: '#25D366' }}
+                >
+                  <MessageCircle size={16} /> {t('lugarDetalle.bookViaWhatsapp')}
+                </a>
+              )}
+              {place.instagram_handle && (
+                <a
+                  href={`https://instagram.com/${place.instagram_handle.replace('@', '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-2 py-3 rounded-full font-semibold text-white text-sm no-underline"
+                  style={{ background: '#E1306C' }}
+                >
+                  <Instagram size={16} /> {t('lugarDetalle.bookViaInstagram')}
+                </a>
+              )}
+              {place.contact_phone && (
+                <a
+                  href={`tel:${place.contact_phone}`}
+                  className="flex items-center justify-center gap-2 py-3 rounded-full font-semibold text-sm no-underline border border-gray-200"
+                  style={{ color: '#374151' }}
+                >
+                  <Phone size={16} /> {t('lugarDetalle.bookViaPhone')}
+                </a>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="bg-white mx-4 mt-3 rounded-2xl p-4 border border-gray-100">
           <div className="flex items-center justify-between mb-3">
