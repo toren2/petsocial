@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react'
+import { useLanguage } from '../LanguageContext'
 
 const categoryColors = {
   vet:        '#7C3AED',
@@ -19,6 +20,7 @@ const categoryEmojis = {
 }
 
 export default function MapaLugares({ places, userLocation, onPlaceSelect, onClose }) {
+  const { t } = useLanguage()
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
   const userLocationRef = useRef(userLocation)
@@ -103,7 +105,7 @@ if (loc) {
           strokeColor: 'white',
           strokeWeight: 2,
         },
-        title: 'Tu ubicación',
+        title: t('mapaLugares.yourLocation'),
       })
 
       new window.google.maps.Circle({
@@ -142,9 +144,9 @@ if (loc) {
           <div style="min-width:160px;padding:4px">
             <div style="font-weight:600;font-size:13px">${place.name}</div>
             <div style="font-size:11px;color:${color};margin-top:2px">${place.type}</div>
-            <div style="font-size:11px;color:#6B7280;margin-top:2px">⭐ ${place.rating} · ${place.reviews} reseñas</div>
+            <div style="font-size:11px;color:#6B7280;margin-top:2px">⭐ ${place.rating} · ${place.reviews} ${t('mapaLugares.reviewsLabel')}</div>
             ${place.distance ? `<div style="font-size:11px;color:#6B7280">${place.distance} km</div>` : ''}
-            <button onclick="window._snouttSelectPlace('${place.id}')" style="margin-top:8px;background:${color};color:white;border:none;border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;width:100%">Ver detalle</button>
+            <button onclick="window._snouttSelectPlace('${place.id}')" style="margin-top:8px;background:${color};color:white;border:none;border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;width:100%">${t('mapaLugares.viewDetail')}</button>
           </div>
         `
       })
@@ -163,13 +165,13 @@ if (loc) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ height: '100dvh' }}>
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
-        <h2 className="text-lg font-bold text-gray-900">Mapa de lugares</h2>
+        <h2 className="text-lg font-bold text-gray-900">{t('mapaLugares.title')}</h2>
         <button
           onClick={e => { e.preventDefault(); e.stopPropagation(); onClose() }}
           className="text-sm font-medium border-0 cursor-pointer px-3 py-1.5 rounded-full"
           style={{ background: '#EDE9FE', color: '#7C3AED' }}
         >
-          Cerrar
+          {t('mapaLugares.close')}
         </button>
       </div>
 
@@ -178,13 +180,13 @@ if (loc) {
           <div key={cat} className="flex items-center gap-1 flex-shrink-0">
             <span className="text-sm">{emoji}</span>
             <span className="text-xs text-gray-500">
-              {cat === 'vet' ? 'Vet' : cat === 'groom' ? 'Grooming' : cat === 'park' ? 'Parque' : cat === 'shop' ? 'Shop' : cat === 'hotel' ? 'Hotel' : 'Rest.'}
+              {cat === 'vet' ? t('mapaLugares.catVetShort') : cat === 'groom' ? t('mapaLugares.catGroomShort') : cat === 'park' ? t('mapaLugares.catParkShort') : cat === 'shop' ? t('mapaLugares.catShopShort') : cat === 'hotel' ? t('mapaLugares.catHotelShort') : t('mapaLugares.catRestShort')}
             </span>
           </div>
         ))}
         <div className="flex items-center gap-1 flex-shrink-0">
           <div className="w-3 h-3 rounded-full bg-blue-500" />
-          <span className="text-xs text-gray-500">Tú</span>
+          <span className="text-xs text-gray-500">{t('mapaLugares.you')}</span>
         </div>
       </div>
 

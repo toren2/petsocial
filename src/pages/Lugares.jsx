@@ -1,21 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { Map, MapPin, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Search, Heart, UtensilsCrossed, Navigation } from 'lucide-react'
 import { supabase } from '../supabase'
+import { useLanguage } from '../LanguageContext'
 import LugarDetalle from './LugarDetalle'
 import MapaLugares from '../components/MapaLugares'
 import MiniMapaLugares from '../components/MiniMapaLugares'
 
 const NEARBY_RADIUS_KM = 10
-
-const categories = [
-  { id: 'all',        label: 'Todos',        Icon: MapPin,         bg: '#EDE9FE', color: '#7C3AED' },
-  { id: 'vet',        label: 'Veterinarias', Icon: Stethoscope,    bg: '#EDE9FE', color: '#7C3AED' },
-  { id: 'groom',      label: 'Grooming',     Icon: Scissors,       bg: '#FCE7F3', color: '#EC4899' },
-  { id: 'park',       label: 'Parques',      Icon: Trees,          bg: '#DCFCE7', color: '#16A34A' },
-  { id: 'shop',       label: 'Pet Shops',    Icon: ShoppingBag,    bg: '#FEF3C7', color: '#D97706' },
-  { id: 'hotel',      label: 'Hoteles',      Icon: Building2,      bg: '#E0F7F4', color: '#0F9B8E' },
-  { id: 'restaurant', label: 'Restaurantes', Icon: UtensilsCrossed, bg: '#FEE2E2', color: '#DC2626' },
-]
 
 const catIcons  = { vet: Stethoscope, groom: Scissors, park: Trees, shop: ShoppingBag, hotel: Building2, restaurant: UtensilsCrossed }
 const catColors = {
@@ -38,6 +29,16 @@ function getDistance(lat1, lng1, lat2, lng2) {
 }
 
 export default function Lugares({ initialCategory = 'all' }) {
+  const { t } = useLanguage()
+  const categories = [
+    { id: 'all',        label: t('lugares.catAll'),        Icon: MapPin,         bg: '#EDE9FE', color: '#7C3AED' },
+    { id: 'vet',        label: t('lugares.catVet'),        Icon: Stethoscope,    bg: '#EDE9FE', color: '#7C3AED' },
+    { id: 'groom',      label: t('lugares.catGroom'),      Icon: Scissors,       bg: '#FCE7F3', color: '#EC4899' },
+    { id: 'park',       label: t('lugares.catPark'),       Icon: Trees,          bg: '#DCFCE7', color: '#16A34A' },
+    { id: 'shop',       label: t('lugares.catShop'),       Icon: ShoppingBag,    bg: '#FEF3C7', color: '#D97706' },
+    { id: 'hotel',      label: t('lugares.catHotel'),      Icon: Building2,      bg: '#E0F7F4', color: '#0F9B8E' },
+    { id: 'restaurant', label: t('lugares.catRestaurant'), Icon: UtensilsCrossed, bg: '#FEE2E2', color: '#DC2626' },
+  ]
   const [places, setPlaces] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState(initialCategory)
@@ -130,10 +131,10 @@ export default function Lugares({ initialCategory = 'all' }) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Lugares 🐾</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Descubre lugares para tu mascota</p>
+          <h2 className="text-xl font-bold text-gray-900">{t('lugares.title')}</h2>
+          <p className="text-xs text-gray-400 mt-0.5">{t('lugares.subtitle')}</p>
         </div>
-        <button onClick={openMap} className="border-0 bg-transparent cursor-pointer text-ps-purple" aria-label="Ver mapa">
+        <button onClick={openMap} className="border-0 bg-transparent cursor-pointer text-ps-purple" aria-label={t('lugares.viewMapAria')}>
           <Map size={22} />
         </button>
       </div>
@@ -145,14 +146,14 @@ export default function Lugares({ initialCategory = 'all' }) {
           className="flex-1 py-2.5 text-sm font-medium border-0 bg-transparent cursor-pointer border-b-2 transition-colors"
           style={{ color: activeTab === 'cerca' ? '#7C3AED' : '#9CA3AF', borderBottomColor: activeTab === 'cerca' ? '#7C3AED' : 'transparent' }}
         >
-          Cerca de mí
+          {t('lugares.tabNearby')}
         </button>
         <button
           onClick={() => setActiveTab('todos')}
           className="flex-1 py-2.5 text-sm font-medium border-0 bg-transparent cursor-pointer border-b-2 transition-colors"
           style={{ color: activeTab === 'todos' ? '#7C3AED' : '#9CA3AF', borderBottomColor: activeTab === 'todos' ? '#7C3AED' : 'transparent' }}
         >
-          Directorio
+          {t('lugares.tabDirectory')}
         </button>
       </div>
 
@@ -162,7 +163,7 @@ export default function Lugares({ initialCategory = 'all' }) {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar veterinarias, parques, pet shops..."
+            placeholder={t('lugares.searchPlaceholder')}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full bg-ps-bg border border-gray-200 rounded-xl py-2.5 pl-9 pr-4 text-sm outline-none"
@@ -205,10 +206,10 @@ export default function Lugares({ initialCategory = 'all' }) {
               <div className="z-10 flex flex-col items-center gap-2">
                 <div className="flex items-center gap-2 bg-white/20 rounded-full px-4 py-2">
                   <Navigation size={14} color="white" />
-                  <span className="text-white text-xs font-semibold">Ver mapa completo</span>
+                  <span className="text-white text-xs font-semibold">{t('lugares.viewFullMap')}</span>
                 </div>
                 {userLocation && (
-                  <span className="text-white/70 text-[10px]">Mostrando lugares a {NEARBY_RADIUS_KM} km de ti</span>
+                  <span className="text-white/70 text-[10px]">{t('lugares.showingWithinKm', { km: NEARBY_RADIUS_KM })}</span>
                 )}
               </div>
             </div>
@@ -217,7 +218,7 @@ export default function Lugares({ initialCategory = 'all' }) {
           {/* Lugar destacado */}
           {featuredPlace && activeTab === 'cerca' && (
             <div className="px-3 pt-3">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">⭐ Mejor valorado cerca</p>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">{t('lugares.topRatedNearby')}</p>
               <div
                 onClick={() => setSelectedPlace(featuredPlace)}
                 className="bg-white rounded-2xl overflow-hidden border border-gray-100 cursor-pointer active:opacity-80"
@@ -251,29 +252,31 @@ export default function Lugares({ initialCategory = 'all' }) {
             <div className="px-3 py-2 mt-2 flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5">
                 <MapPin size={12} className="text-ps-teal flex-shrink-0" />
-                <span className="text-xs text-ps-teal font-medium">Dentro de {NEARBY_RADIUS_KM} km</span>
+                <span className="text-xs text-ps-teal font-medium">{t('lugares.withinKm', { km: NEARBY_RADIUS_KM })}</span>
               </div>
               <button onClick={refreshLocation} className="text-xs font-semibold border-0 cursor-pointer px-2 py-1 rounded-full" style={{ background: '#0F9B8E', color: 'white' }}>
-                Actualizar
+                {t('lugares.update')}
               </button>
             </div>
           )}
 
           <div className="px-3 py-2 bg-white border-b border-gray-100 mt-2">
             <span className="font-semibold text-xs text-gray-900">
-              {loading ? 'Cargando...' : `${filtered.length} lugar${filtered.length !== 1 ? 'es' : ''} ${activeTab === 'todos' ? 'en directorio' : `a menos de ${NEARBY_RADIUS_KM} km`}`}
+              {loading ? t('common.loading') : activeTab === 'todos'
+                ? t(filtered.length === 1 ? 'lugares.placeCountDirectorySingular' : 'lugares.placeCountDirectoryPlural', { count: filtered.length })
+                : t(filtered.length === 1 ? 'lugares.placeCountNearbySingular' : 'lugares.placeCountNearbyPlural', { count: filtered.length, km: NEARBY_RADIUS_KM })}
             </span>
           </div>
 
           {loading ? (
             <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
               <span className="text-4xl">🐾</span>
-              <p className="text-sm">Cargando lugares...</p>
+              <p className="text-sm">{t('lugares.loadingPlaces')}</p>
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
               <span className="text-4xl">📍</span>
-              <p className="text-sm">{activeTab === 'cerca' && !userLocation ? 'Esperando tu ubicación...' : 'No hay lugares aquí'}</p>
+              <p className="text-sm">{activeTab === 'cerca' && !userLocation ? t('lugares.waitingLocation') : t('lugares.noPlacesHere')}</p>
             </div>
           ) : (
             filtered.map((place, i) => {
@@ -297,7 +300,7 @@ export default function Lugares({ initialCategory = 'all' }) {
                     </div>
                     <div className="flex items-center gap-1 mt-1 flex-wrap">
                       <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: bg, color }}>{place.type}</span>
-                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: '#DCFCE7', color: '#16A34A' }}>🐾 Dog Friendly</span>
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: '#DCFCE7', color: '#16A34A' }}>{t('lugares.dogFriendly')}</span>
                     </div>
                     <div className="flex items-center gap-1 mt-1">
                       <Star size={10} fill="#F59E0B" color="#F59E0B" />
@@ -308,7 +311,7 @@ export default function Lugares({ initialCategory = 'all' }) {
                     <div className="text-xs mt-0.5">
                       {place.hours === 'Ver horario en Google Maps' ? (
                         <button onClick={e => { e.stopPropagation(); window.open(`https://www.google.com/maps/search/${encodeURIComponent(place.name)}`, '_blank') }} style={{ color: '#7C3AED', fontWeight: 500, border: 0, background: 'transparent', cursor: 'pointer', padding: 0, fontSize: 11 }}>
-                          Ver en Google Maps
+                          {t('lugares.viewOnGoogleMaps')}
                         </button>
                       ) : (
                         <span style={{ color: place.open ? '#16A34A' : '#DC2626' }}>{place.hours}</span>

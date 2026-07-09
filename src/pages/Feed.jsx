@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Search, Bell, Plus, MessageCircle, Share2, Bookmark, Trash2, X } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import { useLanguage } from '../LanguageContext'
 import CreatePostModal from '../components/CreatePostModal'
 import StoriesBar from '../components/StoriesBar'
 import Notifications from '../components/Notifications'
@@ -22,6 +23,7 @@ function PawIcon({ size = 22, filled = false, color = 'currentColor' }) {
 }
 
 function SearchPanel({ onClose, onViewProfile }) {
+  const { t } = useLanguage()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
@@ -53,7 +55,7 @@ function SearchPanel({ onClose, onViewProfile }) {
           <input
             autoFocus
             type="text"
-            placeholder="Buscar mascotas..."
+            placeholder={t('feed.searchPlaceholder')}
             value={query}
             onChange={e => setQuery(e.target.value)}
             className="w-full bg-ps-bg border border-gray-200 rounded-full py-2.5 pl-9 pr-4 text-sm outline-none"
@@ -66,17 +68,17 @@ function SearchPanel({ onClose, onViewProfile }) {
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12 text-gray-400">
-            <span className="text-sm">Buscando...</span>
+            <span className="text-sm">{t('feed.searching')}</span>
           </div>
         ) : query.trim() === '' ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
             <span className="text-4xl">🔍</span>
-            <p className="text-sm">Busca por nombre de mascota</p>
+            <p className="text-sm">{t('feed.searchByName')}</p>
           </div>
         ) : results.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
             <span className="text-4xl">🐾</span>
-            <p className="text-sm">No se encontraron mascotas</p>
+            <p className="text-sm">{t('feed.noPetsFound')}</p>
           </div>
         ) : (
           results.map(p => (
@@ -107,6 +109,7 @@ function SearchPanel({ onClose, onViewProfile }) {
 }
 
 function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
+  const { t, language } = useLanguage()
   const [liked, setLiked] = useState(post.liked)
   const [likes, setLikes] = useState(post.likes)
   const [showComments, setShowComments] = useState(false)
@@ -140,7 +143,7 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
     setLikes(newLikes)
     if (newLiked) {
       await supabase.from('post_likes').insert([{ post_id: post.id, user_id: currentUserId }])
-      await notifyLike(post.user_id, currentUserId, myPetName || 'Alguien', post.id)
+      await notifyLike(post.user_id, currentUserId, myPetName || t('feed.someone'), post.id)
     } else {
       await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', currentUserId)
     }
@@ -159,10 +162,10 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
   async function handleShare() {
     const url = `${window.location.origin}?post=${post.id}`
     if (navigator.share) {
-      await navigator.share({ title: `${post.pet_name} en Snoutt`, text: post.caption || '', url })
+      await navigator.share({ title: `${post.pet_name} ${t('feed.shareOn')}`, text: post.caption || '', url })
     } else {
       await navigator.clipboard.writeText(url)
-      alert('Link copiado al portapapeles')
+      alert(t('feed.linkCopied'))
     }
   }
 
@@ -182,7 +185,7 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
         <div className="flex-1 cursor-pointer" onClick={() => onViewProfile(post.user_id)}>
           <div className="font-semibold text-sm text-gray-900">{post.pet_name}</div>
           <div className="text-xs text-gray-400">
-            {post.pet_breed} · {new Date(post.created_at).toLocaleDateString('es', { day: 'numeric', month: 'short' })}
+            {post.pet_breed} · {new Date(post.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short' })}
           </div>
         </div>
         {post.user_id === currentUserId && (
@@ -261,7 +264,7 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
         </button>
       </div>
 
-      <div className="px-4 pb-1 text-sm font-semibold text-gray-900">{likes} me gusta</div>
+      <div className="px-4 pb-1 text-sm font-semibold text-gray-900">{likes} {t('feed.likes')}</div>
       {post.caption && (
         <div className="px-4 pb-3 text-sm text-gray-800 leading-relaxed">
           <span className="font-semibold">{post.pet_name} </span>
@@ -285,6 +288,7 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
 
 export default function Feed() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [posts, setPosts] = useState([])
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -343,7 +347,7 @@ export default function Feed() {
   }
 
   async function deletePost(postId, imageUrl) {
-    if (!window.confirm('¿Eliminar este post?')) return
+    if (!window.confirm(t('feed.deletePostConfirm'))) return
     await supabase.from('posts').delete().eq('id', postId)
     if (imageUrl) {
       const path = imageUrl.split('/posts/')[1]
@@ -398,14 +402,14 @@ export default function Feed() {
           className="flex-1 py-2.5 text-sm font-medium border-0 bg-transparent cursor-pointer border-b-2 transition-colors"
           style={{ color: feedTab === 'all' ? '#7C3AED' : '#9CA3AF', borderBottomColor: feedTab === 'all' ? '#7C3AED' : 'transparent' }}
         >
-          Todos
+          {t('feed.tabAll')}
         </button>
         <button
           onClick={() => setFeedTab('following')}
           className="flex-1 py-2.5 text-sm font-medium border-0 bg-transparent cursor-pointer border-b-2 transition-colors"
           style={{ color: feedTab === 'following' ? '#7C3AED' : '#9CA3AF', borderBottomColor: feedTab === 'following' ? '#7C3AED' : 'transparent' }}
         >
-          Siguiendo
+          {t('feed.tabFollowing')}
         </button>
       </div>
 
@@ -423,7 +427,7 @@ export default function Feed() {
             onClick={() => setShowCreate(true)}
             className="flex-1 text-left text-sm text-gray-400 bg-ps-bg border border-gray-200 rounded-full px-4 py-2.5 cursor-pointer"
           >
-            ¿Qué está haciendo {profile?.pet_name || 'tu mascota'}? 🐾
+            {t('feed.whatIsDoing', { name: profile?.pet_name || t('feed.yourPet') })}
           </button>
           <button
             onClick={() => setShowCreate(true)}
@@ -436,13 +440,13 @@ export default function Feed() {
         {loading ? (
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
             <span className="text-4xl">🐾</span>
-            <p className="text-sm">Cargando posts...</p>
+            <p className="text-sm">{t('feed.loadingPosts')}</p>
           </div>
         ) : displayedPosts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
             <span className="text-4xl">📸</span>
             <p className="text-sm">
-              {feedTab === 'following' ? 'No sigues a nadie todavía' : 'No hay posts todavía'}
+              {feedTab === 'following' ? t('feed.notFollowingAnyone') : t('feed.noPostsYet')}
             </p>
             {feedTab === 'all' && (
               <button
@@ -450,7 +454,7 @@ export default function Feed() {
                 className="text-xs font-semibold px-4 py-2 rounded-full border-0 cursor-pointer"
                 style={{ background: '#EDE9FE', color: '#7C3AED' }}
               >
-                ¡Sé el primero en publicar!
+                {t('feed.bePioneer')}
               </button>
             )}
           </div>

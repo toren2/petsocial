@@ -2,52 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Bell, MapPin, Calendar, MessageCircle, Newspaper, Stethoscope, Scissors, Trees, ShoppingBag, Building2, UtensilsCrossed, Heart, ChevronRight, AlertTriangle } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import { useLanguage } from '../LanguageContext'
 import VerifiedBadge from '../components/VerifiedBadge'
-
-const categories = [
-  { id: 'vet',        label: 'Veterinarias', Icon: Stethoscope,     color: '#7C3AED', bg: '#EDE9FE' },
-  { id: 'groom',      label: 'Grooming',     Icon: Scissors,        color: '#EC4899', bg: '#FCE7F3' },
-  { id: 'park',       label: 'Parques',      Icon: Trees,           color: '#16A34A', bg: '#DCFCE7' },
-  { id: 'shop',       label: 'Pet Shops',    Icon: ShoppingBag,     color: '#D97706', bg: '#FEF3C7' },
-  { id: 'hotel',      label: 'Hoteles',      Icon: Building2,       color: '#0F9B8E', bg: '#E0F7F4' },
-  { id: 'restaurant', label: 'Restaurantes', Icon: UtensilsCrossed, color: '#DC2626', bg: '#FEE2E2' },
-]
-
-const quickActions = [
-  { id: 'feed',     label: 'Feed',     Icon: Newspaper,     color: '#7C3AED', bg: '#EDE9FE' },
-  { id: 'match',    label: 'Match',    Icon: Heart,         color: '#EC4899', bg: '#FCE7F3' },
-  { id: 'chat',     label: 'Chat',     Icon: MessageCircle, color: '#0F9B8E', bg: '#E0F7F4' },
-  { id: 'eventos',  label: 'Eventos',  Icon: Calendar,      color: '#D97706', bg: '#FEF3C7' },
-  { id: 'perdidos', label: 'Perdidos', Icon: AlertTriangle, color: '#DC2626', bg: '#FEE2E2' },
-]
-
-function getGreeting() {
-  const hour = new Date().getHours()
-  if (hour < 12) return '¡Buenos días'
-  if (hour < 18) return '¡Buenas tardes'
-  return '¡Buenas noches'
-}
-
-const GENERAL_TIPS = [
-  { emoji: '💧', color: '#3B82F6', bg: '#DBEAFE', title: 'Hidratación', body: 'Recuerda cambiar el agua de tu mascota hoy.' },
-  { emoji: '🦷', color: '#0F9B8E', bg: '#E0F7F4', title: 'Higiene dental', body: 'Cepilla los dientes de tu mascota 2-3 veces por semana.' },
-  { emoji: '🐾', color: '#D97706', bg: '#FEF3C7', title: 'Cuida sus patitas', body: 'Revisa las almohadillas después de cada paseo, sobre todo en pavimento caliente.' },
-  { emoji: '✂️', color: '#EC4899', bg: '#FCE7F3', title: 'Uñas al día', body: 'Corta las uñas cada 3-4 semanas para evitar molestias al caminar.' },
-  { emoji: '🪮', color: '#7C3AED', bg: '#EDE9FE', title: 'Cepillado', body: 'Cepilla su pelaje regularmente para evitar nudos y caída excesiva.' },
-  { emoji: '🦟', color: '#16A34A', bg: '#DCFCE7', title: 'Antipulgas y garrapatas', body: 'Revisa que su tratamiento antiparasitario esté vigente.' },
-  { emoji: '🏃', color: '#DC2626', bg: '#FEE2E2', title: 'Ejercicio diario', body: 'Al menos 30 minutos de actividad física al día ayudan a su salud física y mental.' },
-  { emoji: '🍖', color: '#D97706', bg: '#FEF3C7', title: 'Porciones correctas', body: 'Evita darle sobras de comida humana, puede afectar su digestión.' },
-  { emoji: '🩺', color: '#7C3AED', bg: '#EDE9FE', title: 'Chequeo veterinario', body: 'Una visita anual al veterinario ayuda a detectar problemas a tiempo.' },
-  { emoji: '🎾', color: '#EC4899', bg: '#FCE7F3', title: 'Estimulación mental', body: 'Los juguetes interactivos previenen el aburrimiento y la ansiedad.' },
-  { emoji: '🏷️', color: '#0F9B8E', bg: '#E0F7F4', title: 'Identificación', body: 'Verifica que su placa o chip tenga tus datos de contacto actualizados.' },
-  { emoji: '🚗', color: '#DC2626', bg: '#FEE2E2', title: 'Nunca en el carro', body: 'No dejes a tu mascota sola dentro del carro, ni con las ventanas abiertas.' },
-]
-
-function getDailyTip(date = new Date()) {
-  const start = new Date(date.getFullYear(), 0, 0)
-  const dayOfYear = Math.floor((date - start) / 86400000)
-  return GENERAL_TIPS[dayOfYear % GENERAL_TIPS.length]
-}
 
 function getDistance(lat1, lng1, lat2, lng2) {
   const R = 6371
@@ -61,7 +17,34 @@ function getDistance(lat1, lng1, lat2, lng2) {
 
 const LOST_PET_ALERT_RADIUS_KM = 5
 
-function getLostPetTip(lostPets, userLocation) {
+const GENERAL_TIP_KEYS = [
+  'tipHydration', 'tipDental', 'tipPaws', 'tipNails', 'tipBrush', 'tipFleas',
+  'tipExercise', 'tipFood', 'tipVetCheckup', 'tipPlay', 'tipId', 'tipCar',
+]
+const GENERAL_TIP_STYLE = {
+  tipHydration:  { emoji: '💧', color: '#3B82F6', bg: '#DBEAFE' },
+  tipDental:     { emoji: '🦷', color: '#0F9B8E', bg: '#E0F7F4' },
+  tipPaws:       { emoji: '🐾', color: '#D97706', bg: '#FEF3C7' },
+  tipNails:      { emoji: '✂️', color: '#EC4899', bg: '#FCE7F3' },
+  tipBrush:      { emoji: '🪮', color: '#7C3AED', bg: '#EDE9FE' },
+  tipFleas:      { emoji: '🦟', color: '#16A34A', bg: '#DCFCE7' },
+  tipExercise:   { emoji: '🏃', color: '#DC2626', bg: '#FEE2E2' },
+  tipFood:       { emoji: '🍖', color: '#D97706', bg: '#FEF3C7' },
+  tipVetCheckup: { emoji: '🩺', color: '#7C3AED', bg: '#EDE9FE' },
+  tipPlay:       { emoji: '🎾', color: '#EC4899', bg: '#FCE7F3' },
+  tipId:         { emoji: '🏷️', color: '#0F9B8E', bg: '#E0F7F4' },
+  tipCar:        { emoji: '🚗', color: '#DC2626', bg: '#FEE2E2' },
+}
+
+function getDailyTip(t, date = new Date()) {
+  const start = new Date(date.getFullYear(), 0, 0)
+  const dayOfYear = Math.floor((date - start) / 86400000)
+  const key = GENERAL_TIP_KEYS[dayOfYear % GENERAL_TIP_KEYS.length]
+  const style = GENERAL_TIP_STYLE[key]
+  return { ...style, title: t(`hub.${key}Title`), body: t(`hub.${key}Body`) }
+}
+
+function getLostPetTip(t, lostPets, userLocation) {
   if (!lostPets || lostPets.length === 0) return null
 
   let nearest = null
@@ -80,12 +63,12 @@ function getLostPetTip(lostPets, userLocation) {
     emoji: '🚨',
     color: '#DC2626',
     bg: '#FEE2E2',
-    title: 'Mascota perdida cerca',
-    body: `${nearest.pet_name} se perdió a ${nearest.distance.toFixed(1)} km de ti. Toca "Perdidos" para ver los detalles.`,
+    title: t('hub.tipLostPetTitle'),
+    body: t('hub.tipLostPetBody', { name: nearest.pet_name, distance: nearest.distance.toFixed(1) }),
   }
 }
 
-function getVaccineTip(vaccines) {
+function getVaccineTip(t, vaccines) {
   if (!vaccines || vaccines.length === 0) return null
   const withDates = vaccines.filter(v => v.next_due_date)
   if (withDates.length === 0) return null
@@ -99,35 +82,37 @@ function getVaccineTip(vaccines) {
 
   if (diffDays < 0) {
     const days = Math.abs(diffDays)
-    return { emoji: '💉', color: '#DC2626', bg: '#FEE2E2', title: 'Vacuna vencida', body: `${next.name} venció hace ${days} día${days === 1 ? '' : 's'}. Agenda una cita pronto.` }
+    return { emoji: '💉', color: '#DC2626', bg: '#FEE2E2', title: t('hub.tipVaccineOverdueTitle'), body: t('hub.tipVaccineOverdueBody', { name: next.name, days, plural: days === 1 ? '' : 's' }) }
   } else if (diffDays === 0) {
-    return { emoji: '💉', color: '#DC2626', bg: '#FEE2E2', title: 'Vacuna hoy', body: `${next.name} vence hoy.` }
+    return { emoji: '💉', color: '#DC2626', bg: '#FEE2E2', title: t('hub.tipVaccineTodayTitle'), body: t('hub.tipVaccineTodayBody', { name: next.name }) }
   } else if (diffDays <= 14) {
-    return { emoji: '💉', color: '#D97706', bg: '#FEF3C7', title: 'Vacuna próxima', body: `${next.name} vence en ${diffDays} día${diffDays === 1 ? '' : 's'}.` }
+    return { emoji: '💉', color: '#D97706', bg: '#FEF3C7', title: t('hub.tipVaccineSoonTitle'), body: t('hub.tipVaccineSoonBody', { name: next.name, days: diffDays, plural: diffDays === 1 ? '' : 's' }) }
   }
   return null
 }
 
-function getWeatherTip(weather) {
+function getWeatherTip(t, weather) {
   if (!weather) return null
   const temp = weather.main?.temp
   const condition = weather.weather?.[0]?.main
+  const roundedTemp = Math.round(temp)
 
   if (condition === 'Rain' || condition === 'Thunderstorm' || condition === 'Drizzle') {
-    return { emoji: '🌧️', color: '#3B82F6', bg: '#DBEAFE', title: 'Lluvia hoy', body: 'Mejor quedarse en casa o llevar impermeable para tu mascota.' }
+    return { emoji: '🌧️', color: '#3B82F6', bg: '#DBEAFE', title: t('hub.tipRainTitle'), body: t('hub.tipRainBody') }
   } else if (temp >= 32) {
-    return { emoji: '🌡️', color: '#DC2626', bg: '#FEE2E2', title: `Mucho calor · ${Math.round(temp)}°C`, body: 'Evita paseos en horas pico. Lleva agua y cuida las patitas.' }
+    return { emoji: '🌡️', color: '#DC2626', bg: '#FEE2E2', title: t('hub.tipHotTitle', { temp: roundedTemp }), body: t('hub.tipHotBody') }
   } else if (temp >= 27) {
-    return { emoji: '☀️', color: '#D97706', bg: '#FEF3C7', title: `Calor · ${Math.round(temp)}°C`, body: 'No olvides llevar agua y cuidar las patitas de tu mascota.' }
+    return { emoji: '☀️', color: '#D97706', bg: '#FEF3C7', title: t('hub.tipWarmTitle', { temp: roundedTemp }), body: t('hub.tipWarmBody') }
   } else if (temp < 20) {
-    return { emoji: '🧥', color: '#7C3AED', bg: '#EDE9FE', title: `Fresco · ${Math.round(temp)}°C`, body: 'Buen clima para pasear, considera abrigo para razas pequeñas.' }
+    return { emoji: '🧥', color: '#7C3AED', bg: '#EDE9FE', title: t('hub.tipCoolTitle', { temp: roundedTemp }), body: t('hub.tipCoolBody') }
   } else {
-    return { emoji: '🌤️', color: '#0F9B8E', bg: '#E0F7F4', title: `Buen clima · ${Math.round(temp)}°C`, body: 'Perfecto para un paseo con tu mascota hoy.' }
+    return { emoji: '🌤️', color: '#0F9B8E', bg: '#E0F7F4', title: t('hub.tipNiceTitle', { temp: roundedTemp }), body: t('hub.tipNiceBody') }
   }
 }
 
 export default function Hub({ onNavigate, unreadCount }) {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [profile, setProfile] = useState(null)
   const [nearbyMatches, setNearbyMatches] = useState([])
   const [nearbyPlaces, setNearbyPlaces] = useState([])
@@ -135,6 +120,30 @@ export default function Hub({ onNavigate, unreadCount }) {
   const [weather, setWeather] = useState(null)
   const [vaccines, setVaccines] = useState([])
   const [lostPets, setLostPets] = useState([])
+
+  const categories = [
+    { id: 'vet',        label: t('hub.catVet'),        Icon: Stethoscope,     color: '#7C3AED', bg: '#EDE9FE' },
+    { id: 'groom',      label: t('hub.catGroom'),      Icon: Scissors,        color: '#EC4899', bg: '#FCE7F3' },
+    { id: 'park',       label: t('hub.catPark'),       Icon: Trees,           color: '#16A34A', bg: '#DCFCE7' },
+    { id: 'shop',       label: t('hub.catShop'),       Icon: ShoppingBag,     color: '#D97706', bg: '#FEF3C7' },
+    { id: 'hotel',      label: t('hub.catHotel'),      Icon: Building2,       color: '#0F9B8E', bg: '#E0F7F4' },
+    { id: 'restaurant', label: t('hub.catRestaurant'), Icon: UtensilsCrossed, color: '#DC2626', bg: '#FEE2E2' },
+  ]
+
+  const quickActions = [
+    { id: 'feed',     label: t('hub.qaFeed'),     Icon: Newspaper,     color: '#7C3AED', bg: '#EDE9FE' },
+    { id: 'match',    label: t('hub.qaMatch'),    Icon: Heart,         color: '#EC4899', bg: '#FCE7F3' },
+    { id: 'chat',     label: t('hub.qaChat'),     Icon: MessageCircle, color: '#0F9B8E', bg: '#E0F7F4' },
+    { id: 'eventos',  label: t('hub.qaEventos'),  Icon: Calendar,      color: '#D97706', bg: '#FEF3C7' },
+    { id: 'perdidos', label: t('hub.qaPerdidos'), Icon: AlertTriangle, color: '#DC2626', bg: '#FEE2E2' },
+  ]
+
+  function getGreeting() {
+    const hour = new Date().getHours()
+    if (hour < 12) return t('hub.greetingMorning')
+    if (hour < 18) return t('hub.greetingAfternoon')
+    return t('hub.greetingEvening')
+  }
 
   useEffect(() => {
     fetchProfile()
@@ -225,10 +234,10 @@ export default function Hub({ onNavigate, unreadCount }) {
     if (data) setNearbyPlaces(data)
   }
 
-  const lostPetTip = getLostPetTip(lostPets, userLocation)
-  const vaccineTip = getVaccineTip(vaccines)
-  const weatherTip = getWeatherTip(weather)
-  const dailyTip = getDailyTip()
+  const lostPetTip = getLostPetTip(t, lostPets, userLocation)
+  const vaccineTip = getVaccineTip(t, vaccines)
+  const weatherTip = getWeatherTip(t, weather)
+  const dailyTip = getDailyTip(t)
   const tips = [lostPetTip, vaccineTip, weatherTip, dailyTip].filter(Boolean)
 
   return (
@@ -255,8 +264,8 @@ export default function Hub({ onNavigate, unreadCount }) {
               )}
             </div>
             <div>
-              <p className="text-white/70 text-xs">{getGreeting()}, {profile?.pet_name || 'amigo'}! 🐾</p>
-              <p className="text-white font-bold text-base">¿Qué aventura hoy?</p>
+              <p className="text-white/70 text-xs">{t('hub.greeting', { greeting: getGreeting(), name: profile?.pet_name || t('hub.friend') })}</p>
+              <p className="text-white font-bold text-base">{t('hub.whatAdventure')}</p>
             </div>
           </div>
           <button
@@ -279,14 +288,14 @@ export default function Hub({ onNavigate, unreadCount }) {
           style={{ background: 'rgba(255,255,255,0.15)' }}
         >
           <MapPin size={18} color="white" />
-          <span className="text-white/80 text-sm">Buscar lugares pet-friendly...</span>
+          <span className="text-white/80 text-sm">{t('hub.searchPlaces')}</span>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-ps-bg">
 
         <div className="px-4 pt-4 pb-2">
-          <h3 className="text-sm font-bold text-gray-900 mb-3">Para hoy 🌟</h3>
+          <h3 className="text-sm font-bold text-gray-900 mb-3">{t('hub.forToday')}</h3>
           <div className="flex flex-col gap-2">
             {tips.map((tip, i) => (
               <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: tip.bg }}>
@@ -301,7 +310,7 @@ export default function Hub({ onNavigate, unreadCount }) {
         </div>
 
         <div className="px-4 py-2">
-          <h3 className="text-sm font-bold text-gray-900 mb-3">Acciones rápidas</h3>
+          <h3 className="text-sm font-bold text-gray-900 mb-3">{t('hub.quickActions')}</h3>
           <div className="grid grid-cols-5 gap-2">
             {quickActions.map(({ id, label, Icon, color, bg }) => (
               <button
@@ -320,9 +329,9 @@ export default function Hub({ onNavigate, unreadCount }) {
         {nearbyMatches.length > 0 && (
           <div className="px-4 py-2">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Match cerca de ti ❤️</h3>
+              <h3 className="text-sm font-bold text-gray-900">{t('hub.matchNearby')}</h3>
               <button onClick={() => onNavigate('match')} className="flex items-center gap-1 text-xs font-medium border-0 bg-transparent cursor-pointer" style={{ color: '#7C3AED' }}>
-                Ver todos <ChevronRight size={14} />
+                {t('common.seeAll')} <ChevronRight size={14} />
               </button>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2">
@@ -339,13 +348,13 @@ export default function Hub({ onNavigate, unreadCount }) {
                     <p className="text-xs font-bold text-gray-900 truncate flex items-center gap-0.5">
                       {pet.pet_name} <VerifiedBadge verified={pet.verified} size={11} />
                     </p>
-                    <p className="text-[10px] text-gray-400 truncate">{pet.age} años · {pet.breed}</p>
+                    <p className="text-[10px] text-gray-400 truncate">{pet.age} {t('common.years')} · {pet.breed}</p>
                     <button
                       onClick={() => onNavigate('match')}
                       className="mt-1.5 w-full flex items-center justify-center gap-1 py-1 rounded-full border-0 cursor-pointer text-[10px] font-semibold"
                       style={{ background: '#FCE7F3', color: '#EC4899' }}
                     >
-                      <Heart size={10} /> Match
+                      <Heart size={10} /> {t('match.title')}
                     </button>
                   </div>
                 </div>
@@ -357,9 +366,9 @@ export default function Hub({ onNavigate, unreadCount }) {
         {nearbyPlaces.length > 0 && (
           <div className="px-4 py-2 pb-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Lugares recomendados 📍</h3>
+              <h3 className="text-sm font-bold text-gray-900">{t('hub.placesRecommended')}</h3>
               <button onClick={() => onNavigate('lugares')} className="flex items-center gap-1 text-xs font-medium border-0 bg-transparent cursor-pointer" style={{ color: '#7C3AED' }}>
-                Ver todos <ChevronRight size={14} />
+                {t('common.seeAll')} <ChevronRight size={14} />
               </button>
             </div>
             <div className="flex flex-col gap-2">
@@ -383,7 +392,7 @@ export default function Hub({ onNavigate, unreadCount }) {
         )}
 
         <div className="px-4 py-2 pb-4">
-          <h3 className="text-sm font-bold text-gray-900 mb-3">Explorar por categoría</h3>
+          <h3 className="text-sm font-bold text-gray-900 mb-3">{t('hub.exploreByCategory')}</h3>
           <div className="grid grid-cols-3 gap-2">
             {categories.map(({ id, label, Icon, color, bg }) => (
               <button

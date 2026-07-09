@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from './AuthContext'
+import { useLanguage } from './LanguageContext'
 import Auth from './pages/Auth'
 import Splash from './pages/Splash'
 import Feed from './pages/Feed'
@@ -16,6 +17,7 @@ import Hub from './pages/Hub'
 
 export default function App() {
   const { user, loading, signOut } = useAuth()
+  const { t } = useLanguage()
   const [screen, setScreen] = useState('splash')
   const [matchedPet, setMatchedPet] = useState(null)
   const [showSplash, setShowSplash] = useState(true)
@@ -60,7 +62,7 @@ export default function App() {
       onClick={signOut}
       className="text-xs text-ps-purple border-0 bg-transparent cursor-pointer font-medium"
     >
-      Salir
+      {t('app.logout')}
     </button>
   </div>
 </div>

@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react'
 import { X, Plus, Send, Trash2, Camera, Eye, Repeat, Video } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import { useLanguage } from '../LanguageContext'
 
 function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, currentUserId }) {
+  const { t, language } = useLanguage()
   const [index, setIndex] = useState(startIndex)
   const [progress, setProgress] = useState(0)
   const [showViewers, setShowViewers] = useState(false)
@@ -71,7 +73,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
   if (!story) return null
 
   async function handleDelete() {
-    if (!window.confirm('¿Eliminar esta historia?')) return
+    if (!window.confirm(t('stories.deleteStoryConfirm'))) return
     await onDelete(story)
     if (index < stories.length - 1) {
       setIndex(i => i + 1)
@@ -104,7 +106,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
         <div className="flex-1">
           <div className="text-white font-semibold text-sm">{story.pet_name}</div>
           <div className="text-white/60 text-xs">
-            {new Date(story.created_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
+            {new Date(story.created_at).toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' })}
           </div>
         </div>
         {story.user_id === currentUserId && (
@@ -160,7 +162,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
         )}
         {sharing && (
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/70 px-4 py-2 rounded-full">
-            <span className="text-white text-sm">Compartiendo...</span>
+            <span className="text-white text-sm">{t('stories.sharing')}</span>
           </div>
         )}
       </div>
@@ -170,7 +172,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <div className="flex items-center gap-2">
               <Eye size={16} className="text-ps-purple" />
-              <h3 className="font-bold text-gray-900">Visto por {viewers.length}</h3>
+              <h3 className="font-bold text-gray-900">{t('stories.viewedBy', { count: viewers.length })}</h3>
             </div>
             <button onClick={() => { setShowViewers(false) }} className="border-0 bg-transparent cursor-pointer text-gray-400">
               <X size={20} />
@@ -180,7 +182,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
             {viewers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2 text-gray-400">
                 <Eye size={32} />
-                <p className="text-sm">Nadie ha visto esta historia aún</p>
+                <p className="text-sm">{t('stories.noOneViewed')}</p>
               </div>
             ) : (
               viewers.map(v => (
@@ -210,6 +212,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
 
 function CreateStoryModal({ profile, onClose, onCreate }) {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [mediaFile, setMediaFile] = useState(null)
   const [mediaPreview, setMediaPreview] = useState(null)
   const [mediaType, setMediaType] = useState(null) // 'image' | 'video'
@@ -257,7 +260,7 @@ function CreateStoryModal({ profile, onClose, onCreate }) {
     <div className="fixed inset-0 bg-black/60 z-50 flex flex-col justify-end">
       <div className="bg-white rounded-t-3xl flex flex-col flex-shrink-0">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h3 className="font-bold text-gray-900 text-lg">Nueva historia</h3>
+          <h3 className="font-bold text-gray-900 text-lg">{t('stories.newStory')}</h3>
           <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-gray-400">
             <X size={22} />
           </button>
@@ -284,14 +287,14 @@ function CreateStoryModal({ profile, onClose, onCreate }) {
                 className="flex-1 border-2 border-dashed border-gray-200 rounded-2xl py-8 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
               >
                 <Camera size={28} className="text-gray-300" />
-                <span className="text-xs text-gray-400">Foto</span>
+                <span className="text-xs text-gray-400">{t('createPost.photo')}</span>
               </button>
               <button
                 onClick={() => { fileInputRef.current.accept = 'video/*'; fileInputRef.current?.click() }}
                 className="flex-1 border-2 border-dashed border-gray-200 rounded-2xl py-8 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
               >
                 <Video size={28} className="text-gray-300" />
-                <span className="text-xs text-gray-400">Video</span>
+                <span className="text-xs text-gray-400">{t('createPost.video')}</span>
               </button>
             </div>
           )}
@@ -300,7 +303,7 @@ function CreateStoryModal({ profile, onClose, onCreate }) {
         <div className="px-5 pb-2">
           <input
             className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg"
-            placeholder="Agrega un texto... (opcional)"
+            placeholder={t('stories.addTextOptional')}
             value={caption}
             onChange={e => setCaption(e.target.value)}
           />
@@ -313,7 +316,7 @@ function CreateStoryModal({ profile, onClose, onCreate }) {
             style={{ background: loading || !mediaFile ? '#C4B5FD' : '#7C3AED' }}
           >
             <Send size={16} />
-            {loading ? 'Publicando...' : 'Publicar historia'}
+            {loading ? t('stories.publishing') : t('stories.publishStory')}
           </button>
         </div>
       </div>
@@ -323,6 +326,7 @@ function CreateStoryModal({ profile, onClose, onCreate }) {
 
 export default function StoriesBar({ profile }) {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [stories, setStories] = useState([])
   const [viewingStories, setViewingStories] = useState(null)
   const [showCreate, setShowCreate] = useState(false)
@@ -385,7 +389,7 @@ export default function StoriesBar({ profile }) {
       pet_breed: profile?.breed || '',
       avatar_url: profile?.avatar_url || null,
     }])
-    alert('¡Historia compartida como post! 🐾')
+    alert(t('stories.sharedAsPost'))
   }
 
   return (
@@ -401,7 +405,7 @@ export default function StoriesBar({ profile }) {
               )}
             </div>
           </div>
-          <span className="text-[10px] text-gray-500 max-w-[52px] text-center truncate">Tu historia</span>
+          <span className="text-[10px] text-gray-500 max-w-[52px] text-center truncate">{t('stories.myStory')}</span>
         </div>
 
         {stories.map((group) => (

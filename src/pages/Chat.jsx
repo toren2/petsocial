@@ -6,9 +6,11 @@ import { notifyMessage } from '../notifications'
 import PerfilPublico from './PerfilPublico'
 import UserActionsMenu from '../components/UserActionsMenu'
 import VerifiedBadge from '../components/VerifiedBadge'
+import { useLanguage } from '../LanguageContext'
 
 function ConversationList({ onOpen }) {
   const { user } = useAuth()
+  const { t, language } = useLanguage()
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState(null)
@@ -59,19 +61,19 @@ function ConversationList({ onOpen }) {
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
-        <h2 className="text-xl font-bold text-gray-900">Mensajes</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t('chat.messages')}</h2>
       </div>
       <div className="flex-1 overflow-y-auto bg-ps-bg">
         {loading ? (
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
             <span className="text-4xl">🐾</span>
-            <p className="text-sm">Cargando mensajes...</p>
+            <p className="text-sm">{t('chat.loadingMessages')}</p>
           </div>
         ) : matches.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
             <span className="text-4xl">💬</span>
-            <p className="text-sm">Aún no tienes matches</p>
-            <p className="text-xs text-center px-8">Haz match con otras mascotas para empezar a chatear</p>
+            <p className="text-sm">{t('chat.noMatchesYet')}</p>
+            <p className="text-xs text-center px-8">{t('chat.noMatchesBody')}</p>
           </div>
         ) : (
           matches.map(match => (
@@ -89,14 +91,14 @@ function ConversationList({ onOpen }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-sm text-gray-900 flex items-center gap-1">
-                    {match.profile?.pet_name || 'Mascota'} <VerifiedBadge verified={match.verified} size={13} />
+                    {match.profile?.pet_name || t('chat.pet')} <VerifiedBadge verified={match.verified} size={13} />
                   </div>
                   <div className="text-xs text-gray-400 truncate mt-0.5">
                     {match.profile?.breed} · {match.profile?.location}
                   </div>
                 </div>
                 <div className="text-xs text-gray-400 flex-shrink-0">
-                  {new Date(match.created_at).toLocaleDateString('es', { day: 'numeric', month: 'short' })}
+                  {new Date(match.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short' })}
                 </div>
               </div>
               <button
@@ -113,21 +115,21 @@ function ConversationList({ onOpen }) {
       {deletingId && (
         <div className="absolute inset-0 bg-black/50 z-50 flex items-end">
           <div className="bg-white rounded-t-3xl w-full p-6 flex flex-col gap-4">
-            <h3 className="font-bold text-gray-900 text-lg">¿Borrar conversación?</h3>
-            <p className="text-sm text-gray-500">Se eliminarán todos los mensajes. Esta acción no se puede deshacer.</p>
+            <h3 className="font-bold text-gray-900 text-lg">{t('chat.deleteConversationTitle')}</h3>
+            <p className="text-sm text-gray-500">{t('chat.deleteConversationBody')}</p>
             <button
               onClick={() => deleteConversation(deletingId)}
               className="w-full py-3 rounded-full font-semibold text-white border-0 cursor-pointer"
               style={{ background: '#EF4444' }}
             >
-              Borrar conversación
+              {t('chat.deleteConversation')}
             </button>
             <button
               onClick={() => setDeletingId(null)}
               className="w-full py-3 rounded-full font-semibold border-0 cursor-pointer"
               style={{ background: '#F3F4F6', color: '#6B7280' }}
             >
-              Cancelar
+              {t('chat.cancel')}
             </button>
           </div>
         </div>
@@ -138,6 +140,7 @@ function ConversationList({ onOpen }) {
 
 function Conversation({ match, onBack }) {
   const { user } = useAuth()
+  const { t, language } = useLanguage()
   const [msgs, setMsgs] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
@@ -233,7 +236,7 @@ function Conversation({ match, onBack }) {
         </div>
         <div className="flex-1 cursor-pointer" onClick={() => setViewingProfile(match.otherId)}>
           <div className="font-semibold text-gray-900 text-base flex items-center gap-1">
-            {match.profile?.pet_name || 'Mascota'} <VerifiedBadge verified={match.verified} size={14} />
+            {match.profile?.pet_name || t('chat.pet')} <VerifiedBadge verified={match.verified} size={14} />
           </div>
           <div className="text-xs text-gray-400">{match.profile?.breed}</div>
         </div>
@@ -251,13 +254,13 @@ function Conversation({ match, onBack }) {
           style={{ background: 'linear-gradient(90deg, #EDE9FE, #FCE7F3)', color: '#7C3AED' }}
         >
           <span>🐾</span>
-          <span>¡Es un match! Empiecen a chatear ✨</span>
+          <span>{t('chat.matchBanner')}</span>
         </div>
 
         {loading ? (
-          <div className="text-center text-sm text-gray-400 py-4">Cargando mensajes...</div>
+          <div className="text-center text-sm text-gray-400 py-4">{t('chat.loadingConversation')}</div>
         ) : msgs.length === 0 ? (
-          <div className="text-center text-sm text-gray-400 py-4">¡Sé el primero en decir hola! 👋</div>
+          <div className="text-center text-sm text-gray-400 py-4">{t('chat.sayHi')}</div>
         ) : (
           msgs.map(msg => (
             <div
@@ -288,7 +291,7 @@ function Conversation({ match, onBack }) {
               )}
               <div className="flex items-center gap-2 mt-1 px-1">
                 <span className="text-[10px] text-gray-400">
-                  {new Date(msg.created_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(msg.created_at).toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' })}
                 </span>
                 {selectedMsg === msg.id && msg.sender_id === user.id && (
                   <button
@@ -296,7 +299,7 @@ function Conversation({ match, onBack }) {
                     className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border-0 cursor-pointer"
                     style={{ background: '#FEE2E2', color: '#EF4444' }}
                   >
-                    <Trash2 size={10} /> Eliminar
+                    <Trash2 size={10} /> {t('chat.deleteMsg')}
                   </button>
                 )}
               </div>
@@ -306,7 +309,7 @@ function Conversation({ match, onBack }) {
         {uploadingImage && (
           <div className="flex items-end justify-end">
             <div className="px-4 py-2.5 rounded-2xl text-sm text-white" style={{ background: '#7C3AED' }}>
-              Enviando imagen...
+              {t('chat.sendingImage')}
             </div>
           </div>
         )}
@@ -329,7 +332,7 @@ function Conversation({ match, onBack }) {
         </button>
         <input
           className="flex-1 border border-gray-200 rounded-full px-4 py-2 text-sm outline-none bg-ps-bg"
-          placeholder="Escribe un mensaje..."
+          placeholder={t('chat.messagePlaceholder')}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && sendMsg()}

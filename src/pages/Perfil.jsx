@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import { useLanguage } from '../LanguageContext'
 import Vacunas from '../components/Vacunas'
 import Verificacion from '../components/Verificacion'
 import VerifiedBadge from '../components/VerifiedBadge'
@@ -13,6 +14,7 @@ const ENERGIES = ['Tranquilo', 'Activo', 'Hiperactivo']
 const EMOJIS   = ['🐕', '🐩', '🦮', '🐕‍🦺', '🦊', '🐈', '🐇', '🦜']
 
 function PhotoViewer({ posts, startIndex, onClose }) {
+  const { t } = useLanguage()
   const [index, setIndex] = useState(startIndex)
   const post = posts[index]
   if (!post) return null
@@ -31,7 +33,7 @@ function PhotoViewer({ posts, startIndex, onClose }) {
       {post.caption && (
         <div className="px-4 py-3 bg-black/60 flex-shrink-0">
           <p className="text-white text-sm leading-relaxed">{post.caption}</p>
-          <div className="flex items-center gap-1 mt-2 text-white/70 text-xs"><Heart size={13} /><span>{post.likes} me gusta</span></div>
+          <div className="flex items-center gap-1 mt-2 text-white/70 text-xs"><Heart size={13} /><span>{post.likes} {t('perfil.likes')}</span></div>
         </div>
       )}
     </div>
@@ -40,6 +42,7 @@ function PhotoViewer({ posts, startIndex, onClose }) {
 
 export default function Perfil({ onSignOut }) {
   const { user } = useAuth()
+  const { language, setLanguage, t } = useLanguage()
   const [profile, setProfile] = useState(null)
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -123,7 +126,7 @@ export default function Perfil({ onSignOut }) {
   }
 
   async function deletePost(post) {
-    if (!window.confirm('¿Eliminar este post?')) return
+    if (!window.confirm(t('perfil.deletePostConfirm'))) return
     await supabase.from('posts').delete().eq('id', post.id)
     if (post.image_url) {
       const path = post.image_url.split('/posts/')[1]
@@ -154,7 +157,7 @@ export default function Perfil({ onSignOut }) {
   }
 
   async function uploadPetPhoto(file) {
-    if (petPhotos.length >= 5) { alert('Máximo 5 fotos permitidas'); return }
+    if (petPhotos.length >= 5) { alert(t('perfil.maxPhotosAlert')); return }
     setUploadingPetPhoto(true)
     const ext = file.name.split('.').pop()
     const path = `${user.id}/${Date.now()}.${ext}`
@@ -195,31 +198,31 @@ export default function Perfil({ onSignOut }) {
   if (loading) return (
     <div className="flex flex-col flex-1 items-center justify-center gap-3 text-gray-400">
       <span className="text-4xl">🐾</span>
-      <p className="text-sm">Cargando perfil...</p>
+      <p className="text-sm">{t('perfil.loadingProfile')}</p>
     </div>
   )
 
   if (editing) return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
-        <h2 className="text-xl font-bold text-gray-900">{profile ? 'Editar perfil' : 'Crear perfil'}</h2>
-        {profile && <button onClick={() => setEditing(false)} className="text-sm text-gray-400 border-0 bg-transparent cursor-pointer">Cancelar</button>}
+        <h2 className="text-xl font-bold text-gray-900">{profile ? t('perfil.editProfile') : t('perfil.createProfile')}</h2>
+        {profile && <button onClick={() => setEditing(false)} className="text-sm text-gray-400 border-0 bg-transparent cursor-pointer">{t('perfil.cancel')}</button>}
       </div>
       <div className="flex-1 overflow-y-auto bg-ps-bg px-4 py-4 flex flex-col gap-4">
         <div className="bg-white rounded-2xl p-4 border border-gray-100 flex flex-col items-center gap-3">
-          <h3 className="text-sm font-semibold text-gray-900 self-start">Foto de perfil</h3>
+          <h3 className="text-sm font-semibold text-gray-900 self-start">{t('perfil.profilePhoto')}</h3>
           <div className="relative cursor-pointer" onClick={() => fileInputRef.current?.click()}>
             {form.avatar_url ? <img src={form.avatar_url} alt="avatar" className="w-24 h-24 rounded-full object-cover border-4 border-ps-purple-light" /> : <div className="w-24 h-24 rounded-full bg-ps-purple-light flex items-center justify-center text-5xl border-4 border-ps-purple-light">{form.emoji}</div>}
             <div className="absolute bottom-0 right-0 w-8 h-8 bg-ps-purple rounded-full flex items-center justify-center border-2 border-white">
               {uploadingPhoto ? <span className="text-white text-xs">...</span> : <Camera size={14} color="white" />}
             </div>
           </div>
-          <p className="text-xs text-gray-400">Toca para subir una foto</p>
+          <p className="text-xs text-gray-400">{t('perfil.tapToUpload')}</p>
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadPhoto(e.target.files[0])} />
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Elige un emoji</h3>
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('perfil.chooseEmoji')}</h3>
           <div className="flex gap-2 flex-wrap">
             {EMOJIS.map(e => (
               <button key={e} onClick={() => handle('emoji', e)}
@@ -231,43 +234,43 @@ export default function Perfil({ onSignOut }) {
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-gray-100 flex flex-col gap-3">
-          <h3 className="text-sm font-semibold text-gray-900">Información básica</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t('perfil.basicInfo')}</h3>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Nombre de tu mascota</label>
-            <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg" placeholder="ej. Hoshi" value={form.pet_name} onChange={e => handle('pet_name', e.target.value)} />
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('perfil.petName')}</label>
+            <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg" placeholder={t('perfil.petNamePlaceholder')} value={form.pet_name} onChange={e => handle('pet_name', e.target.value)} />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Raza</label>
-            <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg" placeholder="ej. Shih Tzu" value={form.breed} onChange={e => handle('breed', e.target.value)} />
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('perfil.breed')}</label>
+            <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg" placeholder={t('perfil.breedPlaceholder')} value={form.breed} onChange={e => handle('breed', e.target.value)} />
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Especie</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('perfil.species')}</label>
               <select className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none bg-ps-bg" value={form.species} onChange={e => handle('species', e.target.value)}>
                 {SPECIES.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div className="flex-1">
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Edad (años)</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('perfil.ageYears')}</label>
               <input type="number" min="0" max="30" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none bg-ps-bg" placeholder="2" value={form.age} onChange={e => handle('age', e.target.value)} />
             </div>
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Tamaño</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('perfil.size')}</label>
               <select className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none bg-ps-bg" value={form.size} onChange={e => handle('size', e.target.value)}>
                 {SIZES.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div className="flex-1">
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Sexo</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('perfil.sex')}</label>
               <select className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none bg-ps-bg" value={form.sex} onChange={e => handle('sex', e.target.value)}>
                 {SEXES.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Nivel de energía</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('perfil.energyLevel')}</label>
             <div className="flex gap-2">
               {ENERGIES.map(e => (
                 <button key={e} onClick={() => handle('energy', e)}
@@ -278,12 +281,12 @@ export default function Perfil({ onSignOut }) {
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Ubicación</label>
-            <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg" placeholder="ej. Bella Vista, Ciudad de Panamá" value={form.location} onChange={e => handle('location', e.target.value)} />
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('perfil.location')}</label>
+            <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg" placeholder={t('perfil.locationPlaceholder')} value={form.location} onChange={e => handle('location', e.target.value)} />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Sobre tu mascota</label>
-            <textarea className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg resize-none" placeholder="Cuéntanos sobre tu mascota..." rows={3} value={form.about} onChange={e => handle('about', e.target.value)} />
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('perfil.about')}</label>
+            <textarea className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg resize-none" placeholder={t('perfil.aboutPlaceholder')} rows={3} value={form.about} onChange={e => handle('about', e.target.value)} />
           </div>
         </div>
 
@@ -294,9 +297,9 @@ export default function Perfil({ onSignOut }) {
           style={{ background: saving || !form.pet_name ? '#C4B5FD' : '#7C3AED' }}
         >
           <Save size={16} />
-          {saving ? 'Guardando...' : 'Guardar perfil'}
+          {saving ? t('perfil.saving') : t('perfil.saveProfile')}
         </button>
-        <button onClick={onSignOut} className="w-full py-3 rounded-full text-sm text-gray-400 border border-gray-200 bg-white cursor-pointer">Cerrar sesión</button>
+        <button onClick={onSignOut} className="w-full py-3 rounded-full text-sm text-gray-400 border border-gray-200 bg-white cursor-pointer">{t('perfil.signOut')}</button>
       </div>
     </div>
   )
@@ -320,10 +323,10 @@ export default function Perfil({ onSignOut }) {
             <div className="font-bold text-gray-900 text-lg flex items-center gap-1">
               {profile.pet_name} <VerifiedBadge verified={isVerified} size={16} />
             </div>
-            <div className="text-sm text-gray-500">{profile.breed} · {profile.age} años · {profile.sex}</div>
+            <div className="text-sm text-gray-500">{profile.breed} · {t('perfil.ageValue', { age: profile.age })} · {profile.sex}</div>
             {profile.location && <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5"><MapPin size={11} /> {profile.location}</div>}
             <div className="flex gap-4 mt-2">
-              {[['posts', 'Posts'], ['matches', 'Matches'], ['reviews', 'Reviews']].map(([k, label]) => (
+              {[['posts', t('perfil.posts')], ['matches', t('perfil.matches')], ['reviews', t('perfil.reviews')]].map(([k, label]) => (
                 <div key={label} className="text-center">
                   <div className="font-bold text-gray-900 text-sm">{stats[k]}</div>
                   <div className="text-xs text-gray-400">{label}</div>
@@ -336,22 +339,32 @@ export default function Perfil({ onSignOut }) {
         {profile.about && <div className="px-4 pb-3"><p className="text-sm text-gray-700 leading-relaxed">{profile.about}</p></div>}
 
         <div className="px-4 pb-3 flex gap-2">
-          <button onClick={() => setEditing(true)} className="flex-1 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-gray-50 cursor-pointer text-gray-700">Editar perfil</button>
-          <button onClick={() => setShowInfo(s => !s)} className="flex-1 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-gray-50 cursor-pointer text-gray-700">{showInfo ? 'Ocultar info' : 'Ver info'}</button>
-          <button onClick={onSignOut} className="py-2 px-3 rounded-xl text-xs font-semibold border border-gray-200 bg-gray-50 cursor-pointer text-gray-500">Salir</button>
+          <button onClick={() => setEditing(true)} className="flex-1 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-gray-50 cursor-pointer text-gray-700">{t('perfil.editProfile')}</button>
+          <button onClick={() => setShowInfo(s => !s)} className="flex-1 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-gray-50 cursor-pointer text-gray-700">{showInfo ? t('perfil.hideInfo') : t('perfil.viewInfo')}</button>
+          <div className="inline-flex rounded-xl border border-gray-200 overflow-hidden flex-shrink-0">
+            <button
+              onClick={() => setLanguage('es')}
+              className={`px-2.5 py-2 text-xs font-semibold border-0 cursor-pointer ${language === 'es' ? 'bg-ps-purple text-white' : 'bg-gray-50 text-gray-500'}`}
+            >ES</button>
+            <button
+              onClick={() => setLanguage('en')}
+              className={`px-2.5 py-2 text-xs font-semibold border-0 cursor-pointer ${language === 'en' ? 'bg-ps-purple text-white' : 'bg-gray-50 text-gray-500'}`}
+            >EN</button>
+          </div>
+          <button onClick={onSignOut} className="py-2 px-3 rounded-xl text-xs font-semibold border border-gray-200 bg-gray-50 cursor-pointer text-gray-500">{t('perfil.exit')}</button>
         </div>
 
         {showInfo && (
           <div className="mx-4 mb-3 rounded-2xl border border-gray-100 overflow-hidden">
             {[
-              [User, 'Nombre', profile.pet_name],
-              [Calendar, 'Edad', `${profile.age} años`],
-              ['🐾', 'Raza', profile.breed],
-              ['🐕', 'Especie', profile.species],
-              [Maximize2, 'Tamaño', profile.size],
-              [Zap, 'Energía', profile.energy],
-              [Users, 'Se lleva con', profile.good_with],
-              [MapPin, 'Ubicación', profile.location],
+              [User, t('perfil.name'), profile.pet_name],
+              [Calendar, t('perfil.age'), t('perfil.ageValue', { age: profile.age })],
+              ['🐾', t('perfil.breed'), profile.breed],
+              ['🐕', t('perfil.species2'), profile.species],
+              [Maximize2, t('perfil.size2'), profile.size],
+              [Zap, t('perfil.energy'), profile.energy],
+              [Users, t('perfil.getsAlongWith'), profile.good_with],
+              [MapPin, t('perfil.location'), profile.location],
             ].map(([Icon, label, value]) => (
               <div key={label} className="flex justify-between items-center px-4 py-2.5 border-b border-gray-100 last:border-0 text-sm bg-white">
                 <span className="text-gray-400 flex items-center gap-2">
@@ -371,14 +384,14 @@ export default function Perfil({ onSignOut }) {
         {/* Fotos de match */}
         <div className="px-4 pb-3">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-900">Fotos de match ({petPhotos.length}/5)</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{t('perfil.matchPhotos', { count: petPhotos.length })}</h3>
             {petPhotos.length < 5 && (
               <button
                 onClick={() => petPhotoRef.current?.click()}
                 className="text-xs font-semibold border-0 cursor-pointer px-3 py-1.5 rounded-full"
                 style={{ background: '#EDE9FE', color: '#7C3AED' }}
               >
-                {uploadingPetPhoto ? 'Subiendo...' : '+ Agregar'}
+                {uploadingPetPhoto ? t('perfil.uploading') : t('perfil.addPhoto')}
               </button>
             )}
             <input ref={petPhotoRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadPetPhoto(e.target.files[0])} />
@@ -386,7 +399,7 @@ export default function Perfil({ onSignOut }) {
           {petPhotos.length === 0 ? (
             <div onClick={() => petPhotoRef.current?.click()} className="flex flex-col items-center justify-center gap-2 rounded-2xl cursor-pointer border-2 border-dashed border-gray-200 py-6">
               <span className="text-3xl">📸</span>
-              <p className="text-xs text-gray-400 text-center">Agrega hasta 5 fotos para tu perfil de match</p>
+              <p className="text-xs text-gray-400 text-center">{t('perfil.addUpToPhotos')}</p>
             </div>
           ) : (
             <div className="flex gap-2 overflow-x-auto pb-1">
@@ -433,7 +446,7 @@ export default function Perfil({ onSignOut }) {
           myPosts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
               <span className="text-4xl">📸</span>
-              <p className="text-sm">Aún no has publicado nada</p>
+              <p className="text-sm">{t('perfil.noPostsYet')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-0.5">
@@ -455,7 +468,7 @@ export default function Perfil({ onSignOut }) {
           savedPosts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
               <Bookmark size={36} className="text-gray-200" />
-              <p className="text-sm">No tienes posts guardados</p>
+              <p className="text-sm">{t('perfil.noSavedPosts')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-0.5">

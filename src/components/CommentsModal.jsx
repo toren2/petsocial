@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef } from 'react'
 import { X, Send, Heart } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import { useLanguage } from '../LanguageContext'
 import { notifyComment } from '../notifications'
 
 export default function CommentsModal({ post, onClose, onViewProfile }) {
   const { user } = useAuth()
+  const { t, language } = useLanguage()
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
   const [input, setInput] = useState('')
@@ -100,7 +102,7 @@ export default function CommentsModal({ post, onClose, onViewProfile }) {
   }
 
   async function deleteComment(commentId) {
-    if (!window.confirm('¿Eliminar este comentario?')) return
+    if (!window.confirm(t('comments.deleteCommentConfirm'))) return
     await supabase.from('post_comments').delete().eq('id', commentId)
     setComments(prev => prev.filter(c => c.id !== commentId && c.parent_id !== commentId))
   }
@@ -134,14 +136,14 @@ export default function CommentsModal({ post, onClose, onViewProfile }) {
           </div>
           <div className="flex items-center gap-3 mt-1">
             <span className="text-xs text-gray-400">
-              {new Date(c.created_at).toLocaleDateString('es', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              {new Date(c.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
             </span>
             {!isReply && (
               <button
                 onClick={() => setReplyingTo(replyingTo?.id === c.id ? null : c)}
                 className="text-xs font-semibold text-gray-400 border-0 bg-transparent cursor-pointer"
               >
-                Responder
+                {t('comments.reply')}
               </button>
             )}
             {c.user_id === user.id && (
@@ -149,7 +151,7 @@ export default function CommentsModal({ post, onClose, onViewProfile }) {
                 onClick={() => deleteComment(c.id)}
                 className="text-xs font-semibold text-red-400 border-0 bg-transparent cursor-pointer"
               >
-                Eliminar
+                {t('common.delete')}
               </button>
             )}
           </div>
@@ -178,7 +180,7 @@ export default function CommentsModal({ post, onClose, onViewProfile }) {
     <div className="absolute inset-0 bg-black/50 z-50 flex flex-col justify-end">
       <div className="bg-white rounded-t-3xl flex flex-col" style={{ maxHeight: '80%' }}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
-          <h3 className="font-bold text-gray-900 text-lg">Comentarios</h3>
+          <h3 className="font-bold text-gray-900 text-lg">{t('comments.title')}</h3>
           <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-gray-400">
             <X size={22} />
           </button>
@@ -202,12 +204,12 @@ export default function CommentsModal({ post, onClose, onViewProfile }) {
 
         <div className="flex-1 overflow-y-auto px-5 py-3">
           {loading ? (
-            <div className="text-center text-sm text-gray-400 py-4">Cargando...</div>
+            <div className="text-center text-sm text-gray-400 py-4">{t('common.loading')}</div>
           ) : topComments.length === 0 ? (
             <div className="text-center text-sm text-gray-400 py-8">
               <p className="text-2xl mb-2">💬</p>
-              <p>Sin comentarios todavía</p>
-              <p className="text-xs mt-1">¡Sé el primero en comentar!</p>
+              <p>{t('comments.noCommentsYet')}</p>
+              <p className="text-xs mt-1">{t('comments.beFirstComment')}</p>
             </div>
           ) : (
             topComments.map(c => <CommentItem key={c.id} c={c} />)
@@ -218,7 +220,7 @@ export default function CommentsModal({ post, onClose, onViewProfile }) {
         {replyingTo && (
           <div className="px-5 py-2 bg-ps-bg border-t border-gray-100 flex items-center justify-between flex-shrink-0">
             <span className="text-xs text-gray-500">
-              Respondiendo a <span className="font-semibold text-ps-purple">{replyingTo.pet_name}</span>
+              {t('comments.replyingToPrefix')} <span className="font-semibold text-ps-purple">{replyingTo.pet_name}</span>
             </span>
             <button onClick={() => setReplyingTo(null)} className="border-0 bg-transparent cursor-pointer text-gray-400">
               <X size={14} />
@@ -237,7 +239,7 @@ export default function CommentsModal({ post, onClose, onViewProfile }) {
           <input
             ref={inputRef}
             className="flex-1 border border-gray-200 rounded-full px-4 py-2 text-sm outline-none bg-ps-bg"
-            placeholder={replyingTo ? `Responder a ${replyingTo.pet_name}...` : 'Agrega un comentario...'}
+            placeholder={replyingTo ? t('comments.replyToPlaceholder', { name: replyingTo.pet_name }) : t('comments.addCommentPlaceholder')}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && sendComment()}

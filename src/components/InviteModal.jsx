@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { X, Send, Check } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import { useLanguage } from '../LanguageContext'
 import { notifyEventInvite } from '../notifications.js'
 
 export default function InviteModal({ event, onClose }) {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState({})
@@ -49,7 +51,7 @@ export default function InviteModal({ event, onClose }) {
     .select('pet_name')
     .eq('id', user.id)
     .single()
-  await notifyEventInvite(receiverId, myProfile?.pet_name || 'Una mascota', event.title)
+  await notifyEventInvite(receiverId, myProfile?.pet_name || t('inviteModal.somePet'), event.title)
 }
   }
 
@@ -58,7 +60,7 @@ export default function InviteModal({ event, onClose }) {
       <div className="bg-white rounded-t-3xl flex flex-col max-h-[70%]">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
-            <h3 className="font-bold text-gray-900 text-lg">Invitar amigos</h3>
+            <h3 className="font-bold text-gray-900 text-lg">{t('inviteModal.title')}</h3>
             <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[240px]">{event.title}</p>
           </div>
           <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-gray-400">
@@ -69,12 +71,12 @@ export default function InviteModal({ event, onClose }) {
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
-              Cargando matches...
+              {t('inviteModal.loadingMatches')}
             </div>
           ) : matches.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 gap-2 text-gray-400">
               <span className="text-3xl">🐾</span>
-              <p className="text-sm">Aún no tienes matches para invitar</p>
+              <p className="text-sm">{t('inviteModal.noMatchesYet')}</p>
             </div>
           ) : (
             matches.map(match => (
@@ -96,11 +98,11 @@ export default function InviteModal({ event, onClose }) {
                   }}
                 >
                   {sent[match.id] ? (
-                    <><Check size={13} /> Enviado</>
+                    <><Check size={13} /> {t('inviteModal.sent')}</>
                   ) : sending[match.id] ? (
-                    'Enviando...'
+                    t('inviteModal.sending')
                   ) : (
-                    <><Send size={13} /> Invitar</>
+                    <><Send size={13} /> {t('inviteModal.invite')}</>
                   )}
                 </button>
               </div>
@@ -110,7 +112,7 @@ export default function InviteModal({ event, onClose }) {
 
         <div className="px-5 py-4 border-t border-gray-100">
           <button onClick={onClose} className="w-full py-3 rounded-full text-sm text-gray-400 border border-gray-200 bg-white cursor-pointer">
-            Cerrar
+            {t('inviteModal.close')}
           </button>
         </div>
       </div>

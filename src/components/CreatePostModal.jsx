@@ -2,9 +2,11 @@ import React, { useState, useRef } from 'react'
 import { X, Image, Send, Video } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import { useLanguage } from '../LanguageContext'
 
 export default function CreatePostModal({ profile, onClose, onCreate }) {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [caption, setCaption] = useState('')
   const [mediaFile, setMediaFile] = useState(null)
   const [mediaPreview, setMediaPreview] = useState(null)
@@ -73,7 +75,7 @@ export default function CreatePostModal({ profile, onClose, onCreate }) {
     <div className="absolute inset-0 bg-black/50 z-50 flex flex-col justify-end">
       <div className="bg-white rounded-t-3xl flex flex-col max-h-[90%]">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h3 className="font-bold text-gray-900 text-lg">Nuevo post</h3>
+          <h3 className="font-bold text-gray-900 text-lg">{t('createPost.newPost')}</h3>
           <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-gray-400">
             <X size={22} />
           </button>
@@ -101,14 +103,14 @@ export default function CreatePostModal({ profile, onClose, onCreate }) {
                 className="flex-1 border-2 border-dashed border-gray-200 rounded-2xl py-8 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
               >
                 <Image size={28} className="text-gray-300" />
-                <span className="text-xs text-gray-400">Foto</span>
+                <span className="text-xs text-gray-400">{t('createPost.photo')}</span>
               </button>
               <button
                 onClick={() => { fileInputRef.current.accept = 'video/*'; fileInputRef.current?.click() }}
                 className="flex-1 border-2 border-dashed border-gray-200 rounded-2xl py-8 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
               >
                 <Video size={28} className="text-gray-300" />
-                <span className="text-xs text-gray-400">Video</span>
+                <span className="text-xs text-gray-400">{t('createPost.video')}</span>
               </button>
             </div>
           )}
@@ -137,7 +139,7 @@ export default function CreatePostModal({ profile, onClose, onCreate }) {
 
           <textarea
             className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none bg-ps-bg resize-none"
-            placeholder="¿Qué está haciendo tu mascota? 🐾"
+            placeholder={t('createPost.captionPlaceholder')}
             rows={4}
             value={caption}
             onChange={e => setCaption(e.target.value)}
@@ -152,7 +154,7 @@ export default function CreatePostModal({ profile, onClose, onCreate }) {
             style={{ background: loading || (!caption.trim() && !mediaFile) ? '#C4B5FD' : '#7C3AED' }}
           >
             <Send size={16} />
-            {loading ? 'Publicando...' : 'Publicar'}
+            {loading ? t('createPost.publishing') : t('createPost.publish')}
           </button>
         </div>
       </div>

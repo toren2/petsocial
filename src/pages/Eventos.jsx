@@ -2,22 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Plus, MapPin, Clock, Users, X, Trash2, ArrowLeft } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import { useLanguage } from '../LanguageContext'
 import InviteModal from '../components/InviteModal'
-
-const types = [
-  { id: 'all',        label: 'Todos',      emoji: '📅' },
-  { id: 'paseo',      label: 'Paseos',     emoji: '🦮' },
-  { id: 'meetup',     label: 'Meetups',    emoji: '🐾' },
-  { id: 'feria',      label: 'Ferias',     emoji: '❤️' },
-  { id: 'cumpleanos', label: 'Cumpleaños', emoji: '🎂' },
-]
-
-const typeColors = {
-  paseo:      { bg: '#E0F7F4', color: '#0F9B8E', label: 'Paseo' },
-  meetup:     { bg: '#EDE9FE', color: '#7C3AED', label: 'Meetup' },
-  feria:      { bg: '#FCE7F3', color: '#EC4899', label: 'Feria' },
-  cumpleanos: { bg: '#FEF9C3', color: '#CA8A04', label: 'Cumpleaños' },
-}
 
 function isPast(dateStr) {
   if (!dateStr) return false
@@ -27,7 +13,28 @@ function isPast(dateStr) {
   return eventDate < today
 }
 
+function getTypes(t) {
+  return [
+    { id: 'all',        label: t('eventos.typeAll'),        emoji: '📅' },
+    { id: 'paseo',      label: t('eventos.typePaseo'),      emoji: '🦮' },
+    { id: 'meetup',     label: t('eventos.typeMeetup'),     emoji: '🐾' },
+    { id: 'feria',      label: t('eventos.typeFeria'),      emoji: '❤️' },
+    { id: 'cumpleanos', label: t('eventos.typeCumpleanos'), emoji: '🎂' },
+  ]
+}
+
+function getTypeColors(t) {
+  return {
+    paseo:      { bg: '#E0F7F4', color: '#0F9B8E', label: t('eventos.tcPaseo') },
+    meetup:     { bg: '#EDE9FE', color: '#7C3AED', label: t('eventos.tcMeetup') },
+    feria:      { bg: '#FCE7F3', color: '#EC4899', label: t('eventos.tcFeria') },
+    cumpleanos: { bg: '#FEF9C3', color: '#CA8A04', label: t('eventos.tcCumpleanos') },
+  }
+}
+
 function EventDetailModal({ event, onClose, onToggle, onInvite, onDelete, currentUserId }) {
+  const { t } = useLanguage()
+  const typeColors = getTypeColors(t)
   const tc = typeColors[event.type] || { bg: '#EDE9FE', color: '#7C3AED', label: event.type }
   const maxAttendees = event.max_attendees || 10
   const pct = Math.round((event.attendees / maxAttendees) * 100)
@@ -43,7 +50,7 @@ function EventDetailModal({ event, onClose, onToggle, onInvite, onDelete, curren
         </button>
         {past && (
           <span className="absolute top-4 right-4 text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-800/70 text-white">
-            Finalizado
+            {t('eventos.finished')}
           </span>
         )}
         {event.user_id === currentUserId && (
@@ -76,7 +83,7 @@ function EventDetailModal({ event, onClose, onToggle, onInvite, onDelete, curren
               )}
             </div>
             <div>
-              <p className="text-xs text-gray-400">Organizado por</p>
+              <p className="text-xs text-gray-400">{t('eventos.organizedBy')}</p>
               <p className="text-sm font-semibold text-gray-900">{event.profiles.pet_name}</p>
             </div>
           </div>
@@ -99,14 +106,14 @@ function EventDetailModal({ event, onClose, onToggle, onInvite, onDelete, curren
           </div>
           <div className="flex items-center gap-3 text-sm text-gray-600">
             <Users size={16} className="text-ps-purple flex-shrink-0" />
-            <span>{event.attendees} / {maxAttendees} asistentes</span>
+            <span>{t('eventos.attendeesCount', { count: event.attendees, max: maxAttendees })}</span>
           </div>
         </div>
 
         {/* Barra de progreso */}
         <div>
           <div className="flex justify-between text-xs text-gray-400 mb-1.5">
-            <span>Asistentes</span>
+            <span>{t('eventos.attendeesHeader')}</span>
             <span>{pct}%</span>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-2">
@@ -122,7 +129,7 @@ function EventDetailModal({ event, onClose, onToggle, onInvite, onDelete, curren
               className="w-full py-3 rounded-full text-sm font-semibold border-0 cursor-pointer"
               style={{ background: '#EDE9FE', color: '#7C3AED' }}
             >
-              🐾 Invitar amigos
+              {t('eventos.inviteFriends')}
             </button>
             <button
               onClick={() => onToggle(event.id)}
@@ -132,7 +139,7 @@ function EventDetailModal({ event, onClose, onToggle, onInvite, onDelete, curren
                 color: event.joined ? '#6B7280' : 'white',
               }}
             >
-              {event.joined ? '✓ Apuntado' : 'Me apunto'}
+              {event.joined ? t('eventos.joined') : t('eventos.joinEvent')}
             </button>
           </div>
         )}
@@ -142,6 +149,8 @@ function EventDetailModal({ event, onClose, onToggle, onInvite, onDelete, curren
 }
 
 function EventCard({ event, onSelect }) {
+  const { t } = useLanguage()
+  const typeColors = getTypeColors(t)
   const tc = typeColors[event.type] || { bg: '#EDE9FE', color: '#7C3AED', label: event.type }
   const maxAttendees = event.max_attendees || 10
   const past = isPast(event.date)
@@ -156,7 +165,7 @@ function EventCard({ event, onSelect }) {
         {event.emoji}
         {past && (
           <span className="absolute top-2 right-2 text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-800/70 text-white">
-            Finalizado
+            {t('eventos.finished')}
           </span>
         )}
       </div>
@@ -168,7 +177,7 @@ function EventCard({ event, onSelect }) {
           </span>
         </div>
         {event.profiles && (
-          <p className="text-xs text-gray-400 mb-2">por {event.profiles.pet_name}</p>
+          <p className="text-xs text-gray-400 mb-2">{t('eventos.by', { name: event.profiles.pet_name })}</p>
         )}
         <div className="flex flex-col gap-1 text-xs text-gray-400">
           <div className="flex items-center gap-1.5">
@@ -181,7 +190,7 @@ function EventCard({ event, onSelect }) {
           </div>
           <div className="flex items-center gap-1.5">
             <Users size={11} className="text-ps-purple" />
-            <span>{event.attendees} / {maxAttendees} asistentes</span>
+            <span>{t('eventos.attendeesCount', { count: event.attendees, max: maxAttendees })}</span>
           </div>
         </div>
       </div>
@@ -190,6 +199,9 @@ function EventCard({ event, onSelect }) {
 }
 
 function CreateEventModal({ onClose, onCreate }) {
+  const { t } = useLanguage()
+  const types = getTypes(t)
+  const typeColors = getTypeColors(t)
   const [form, setForm] = useState({
     title: '', type: 'paseo', date: '', time: '',
     location: '', maxAttendees: 10, description: '',
@@ -201,7 +213,7 @@ function CreateEventModal({ onClose, onCreate }) {
     if (!form.title || !form.date || !form.location) return
     onCreate({
       ...form,
-      emoji: types.find(t => t.id === form.type)?.emoji || '📅',
+      emoji: types.find(ty => ty.id === form.type)?.emoji || '📅',
       bg: typeColors[form.type]?.bg || '#EDE9FE',
     })
     onClose()
@@ -211,54 +223,54 @@ function CreateEventModal({ onClose, onCreate }) {
     <div className="absolute inset-0 bg-black/50 z-50 flex flex-col justify-end">
       <div className="bg-white rounded-t-3xl flex flex-col max-h-[90%]">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h3 className="font-bold text-gray-900 text-lg">Crear evento</h3>
+          <h3 className="font-bold text-gray-900 text-lg">{t('eventos.createEventTitle')}</h3>
           <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-gray-400">
             <X size={22} />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Nombre del evento</label>
-            <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg" placeholder="ej. Paseo grupal Parque Omar" value={form.title} onChange={e => handle('title', e.target.value)} />
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('eventos.eventName')}</label>
+            <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg" placeholder={t('eventos.eventNamePlaceholder')} value={form.title} onChange={e => handle('title', e.target.value)} />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Tipo de evento</label>
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('eventos.eventType')}</label>
             <div className="flex gap-2 flex-wrap">
-              {types.filter(t => t.id !== 'all').map(t => (
-                <button key={t.id} onClick={() => handle('type', t.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border-0 cursor-pointer"
-                  style={{ background: form.type === t.id ? '#7C3AED' : '#EDE9FE', color: form.type === t.id ? 'white' : '#7C3AED' }}>
-                  {t.emoji} {t.label}
+              {types.filter(ty => ty.id !== 'all').map(ty => (
+                <button key={ty.id} onClick={() => handle('type', ty.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border-0 cursor-pointer"
+                  style={{ background: form.type === ty.id ? '#7C3AED' : '#EDE9FE', color: form.type === ty.id ? 'white' : '#7C3AED' }}>
+                  {ty.emoji} {ty.label}
                 </button>
               ))}
             </div>
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Fecha</label>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('eventos.date')}</label>
               <input type="date" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none bg-ps-bg" value={form.date} onChange={e => handle('date', e.target.value)} />
             </div>
             <div className="flex-1">
-              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Hora</label>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('eventos.time')}</label>
               <input type="time" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none bg-ps-bg" value={form.time} onChange={e => handle('time', e.target.value)} />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Ubicación</label>
-            <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg" placeholder="ej. Parque Omar, San Francisco" value={form.location} onChange={e => handle('location', e.target.value)} />
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('eventos.location')}</label>
+            <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg" placeholder={t('eventos.locationPlaceholder')} value={form.location} onChange={e => handle('location', e.target.value)} />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Máx. asistentes: {form.maxAttendees}</label>
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('eventos.maxAttendees', { count: form.maxAttendees })}</label>
             <input type="range" min="2" max="100" value={form.maxAttendees} onChange={e => handle('maxAttendees', parseInt(e.target.value))} className="w-full accent-ps-purple" />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Descripción</label>
-            <textarea className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg resize-none" placeholder="Cuéntale a la comunidad de qué se trata..." rows={3} value={form.description} onChange={e => handle('description', e.target.value)} />
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('eventos.description')}</label>
+            <textarea className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg resize-none" placeholder={t('eventos.descriptionPlaceholder')} rows={3} value={form.description} onChange={e => handle('description', e.target.value)} />
           </div>
         </div>
         <div className="px-5 py-4 border-t border-gray-100">
           <button onClick={submit} className="w-full py-3.5 rounded-full font-semibold text-white text-base border-0 cursor-pointer"
             style={{ background: form.title && form.date && form.location ? '#7C3AED' : '#C4B5FD' }}>
-            Crear evento
+            {t('eventos.createEventBtn')}
           </button>
         </div>
       </div>
@@ -268,6 +280,8 @@ function CreateEventModal({ onClose, onCreate }) {
 
 export default function Eventos() {
   const { user } = useAuth()
+  const { t } = useLanguage()
+  const types = getTypes(t)
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeType, setActiveType] = useState('all')
@@ -303,7 +317,7 @@ export default function Eventos() {
   }
 
   async function deleteEvent(id) {
-    if (!window.confirm('¿Eliminar este evento?')) return
+    if (!window.confirm(t('eventos.deleteEventConfirm'))) return
     await supabase.from('events').delete().eq('id', id)
     setEvents(prev => prev.filter(e => e.id !== id))
     setSelectedEvent(null)
@@ -327,25 +341,25 @@ export default function Eventos() {
   if (loading) return (
     <div className="flex flex-col flex-1 items-center justify-center gap-3 text-gray-400">
       <span className="text-4xl">🐾</span>
-      <p className="text-sm">Cargando eventos...</p>
+      <p className="text-sm">{t('eventos.loadingEvents')}</p>
     </div>
   )
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
-        <h2 className="text-xl font-bold text-gray-900">Eventos</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t('eventos.title')}</h2>
         <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 bg-ps-purple text-white text-xs font-semibold px-3.5 py-2 rounded-full border-0 cursor-pointer">
-          <Plus size={14} /> Crear
+          <Plus size={14} /> {t('eventos.create')}
         </button>
       </div>
       <div className="flex gap-2 px-4 py-2.5 bg-white border-b border-gray-100 overflow-x-auto flex-shrink-0">
-        {types.map(t => (
-          <button key={t.id} onClick={() => setActiveType(t.id)}
+        {types.map(ty => (
+          <button key={ty.id} onClick={() => setActiveType(ty.id)}
             className="flex items-center gap-1.5 text-xs font-medium px-3.5 py-1.5 rounded-full border-0 cursor-pointer whitespace-nowrap flex-shrink-0"
-            style={{ background: activeType === t.id ? '#7C3AED' : '#EDE9FE', color: activeType === t.id ? 'white' : '#7C3AED' }}
+            style={{ background: activeType === ty.id ? '#7C3AED' : '#EDE9FE', color: activeType === ty.id ? 'white' : '#7C3AED' }}
           >
-            {t.emoji} {t.label}
+            {ty.emoji} {ty.label}
           </button>
         ))}
       </div>
@@ -353,14 +367,14 @@ export default function Eventos() {
         {upcoming.length === 0 && past.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
             <span className="text-4xl">📅</span>
-            <p className="text-sm">No hay eventos todavía — ¡crea el primero!</p>
+            <p className="text-sm">{t('eventos.noEventsYet')}</p>
           </div>
         ) : (
           <>
             {upcoming.length > 0 && (
               <>
                 <div className="px-4 py-2">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Próximos</span>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('eventos.upcoming')}</span>
                 </div>
                 {upcoming.map(e => <EventCard key={e.id} event={e} onSelect={setSelectedEvent} />)}
               </>
@@ -368,7 +382,7 @@ export default function Eventos() {
             {past.length > 0 && (
               <>
                 <div className="px-4 py-2 mt-2">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Finalizados</span>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('eventos.finishedSection')}</span>
                 </div>
                 {past.map(e => <EventCard key={e.id} event={e} onSelect={setSelectedEvent} />)}
               </>

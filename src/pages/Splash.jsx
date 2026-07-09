@@ -1,7 +1,9 @@
 import React from 'react'
 import { Heart, MapPin, Users, Tag } from 'lucide-react'
+import { useLanguage } from '../LanguageContext'
 
 export default function Splash({ onEnter }) {
+  const { t } = useLanguage()
   return (
     <div
       className="flex flex-col items-center justify-center gap-6 px-8 flex-1"
@@ -20,7 +22,7 @@ export default function Splash({ onEnter }) {
     }} 
   />
 </div>
-<p className="text-white/80 text-sm mt-2">La red social de mascotas</p>
+<p className="text-white/80 text-sm mt-2">{t('splash.tagline')}</p>
 
       <div className="flex flex-col gap-3 w-full">
         <button
@@ -28,19 +30,19 @@ export default function Splash({ onEnter }) {
           className="w-full py-3.5 rounded-full font-semibold text-base border-0 cursor-pointer"
           style={{ background: 'white', color: '#7C3AED' }}
         >
-          Crear cuenta
+          {t('splash.createAccount')}
         </button>
         <button onClick={onEnter} className="btn-outline-white">
-          Iniciar sesión
+          {t('splash.signIn')}
         </button>
       </div>
 
       <div className="flex gap-6 mt-2">
         {[
-          [Heart, 'Match'],
-          [MapPin, 'Lugares'],
-          [Users, 'Comunidad'],
-          [Tag, 'Descuentos'],
+          [Heart, t('splash.featureMatch')],
+          [MapPin, t('splash.featurePlaces')],
+          [Users, t('splash.featureCommunity')],
+          [Tag, t('splash.featureDeals')],
         ].map(([Icon, label]) => (
           <div key={label} className="flex flex-col items-center gap-1 text-white/75 text-[10px]">
             <Icon size={20} strokeWidth={1.8} className="text-white/90" />
@@ -49,7 +51,7 @@ export default function Splash({ onEnter }) {
         ))}
       </div>
 
-      <p className="text-white/60 text-xs">¿Eres nuevo? Únete a la manada 🐶</p>
+      <p className="text-white/60 text-xs">{t('splash.newHere')}</p>
     </div>
   )
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { ArrowLeft, MapPin, Clock, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, X } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import { useLanguage } from '../LanguageContext'
 
 const catIcons  = { vet: Stethoscope, groom: Scissors, park: Trees, shop: ShoppingBag, hotel: Building2 }
 const catColors = {
@@ -30,6 +31,7 @@ function Stars({ rating, size = 14, interactive = false, onRate }) {
 }
 
 function ReviewModal({ place, onClose, onSubmit }) {
+  const { t } = useLanguage()
   const [rating, setRating] = useState(0)
   const [text, setText] = useState('')
   const [saving, setSaving] = useState(false)
@@ -46,21 +48,21 @@ function ReviewModal({ place, onClose, onSubmit }) {
     <div className="absolute inset-0 bg-black/50 z-50 flex flex-col justify-end">
       <div className="bg-white rounded-t-3xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h3 className="font-bold text-gray-900 text-lg">Dejar review</h3>
+          <h3 className="font-bold text-gray-900 text-lg">{t('lugarDetalle.leaveReview')}</h3>
           <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-gray-400">
             <X size={22} />
           </button>
         </div>
         <div className="px-5 py-4 flex flex-col gap-4">
           <div>
-            <p className="text-sm text-gray-500 mb-2">¿Cómo calificarías {place.name}?</p>
+            <p className="text-sm text-gray-500 mb-2">{t('lugarDetalle.howWouldYouRate', { name: place.name })}</p>
             <Stars rating={rating} size={32} interactive onRate={setRating} />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Tu experiencia</label>
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('lugarDetalle.yourExperience')}</label>
             <textarea
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg resize-none"
-              placeholder="Cuéntale a la comunidad tu experiencia..."
+              placeholder={t('lugarDetalle.experiencePlaceholder')}
               rows={4}
               value={text}
               onChange={e => setText(e.target.value)}
@@ -72,7 +74,7 @@ function ReviewModal({ place, onClose, onSubmit }) {
             className="w-full py-3.5 rounded-full font-semibold text-white text-base border-0 cursor-pointer"
             style={{ background: rating && text.trim() && !saving ? '#7C3AED' : '#C4B5FD' }}
           >
-            {saving ? 'Publicando...' : 'Publicar review'}
+            {saving ? t('lugarDetalle.publishing') : t('lugarDetalle.publishReview')}
           </button>
         </div>
       </div>
@@ -82,6 +84,7 @@ function ReviewModal({ place, onClose, onSubmit }) {
 
 export default function LugarDetalle({ place, onBack }) {
   const { user } = useAuth()
+  const { t, language } = useLanguage()
   const CatIcon = catIcons[place.category] || MapPin
   const { bg, color } = catColors[place.category] || { bg: '#EDE9FE', color: '#7C3AED' }
   const [reviews, setReviews] = useState([])
@@ -160,7 +163,7 @@ export default function LugarDetalle({ place, onBack }) {
                 <Star size={14} fill="#F59E0B" color="#F59E0B" />
                 <span className="font-bold text-gray-900">{avgRating}</span>
               </div>
-              <span className="text-xs text-gray-400">({reviews.length} reviews)</span>
+              <span className="text-xs text-gray-400">{t('lugarDetalle.reviewsParen', { count: reviews.length })}</span>
             </div>
           </div>
           <div className="flex flex-col gap-2 mt-3">
@@ -175,7 +178,7 @@ export default function LugarDetalle({ place, onBack }) {
     onClick={() => window.open(mapsUrl, '_blank')}
     style={{ color: '#7C3AED', fontWeight: 500, fontSize: 14, border: 0, background: 'transparent', cursor: 'pointer', padding: 0 }}
   >
-    Ver en Google Maps
+    {t('lugarDetalle.viewOnGoogleMaps')}
   </button>
 ) : (
   <span style={{ color: place.open ? '#16A34A' : '#DC2626' }}>{place.hours}</span>
@@ -186,13 +189,13 @@ export default function LugarDetalle({ place, onBack }) {
 
         <div className="bg-white mx-4 mt-3 rounded-2xl p-4 border border-gray-100">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="font-semibold text-gray-900">Reviews</h4>
+            <h4 className="font-semibold text-gray-900">{t('lugarDetalle.reviewsTitle')}</h4>
             <button
               onClick={() => setShowModal(true)}
               className="text-xs font-semibold px-3.5 py-1.5 rounded-full border-0 cursor-pointer"
               style={{ background: '#EDE9FE', color: '#7C3AED' }}
             >
-              + Escribir review
+              {t('lugarDetalle.writeReview')}
             </button>
           </div>
 
@@ -200,7 +203,7 @@ export default function LugarDetalle({ place, onBack }) {
             <div className="text-center">
               <div className="text-4xl font-bold text-gray-900">{avgRating}</div>
               <Stars rating={Math.round(avgRating)} size={14} />
-              <div className="text-xs text-gray-400 mt-1">{reviews.length} reseñas</div>
+              <div className="text-xs text-gray-400 mt-1">{t('lugarDetalle.reviewsCount', { count: reviews.length })}</div>
             </div>
             <div className="flex-1 flex flex-col gap-1">
               {[5,4,3,2,1].map(star => {
@@ -221,10 +224,10 @@ export default function LugarDetalle({ place, onBack }) {
           </div>
 
           {loading ? (
-            <div className="text-center text-sm text-gray-400 py-4">Cargando reviews...</div>
+            <div className="text-center text-sm text-gray-400 py-4">{t('lugarDetalle.loadingReviews')}</div>
           ) : reviews.length === 0 ? (
             <div className="text-center text-sm text-gray-400 py-4">
-              Se el primero en dejar una review 🐾
+              {t('lugarDetalle.beFirstReview')}
             </div>
           ) : (
             <div className="flex flex-col gap-4">
@@ -237,7 +240,7 @@ export default function LugarDetalle({ place, onBack }) {
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-semibold text-sm text-gray-900">{review.user_name}</span>
                       <span className="text-xs text-gray-400">
-                        {new Date(review.created_at).toLocaleDateString('es', { day: 'numeric', month: 'short' })}
+                        {new Date(review.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short' })}
                       </span>
                     </div>
                     <Stars rating={review.rating} size={12} />
@@ -255,7 +258,7 @@ export default function LugarDetalle({ place, onBack }) {
             className="w-full py-3.5 rounded-full font-semibold text-white text-base border-0 cursor-pointer"
             style={{ background: '#7C3AED' }}
           >
-            Dejar mi review
+            {t('lugarDetalle.leaveMyReview')}
           </button>
         </div>
       </div>

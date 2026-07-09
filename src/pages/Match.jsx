@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { notifyMatch } from '../notifications'
 import VerifiedBadge from '../components/VerifiedBadge'
+import { useLanguage } from '../LanguageContext'
 
 const tagColors = {
   'Muy activo':   'bg-green-100 text-green-800',
@@ -22,11 +23,12 @@ const SIZES = ['Pequeño', 'Mediano', 'Grande']
 
 function PhotoCarousel({ photos, emoji, bg, online, location }) {
   const [index, setIndex] = useState(0)
+  const { t } = useLanguage()
 
   if (!photos.length) return (
     <div className="relative flex items-center justify-center overflow-hidden" style={{ height: 300, background: bg || '#EDE9FE', fontSize: 110 }}>
       <span>{emoji}</span>
-      {online && <span className="absolute top-3 left-3 bg-green-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full">● Activo</span>}
+      {online && <span className="absolute top-3 left-3 bg-green-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full">{t('match.active')}</span>}
       {location && <span className="absolute top-3 right-3 bg-black/40 text-white text-xs px-2.5 py-0.5 rounded-full">📍 {location}</span>}
     </div>
   )
@@ -43,7 +45,7 @@ function PhotoCarousel({ photos, emoji, bg, online, location }) {
         </div>
       )}
 
-      {online && <span className="absolute top-3 left-3 bg-green-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full z-10">● Activo</span>}
+      {online && <span className="absolute top-3 left-3 bg-green-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full z-10">{t('match.active')}</span>}
       {location && <span className="absolute top-3 right-3 bg-black/40 text-white text-xs px-2.5 py-0.5 rounded-full z-10">📍 {location}</span>}
 
       {index > 0 && (
@@ -58,6 +60,7 @@ function PhotoCarousel({ photos, emoji, bg, online, location }) {
 
 function FilterPanel({ filters, onApply, onClose, availableBreeds, availableLocations }) {
   const [local, setLocal] = useState(filters)
+  const { t } = useLanguage()
 
   function update(k, v) { setLocal(f => ({ ...f, [k]: v })) }
 
@@ -70,7 +73,7 @@ function FilterPanel({ filters, onApply, onClose, availableBreeds, availableLoca
     <div className="absolute inset-0 bg-black/50 z-50 flex flex-col justify-end">
       <div className="bg-white rounded-t-3xl flex flex-col max-h-[85%]">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
-          <h3 className="font-bold text-gray-900 text-lg">Filtros</h3>
+          <h3 className="font-bold text-gray-900 text-lg">{t('match.filtersTitle')}</h3>
           <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-gray-400">
             <X size={22} />
           </button>
@@ -78,19 +81,19 @@ function FilterPanel({ filters, onApply, onClose, availableBreeds, availableLoca
 
         <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Raza</label>
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('match.breed')}</label>
             <select
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none bg-ps-bg"
               value={local.breed}
               onChange={e => update('breed', e.target.value)}
             >
-              <option value="">Cualquier raza</option>
+              <option value="">{t('match.anyBreed')}</option>
               {availableBreeds.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Tamaño</label>
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('match.size')}</label>
             <div className="flex gap-2">
               {SIZES.map(s => (
                 <button
@@ -107,7 +110,7 @@ function FilterPanel({ filters, onApply, onClose, availableBreeds, availableLoca
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Edad mín.</label>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('match.minAge')}</label>
               <input
                 type="number"
                 min="0"
@@ -119,7 +122,7 @@ function FilterPanel({ filters, onApply, onClose, availableBreeds, availableLoca
               />
             </div>
             <div className="flex-1">
-              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Edad máx.</label>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('match.maxAge')}</label>
               <input
                 type="number"
                 min="0"
@@ -133,13 +136,13 @@ function FilterPanel({ filters, onApply, onClose, availableBreeds, availableLoca
           </div>
 
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Zona</label>
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('match.zone')}</label>
             <select
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none bg-ps-bg"
               value={local.location}
               onChange={e => update('location', e.target.value)}
             >
-              <option value="">Cualquier zona</option>
+              <option value="">{t('match.anyZone')}</option>
               {availableLocations.map(l => <option key={l} value={l}>{l}</option>)}
             </select>
           </div>
@@ -150,14 +153,14 @@ function FilterPanel({ filters, onApply, onClose, availableBreeds, availableLoca
             onClick={clearAll}
             className="flex-1 py-3 rounded-full font-semibold border border-gray-200 bg-white cursor-pointer text-gray-600"
           >
-            Limpiar
+            {t('match.clear')}
           </button>
           <button
             onClick={() => onApply(local)}
             className="flex-1 py-3 rounded-full font-semibold text-white border-0 cursor-pointer"
             style={{ background: '#7C3AED' }}
           >
-            Aplicar
+            {t('match.apply')}
           </button>
         </div>
       </div>
@@ -167,6 +170,7 @@ function FilterPanel({ filters, onApply, onClose, availableBreeds, availableLoca
 
 export default function Match({ onMatch }) {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [allCandidates, setAllCandidates] = useState([])
   const [candidates, setCandidates] = useState([])
   const [index, setIndex] = useState(0)
@@ -304,7 +308,7 @@ export default function Match({ onMatch }) {
 
     if (dir === 'like' || dir === 'super') {
       if (likesUsed >= DAILY_LIKE_LIMIT) {
-        alert(`Alcanzaste el límite de ${DAILY_LIKE_LIMIT} likes por hoy. Vuelve mañana o actualiza a Premium.`)
+        alert(t('match.dailyLimitAlert', { limit: DAILY_LIKE_LIMIT }))
         return
       }
       setSwiping(dir)
@@ -344,17 +348,17 @@ export default function Match({ onMatch }) {
   if (loading) return (
     <div className="flex flex-col flex-1 items-center justify-center gap-3 text-gray-400">
       <span className="text-4xl">🐾</span>
-      <p className="text-sm">Buscando mascotas...</p>
+      <p className="text-sm">{t('match.searchingPets')}</p>
     </div>
   )
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
-        <h2 className="text-xl font-bold text-gray-900">Match</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t('match.title')}</h2>
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium px-3 py-1.5 rounded-full" style={{ background: '#EDE9FE', color: '#7C3AED' }}>
-            ❤️ {DAILY_LIKE_LIMIT - likesUsed} restantes
+            {t('match.likesRemaining', { count: DAILY_LIKE_LIMIT - likesUsed })}
           </span>
           <button onClick={() => setShowFilters(true)} className="border-0 bg-transparent cursor-pointer text-ps-purple relative">
             <SlidersHorizontal size={20} />
@@ -380,11 +384,13 @@ export default function Match({ onMatch }) {
                 {pet.name} {pet.sex === 'Macho' ? '♂' : '♀'} <VerifiedBadge verified={pet.verified} size={17} />
               </div>
               <div className="text-sm text-gray-500 mb-3">
-                {pet.age} {pet.age === 1 ? 'año' : 'años'} · {pet.breed}
+                {pet.age} {pet.age === 1 ? t('common.year') : t('common.years')} · {pet.breed}
               </div>
               <div className="flex flex-wrap gap-2">
-                {pet.tags.map(t => (
-                  <span key={t} className={`tag ${tagColors[t] || 'bg-gray-100 text-gray-700'}`}>{t}</span>
+                {pet.tags.map(tag => (
+                  <span key={tag} className={`tag ${tagColors[tag] || 'bg-gray-100 text-gray-700'}`}>
+                    {tag === 'Busca amigos' ? t('match.tagBusyFriends') : tag}
+                  </span>
                 ))}
               </div>
             </div>
@@ -393,15 +399,15 @@ export default function Match({ onMatch }) {
           <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-400">
             <span className="text-5xl">🐾</span>
             <p className="text-sm font-medium">
-              {activeFilterCount > 0 ? 'No hay mascotas con estos filtros' : 'No hay más mascotas por ahora'}
+              {activeFilterCount > 0 ? t('match.noPetsWithFilters') : t('match.noMorePets')}
             </p>
             {activeFilterCount > 0 ? (
               <button onClick={() => setFilters({ breed: '', size: '', minAge: '', maxAge: '', location: '' })} className="text-xs font-semibold px-4 py-2 rounded-full border-0 cursor-pointer mt-2" style={{ background: '#EDE9FE', color: '#7C3AED' }}>
-                Limpiar filtros
+                {t('match.clearFilters')}
               </button>
             ) : (
               <button onClick={fetchCandidates} className="text-xs font-semibold px-4 py-2 rounded-full border-0 cursor-pointer mt-2" style={{ background: '#EDE9FE', color: '#7C3AED' }}>
-                Buscar de nuevo
+                {t('match.searchAgain')}
               </button>
             )}
           </div>
@@ -424,8 +430,8 @@ export default function Match({ onMatch }) {
 
         {likesUsed >= DAILY_LIKE_LIMIT && (
           <div className="mx-2 p-4 rounded-2xl text-center" style={{ background: '#FEF3C7' }}>
-            <p className="text-sm font-semibold text-yellow-800">Límite diario alcanzado</p>
-            <p className="text-xs text-yellow-700 mt-1">Vuelve mañana o actualiza a Premium para likes ilimitados</p>
+            <p className="text-sm font-semibold text-yellow-800">{t('match.dailyLimitReached')}</p>
+            <p className="text-xs text-yellow-700 mt-1">{t('match.dailyLimitBody')}</p>
           </div>
         )}
       </div>

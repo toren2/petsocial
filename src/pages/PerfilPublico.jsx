@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { ArrowLeft, MapPin, Grid3x3, MessageCircle, X, Heart, ChevronLeft, ChevronRight, UserPlus, UserCheck } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
+import { useLanguage } from '../LanguageContext'
 import UserActionsMenu from '../components/UserActionsMenu'
 import VerifiedBadge from '../components/VerifiedBadge'
 
 function PhotoViewer({ posts, startIndex, onClose }) {
+  const { t } = useLanguage()
   const [index, setIndex] = useState(startIndex)
   const post = posts[index]
 
@@ -55,7 +57,7 @@ function PhotoViewer({ posts, startIndex, onClose }) {
           <div className="flex items-center gap-3 mt-2">
             <div className="flex items-center gap-1 text-white/70 text-xs">
               <Heart size={13} />
-              <span>{post.likes} me gusta</span>
+              <span>{post.likes} {t('perfil.likes')}</span>
             </div>
           </div>
         </div>
@@ -66,6 +68,7 @@ function PhotoViewer({ posts, startIndex, onClose }) {
 
 export default function PerfilPublico({ userId, onBack, onChat }) {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const scrollRef = React.useRef(null)
   const topRef = React.useRef(null)
   const [profile, setProfile] = useState(null)
@@ -171,14 +174,14 @@ useEffect(() => {
   if (loading) return (
     <div className="flex flex-col flex-1 items-center justify-center gap-3 text-gray-400">
       <span className="text-4xl">🐾</span>
-      <p className="text-sm">Cargando perfil...</p>
+      <p className="text-sm">{t('perfil.loadingProfile')}</p>
     </div>
   )
 
   if (!profile) return (
     <div className="flex flex-col flex-1 items-center justify-center gap-3 text-gray-400">
       <span className="text-4xl">🐾</span>
-      <p className="text-sm">Perfil no encontrado</p>
+      <p className="text-sm">{t('perfilPublico.profileNotFound')}</p>
     </div>
   )
 
@@ -197,7 +200,7 @@ useEffect(() => {
             className="flex items-center gap-1.5 border-0 cursor-pointer px-3 py-1.5 rounded-full text-xs font-semibold"
             style={{ background: '#EDE9FE', color: '#7C3AED' }}
           >
-            <MessageCircle size={14} /> Mensaje
+            <MessageCircle size={14} /> {t('perfilPublico.message')}
           </button>
         )}
         <UserActionsMenu
@@ -231,7 +234,7 @@ useEffect(() => {
             <div className="font-bold text-gray-900 text-lg flex items-center gap-1">
               {profile.pet_name} <VerifiedBadge verified={isVerified} size={16} />
             </div>
-            <div className="text-sm text-gray-500">{profile.breed} · {profile.age} años · {profile.sex}</div>
+            <div className="text-sm text-gray-500">{profile.breed} · {t('perfil.ageValue', { age: profile.age })} · {profile.sex}</div>
             {profile.location && (
               <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
                 <MapPin size={11} /> {profile.location}
@@ -240,15 +243,15 @@ useEffect(() => {
             <div className="flex gap-4 mt-2">
               <div className="text-center">
                 <div className="font-bold text-gray-900 text-sm">{posts.length}</div>
-                <div className="text-xs text-gray-400">Posts</div>
+                <div className="text-xs text-gray-400">{t('perfil.posts')}</div>
               </div>
               <div className="text-center">
                 <div className="font-bold text-gray-900 text-sm">{followerCount}</div>
-                <div className="text-xs text-gray-400">Seguidores</div>
+                <div className="text-xs text-gray-400">{t('perfilPublico.followers')}</div>
               </div>
               <div className="text-center">
                 <div className="font-bold text-gray-900 text-sm">{profile.size || '-'}</div>
-                <div className="text-xs text-gray-400">Tamaño</div>
+                <div className="text-xs text-gray-400">{t('perfil.size2')}</div>
               </div>
             </div>
           </div>
@@ -271,7 +274,7 @@ useEffect(() => {
             }}
           >
             {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
-            {isFollowing ? 'Siguiendo' : 'Seguir'}
+            {isFollowing ? t('perfilPublico.following') : t('perfilPublico.follow')}
           </button>
         </div>
 
@@ -280,19 +283,19 @@ useEffect(() => {
             onClick={() => setShowInfo(s => !s)}
             className="w-full py-2 rounded-xl text-xs font-medium border border-gray-200 bg-gray-50 cursor-pointer text-gray-600"
           >
-            {showInfo ? 'Ocultar información' : 'Ver información completa'}
+            {showInfo ? t('perfilPublico.hideInfo') : t('perfilPublico.viewFullInfo')}
           </button>
         </div>
 
         {showInfo && (
           <div className="mx-4 mb-3 rounded-2xl border border-gray-100 overflow-hidden">
             {[
-              ['🐾', 'Raza',        profile.breed],
-              ['🐕', 'Especie',     profile.species],
-              ['📏', 'Tamaño',      profile.size],
-              ['⚡', 'Energía',     profile.energy],
-              ['👥', 'Se lleva con',profile.good_with],
-              ['📍', 'Ubicación',   profile.location],
+              ['🐾', t('perfil.breed'),        profile.breed],
+              ['🐕', t('perfil.species2'),     profile.species],
+              ['📏', t('perfil.size2'),        profile.size],
+              ['⚡', t('perfil.energy'),       profile.energy],
+              ['👥', t('perfil.getsAlongWith'),profile.good_with],
+              ['📍', t('perfil.location'),     profile.location],
             ].filter(([, , v]) => v).map(([icon, label, value]) => (
               <div key={label} className="flex justify-between items-center px-4 py-2.5 border-b border-gray-100 last:border-0 text-sm bg-white">
                 <span className="text-gray-400 flex items-center gap-2">
@@ -311,7 +314,7 @@ useEffect(() => {
         {posts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
             <span className="text-4xl">📸</span>
-            <p className="text-sm">Sin posts todavía</p>
+            <p className="text-sm">{t('perfilPublico.noPosts')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-0.5">

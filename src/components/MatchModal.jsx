@@ -1,7 +1,9 @@
 import React from 'react'
 import { myPet } from '../data'
+import { useLanguage } from '../LanguageContext'
 
 export default function MatchModal({ dog, onChat, onKeepSwiping }) {
+  const { t } = useLanguage()
   if (!dog) return null
 
   return (
@@ -10,9 +12,9 @@ export default function MatchModal({ dog, onChat, onKeepSwiping }) {
       style={{ background: 'rgba(124,58,237,0.92)' }}
     >
       <div className="text-4xl">🐾</div>
-      <h2 className="text-3xl font-bold text-white">¡Es un match!</h2>
+      <h2 className="text-3xl font-bold text-white">{t('match.matchTitle')}</h2>
       <p className="text-white/80 text-base text-center">
-        Tú y {dog.name} se han gustado ✨
+        {t('match.matchSubtitle', { name: dog.name })}
       </p>
 
       {/* Avatars */}
@@ -37,13 +39,13 @@ export default function MatchModal({ dog, onChat, onKeepSwiping }) {
           onClick={onChat}
           className="w-full py-3.5 rounded-full bg-white text-bm-purple font-semibold text-base border-0 cursor-pointer"
         >
-          Enviar mensaje
+          {t('match.sendMessage')}
         </button>
         <button
           onClick={onKeepSwiping}
           className="btn-outline-white"
         >
-          Seguir explorando
+          {t('match.keepExploring')}
         </button>
       </div>
     </div>

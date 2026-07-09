@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
 import { useAuth } from '../AuthContext'
+import { useLanguage } from '../LanguageContext'
 
 export default function Auth() {
   const { signIn, signUp } = useAuth()
+  const { t } = useLanguage()
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -33,7 +35,7 @@ export default function Auth() {
             style={{ height: 230, width: 'auto', maxWidth: 'none', filter: 'brightness(0) invert(1)', flexShrink: 0 }}
           />
         </div>
-        <p className="text-white/80 mt-1 text-sm">La red social de mascotas</p>
+        <p className="text-white/80 mt-1 text-sm">{t('auth.tagline')}</p>
       </div>
 
       <div className="w-full bg-white rounded-3xl p-6 flex flex-col gap-4">
@@ -43,35 +45,35 @@ export default function Auth() {
             className="flex-1 py-2.5 text-sm font-semibold border-0 cursor-pointer transition-all"
             style={{ background: mode === 'login' ? '#7C3AED' : 'white', color: mode === 'login' ? 'white' : '#6B7280' }}
           >
-            Iniciar sesión
+            {t('auth.signIn')}
           </button>
           <button
             onClick={() => setMode('register')}
             className="flex-1 py-2.5 text-sm font-semibold border-0 cursor-pointer transition-all"
             style={{ background: mode === 'register' ? '#7C3AED' : 'white', color: mode === 'register' ? 'white' : '#6B7280' }}
           >
-            Crear cuenta
+            {t('auth.createAccount')}
           </button>
         </div>
 
         <div className="flex flex-col gap-3">
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Email</label>
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('auth.email')}</label>
             <input
               type="email"
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none bg-ps-bg"
-              placeholder="tu@email.com"
+              placeholder={t('auth.emailPlaceholder')}
               value={email}
               onChange={e => setEmail(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSubmit()}
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Contraseña</label>
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('auth.password')}</label>
             <input
               type="password"
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none bg-ps-bg"
-              placeholder="Mínimo 6 caracteres"
+              placeholder={t('auth.passwordPlaceholder')}
               value={password}
               onChange={e => setPassword(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSubmit()}
@@ -91,17 +93,17 @@ export default function Auth() {
           className="w-full py-3.5 rounded-full font-semibold text-white text-base border-0 cursor-pointer"
           style={{ background: loading ? '#C4B5FD' : '#7C3AED' }}
         >
-          {loading ? 'Cargando...' : mode === 'login' ? 'Entrar' : 'Registrarme'}
+          {loading ? t('auth.loading') : mode === 'login' ? t('auth.enter') : t('auth.registerBtn')}
         </button>
 
         {mode === 'register' && (
           <p className="text-xs text-gray-400 text-center leading-relaxed">
-            Al registrarte aceptas nuestros términos de uso y política de privacidad.
+            {t('auth.termsNotice')}
           </p>
         )}
       </div>
 
-      <p className="text-white/60 text-xs">¿Eres nuevo? Únete a la manada 🐶</p>
+      <p className="text-white/60 text-xs">{t('auth.newHere')}</p>
     </div>
   )
 }
