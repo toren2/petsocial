@@ -259,6 +259,107 @@
     background: #EDE9FE;
     transform: translateY(-1px);
   }
+  footer .footer-contact button {
+    color: var(--purple-dark);
+    background: none;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: inherit;
+    border: 1.5px solid #E0D4FC;
+    border-radius: 999px;
+    padding: 6px 16px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+  footer .footer-contact button:hover {
+    background: #EDE9FE;
+    transform: translateY(-1px);
+  }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(31,41,55,0.5);
+    z-index: 10;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: white;
+    border-radius: 20px;
+    padding: 28px 24px;
+    max-width: 400px;
+    width: 100%;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  }
+  .modal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: none;
+    border: 0;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--muted);
+    line-height: 1;
+  }
+  .modal-box h3 {
+    margin: 0 0 18px;
+    font-size: 18px;
+    font-weight: 800;
+    padding-right: 20px;
+  }
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .contact-form input,
+  .contact-form textarea {
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1.5px solid #E5E7EB;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.15s ease;
+  }
+  .contact-form input:focus,
+  .contact-form textarea:focus {
+    border-color: var(--purple);
+  }
+  .contact-form textarea { min-height: 90px; }
+  .contact-form button {
+    margin-top: 4px;
+    padding: 13px 20px;
+    border-radius: 999px;
+    border: 0;
+    background: var(--purple);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+  .contact-form button:hover:not(:disabled) {
+    background: var(--purple-dark);
+    transform: translateY(-1px);
+  }
+  .contact-form button:disabled { opacity: 0.6; cursor: default; }
+  .contact-message {
+    margin-top: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    min-height: 18px;
+  }
+  .contact-message.success { color: #0F9B8E; }
+  .contact-message.error { color: #DC2626; }
 </style>
 </head>
 <body>
@@ -331,13 +432,34 @@
 
   <footer>
     <div id="footer-text"></div>
-    <div class="footer-contact"><a href="mailto:contacto@snoutt.app" id="footer-contact-link"></a></div>
+    <div class="footer-contact"><button type="button" id="footer-contact-link" onclick="openContactModal()"></button></div>
   </footer>
 
+  <div class="modal-overlay" id="contact-modal">
+    <div class="modal-box">
+      <button type="button" class="modal-close" onclick="closeContactModal()">&times;</button>
+      <h3 data-i18n="contactTitle"></h3>
+      <form class="contact-form" id="contact-form">
+        <input type="text" id="contact-name" data-i18n-placeholder="contactNamePlaceholder" required>
+        <input type="email" id="contact-email" data-i18n-placeholder="contactEmailPlaceholder" required>
+        <textarea id="contact-message-input" data-i18n-placeholder="contactMessagePlaceholder" required></textarea>
+        <button type="submit" id="contact-submit-btn" data-i18n="contactSend"></button>
+      </form>
+      <p class="contact-message" id="contact-form-message"></p>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
   const SUPABASE_URL = 'https://pvlaruqwbaxdpdndwfvh.supabase.co'
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2bGFydXF3YmF4ZHBkbmR3ZnZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExODQ3NzUsImV4cCI6MjA5Njc2MDc3NX0.jc4mg206OGW0kEMS_0OGvx9cbAkS-5UfKRfG8ob8tLc'
   const YEAR = new Date().getFullYear()
+
+  // EmailJS: reemplazar con los valores reales de tu cuenta en emailjs.com
+  const EMAILJS_PUBLIC_KEY = 'YOUR_EMAILJS_PUBLIC_KEY'
+  const EMAILJS_SERVICE_ID = 'YOUR_EMAILJS_SERVICE_ID'
+  const EMAILJS_TEMPLATE_ID = 'YOUR_EMAILJS_TEMPLATE_ID'
+  if (window.emailjs) emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY })
 
   const translations = {
     es: {
@@ -359,6 +481,14 @@
       f6t: 'Comunidad', f6d: 'Comparte momentos, sigue a otras mascotas y descubre historias del barrio.',
       footer: '© ' + YEAR + ' Snoutt. Hecho con 🐾 en Panamá.',
       contact: '✉️ Contáctanos',
+      contactTitle: 'Escríbenos',
+      contactNamePlaceholder: 'Tu nombre',
+      contactEmailPlaceholder: 'Tu email',
+      contactMessagePlaceholder: 'Tu mensaje',
+      contactSend: 'Enviar',
+      contactSending: 'Enviando...',
+      contactSuccess: '¡Mensaje enviado! Te responderemos pronto.',
+      contactError: 'No se pudo enviar, intenta de nuevo.',
       toggleLabel: 'EN',
       htmlLang: 'es',
     },
@@ -381,6 +511,14 @@
       f6t: 'Community', f6d: 'Share moments, follow other pets, and discover neighborhood stories.',
       footer: '© ' + YEAR + ' Snoutt. Made with 🐾 in Panama.',
       contact: '✉️ Contact us',
+      contactTitle: 'Get in touch',
+      contactNamePlaceholder: 'Your name',
+      contactEmailPlaceholder: 'Your email',
+      contactMessagePlaceholder: 'Your message',
+      contactSend: 'Send',
+      contactSending: 'Sending...',
+      contactSuccess: "Message sent! We'll get back to you soon.",
+      contactError: "Couldn't send, try again.",
       toggleLabel: 'ES',
       htmlLang: 'en',
     },
@@ -402,6 +540,7 @@
     document.getElementById('lang-toggle').textContent = dict.toggleLabel
     document.getElementById('footer-text').textContent = dict.footer
     document.getElementById('footer-contact-link').textContent = dict.contact
+    document.getElementById('contact-submit-btn').textContent = dict.contactSend
   }
 
   document.getElementById('lang-toggle').addEventListener('click', () => {
@@ -457,6 +596,52 @@
 
     submitBtn.disabled = false
     submitBtn.textContent = dict.button
+  })
+
+  function openContactModal() {
+    document.getElementById('contact-modal').classList.add('open')
+  }
+  function closeContactModal() {
+    document.getElementById('contact-modal').classList.remove('open')
+  }
+  document.getElementById('contact-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'contact-modal') closeContactModal()
+  })
+
+  const contactForm = document.getElementById('contact-form')
+  const contactSubmitBtn = document.getElementById('contact-submit-btn')
+  const contactMessageEl = document.getElementById('contact-form-message')
+
+  contactForm.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const dict = translations[lang]
+    const name = document.getElementById('contact-name').value.trim()
+    const email = document.getElementById('contact-email').value.trim()
+    const message = document.getElementById('contact-message-input').value.trim()
+    if (!name || !email || !message) return
+
+    contactSubmitBtn.disabled = true
+    contactSubmitBtn.textContent = dict.contactSending
+    contactMessageEl.textContent = ''
+    contactMessageEl.className = 'contact-message'
+
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        from_name: name,
+        from_email: email,
+        message: message,
+        to_email: 'contacto@snoutt.app',
+      })
+      contactMessageEl.textContent = dict.contactSuccess
+      contactMessageEl.className = 'contact-message success'
+      contactForm.reset()
+    } catch (err) {
+      contactMessageEl.textContent = dict.contactError
+      contactMessageEl.className = 'contact-message error'
+    }
+
+    contactSubmitBtn.disabled = false
+    contactSubmitBtn.textContent = dict.contactSend
   })
 </script>
 </body>
