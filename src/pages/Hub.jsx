@@ -251,7 +251,7 @@ export default function Hub({ onNavigate, unreadCount }) {
     const today = new Date().toISOString().split('T')[0]
     const { data } = await supabase
       .from('events')
-      .select('*')
+      .select('*, profiles(pet_name, emoji, avatar_url)')
       .gte('date', today)
       .order('date', { ascending: true })
       .limit(5)
@@ -393,8 +393,24 @@ export default function Hub({ onNavigate, unreadCount }) {
                   className="flex-shrink-0 bg-white rounded-2xl overflow-hidden border border-gray-100 cursor-pointer active:opacity-80"
                   style={{ width: 160 }}
                 >
-                  <div className="flex items-center justify-center text-4xl py-4" style={{ background: event.bg || '#EDE9FE' }}>
-                    {event.emoji || '📅'}
+                  <div className="relative flex items-center justify-center text-4xl overflow-hidden" style={{ height: 90, background: event.bg || '#EDE9FE' }}>
+                    {event.image_url ? (
+                      <img src={event.image_url} alt={event.title} className="absolute inset-0 w-full h-full object-cover" />
+                    ) : (
+                      event.emoji || '📅'
+                    )}
+                    {event.profiles && (
+                      <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 bg-black/40 backdrop-blur-sm rounded-full pl-0.5 pr-2 py-0.5 max-w-[90%]">
+                        <div className="w-4 h-4 rounded-full overflow-hidden bg-white/30 flex items-center justify-center flex-shrink-0">
+                          {event.profiles.avatar_url ? (
+                            <img src={event.profiles.avatar_url} alt={event.profiles.pet_name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[8px]">{event.profiles.emoji || '🐕'}</span>
+                          )}
+                        </div>
+                        <span className="text-[9px] font-semibold text-white truncate">{event.profiles.pet_name}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="p-3">
                     <p className="text-xs font-bold text-gray-900 truncate mb-1">{event.title}</p>

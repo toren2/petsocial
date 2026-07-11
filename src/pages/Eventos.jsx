@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, MapPin, Clock, Users, X, Trash2, ArrowLeft } from 'lucide-react'
+import { Plus, MapPin, Clock, Users, X, Trash2, ArrowLeft, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -43,8 +43,12 @@ function EventDetailModal({ event, onClose, onToggle, onInvite, onDelete, curren
   return (
     <div className="absolute inset-0 bg-white z-50 flex flex-col overflow-y-auto">
       {/* Header imagen */}
-      <div className="flex items-center justify-center text-8xl py-12 relative flex-shrink-0" style={{ background: event.bg }}>
-        {event.emoji}
+      <div className="relative flex-shrink-0 flex items-center justify-center overflow-hidden" style={{ background: event.bg, height: event.image_url ? 220 : 'auto', paddingTop: event.image_url ? 0 : 48, paddingBottom: event.image_url ? 0 : 48 }}>
+        {event.image_url ? (
+          <img src={event.image_url} alt={event.title} className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <span className="text-8xl">{event.emoji}</span>
+        )}
         <button onClick={onClose} className="absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center border-0 cursor-pointer bg-black/30">
           <ArrowLeft size={20} color="white" />
         </button>
@@ -161,12 +165,28 @@ function EventCard({ event, onSelect }) {
       className="bg-white mx-4 my-2 rounded-2xl overflow-hidden border border-gray-100 cursor-pointer active:opacity-80"
       style={{ opacity: past ? 0.65 : 1 }}
     >
-      <div className="flex items-center justify-center text-5xl py-5 relative" style={{ background: event.bg }}>
-        {event.emoji}
+      <div className="relative h-32 flex items-center justify-center overflow-hidden" style={{ background: event.bg }}>
+        {event.image_url ? (
+          <img src={event.image_url} alt={event.title} className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <span className="text-5xl">{event.emoji}</span>
+        )}
         {past && (
           <span className="absolute top-2 right-2 text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-800/70 text-white">
             {t('eventos.finished')}
           </span>
+        )}
+        {event.profiles && (
+          <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full pl-1 pr-2.5 py-1">
+            <div className="w-5 h-5 rounded-full overflow-hidden bg-white/30 flex items-center justify-center flex-shrink-0">
+              {event.profiles.avatar_url ? (
+                <img src={event.profiles.avatar_url} alt={event.profiles.pet_name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[10px]">{event.profiles.emoji || '🐕'}</span>
+              )}
+            </div>
+            <span className="text-[10px] font-semibold text-white">{event.profiles.pet_name}</span>
+          </div>
         )}
       </div>
       <div className="p-4">
@@ -176,9 +196,6 @@ function EventCard({ event, onSelect }) {
             {tc.label}
           </span>
         </div>
-        {event.profiles && (
-          <p className="text-xs text-gray-400 mb-2">{t('eventos.by', { name: event.profiles.pet_name })}</p>
-        )}
         <div className="flex flex-col gap-1 text-xs text-gray-400">
           <div className="flex items-center gap-1.5">
             <Clock size={11} className="text-ps-purple" />
@@ -199,15 +216,31 @@ function EventCard({ event, onSelect }) {
 }
 
 function CreateEventModal({ onClose, onCreate }) {
+  const { user } = useAuth()
   const { t } = useLanguage()
   const types = getTypes(t)
   const typeColors = getTypeColors(t)
   const [form, setForm] = useState({
     title: '', type: 'paseo', date: '', time: '',
-    location: '', maxAttendees: 10, description: '',
+    location: '', maxAttendees: 10, description: '', image: '',
   })
+  const [imageUploading, setImageUploading] = useState(false)
 
   function handle(k, v) { setForm(f => ({ ...f, [k]: v })) }
+
+  async function handleImageUpload(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    setImageUploading(true)
+    const ext = file.name.split('.').pop()
+    const path = `${user.id}/event-${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('pet-photos').upload(path, file)
+    if (!error) {
+      const { data } = supabase.storage.from('pet-photos').getPublicUrl(path)
+      handle('image', data.publicUrl)
+    }
+    setImageUploading(false)
+  }
 
   function submit() {
     if (!form.title || !form.date || !form.location) return
@@ -257,6 +290,26 @@ function CreateEventModal({ onClose, onCreate }) {
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('eventos.location')}</label>
             <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg" placeholder={t('eventos.locationPlaceholder')} value={form.location} onChange={e => handle('location', e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('eventos.eventImage')}</label>
+            {form.image ? (
+              <div className="relative">
+                <img src={form.image} alt="" className="w-full h-32 object-cover rounded-xl" />
+                <button
+                  onClick={() => handle('image', '')}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center border-0 cursor-pointer bg-black/50"
+                >
+                  <X size={14} color="white" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex items-center justify-center gap-2 border border-dashed border-gray-300 rounded-xl py-4 cursor-pointer text-xs text-gray-400">
+                <ImageIcon size={16} />
+                {imageUploading ? t('eventos.uploadingImage') : t('eventos.uploadImage')}
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={imageUploading} />
+              </label>
+            )}
           </div>
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('eventos.maxAttendees', { count: form.maxAttendees })}</label>
@@ -318,6 +371,7 @@ export default function Eventos() {
         date: event.date, time: event.time, location: event.location,
         max_attendees: event.maxAttendees, attendees: 1,
         host: 'hoshi_oficial', description: event.description, bg: event.bg,
+        image_url: event.image || null,
         user_id: user.id,
       }])
       .select('*, profiles(pet_name, emoji, avatar_url)')
