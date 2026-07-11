@@ -91,6 +91,24 @@ function getVaccineTip(t, vaccines) {
   return null
 }
 
+function getEventTip(t, myEvents) {
+  if (!myEvents || myEvents.length === 0) return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const sorted = [...myEvents].sort((a, b) => new Date(a.date) - new Date(b.date))
+  const next = sorted[0]
+  const eventDate = new Date(`${next.date}T00:00:00`)
+  const diffDays = Math.round((eventDate - today) / 86400000)
+
+  if (diffDays < 0) return null
+  if (diffDays === 0) {
+    return { emoji: '📅', color: '#7C3AED', bg: '#EDE9FE', title: t('hub.tipEventTodayTitle'), body: t('hub.tipEventTodayBody', { title: next.title }) }
+  } else if (diffDays <= 3) {
+    return { emoji: '📅', color: '#7C3AED', bg: '#EDE9FE', title: t('hub.tipEventSoonTitle'), body: t('hub.tipEventSoonBody', { title: next.title, days: diffDays, plural: diffDays === 1 ? '' : 's' }) }
+  }
+  return null
+}
+
 function getWeatherTip(t, weather) {
   if (!weather) return null
   const temp = weather.main?.temp
@@ -120,6 +138,8 @@ export default function Hub({ onNavigate, unreadCount }) {
   const [weather, setWeather] = useState(null)
   const [vaccines, setVaccines] = useState([])
   const [lostPets, setLostPets] = useState([])
+  const [upcomingEvents, setUpcomingEvents] = useState([])
+  const [myEvents, setMyEvents] = useState([])
 
   const categories = [
     { id: 'vet',        label: t('hub.catVet'),        Icon: Stethoscope,     color: '#7C3AED', bg: '#EDE9FE' },
@@ -150,6 +170,8 @@ export default function Hub({ onNavigate, unreadCount }) {
     fetchNearbyMatches()
     fetchVaccines()
     fetchLostPets()
+    fetchUpcomingEvents()
+    fetchMyEvents()
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async pos => {
@@ -225,6 +247,25 @@ export default function Hub({ onNavigate, unreadCount }) {
     if (data) setLostPets(data)
   }
 
+  async function fetchUpcomingEvents() {
+    const today = new Date().toISOString().split('T')[0]
+    const { data } = await supabase
+      .from('events')
+      .select('*')
+      .gte('date', today)
+      .order('date', { ascending: true })
+      .limit(5)
+    if (data) setUpcomingEvents(data)
+  }
+
+  async function fetchMyEvents() {
+    const { data } = await supabase
+      .from('event_attendees')
+      .select('events(*)')
+      .eq('user_id', user.id)
+    if (data) setMyEvents(data.map(a => a.events).filter(Boolean))
+  }
+
   async function fetchNearbyPlaces() {
     const { data } = await supabase
       .from('places')
@@ -235,10 +276,11 @@ export default function Hub({ onNavigate, unreadCount }) {
   }
 
   const lostPetTip = getLostPetTip(t, lostPets, userLocation)
+  const eventTip = getEventTip(t, myEvents)
   const vaccineTip = getVaccineTip(t, vaccines)
   const weatherTip = getWeatherTip(t, weather)
   const dailyTip = getDailyTip(t)
-  const tips = [lostPetTip, vaccineTip, weatherTip, dailyTip].filter(Boolean)
+  const tips = [lostPetTip, eventTip, vaccineTip, weatherTip, dailyTip].filter(Boolean)
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -334,6 +376,36 @@ export default function Hub({ onNavigate, unreadCount }) {
             ))}
           </div>
         </div>
+
+        {upcomingEvents.length > 0 && (
+          <div className="px-4 py-2">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-gray-900">{t('hub.eventsUpcoming')}</h3>
+              <button onClick={() => onNavigate('eventos')} className="flex items-center gap-1 text-xs font-medium border-0 bg-transparent cursor-pointer" style={{ color: '#7C3AED' }}>
+                {t('common.seeAll')} <ChevronRight size={14} />
+              </button>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {upcomingEvents.map(event => (
+                <div
+                  key={event.id}
+                  onClick={() => onNavigate('eventos')}
+                  className="flex-shrink-0 bg-white rounded-2xl overflow-hidden border border-gray-100 cursor-pointer active:opacity-80"
+                  style={{ width: 160 }}
+                >
+                  <div className="flex items-center justify-center text-4xl py-4" style={{ background: event.bg || '#EDE9FE' }}>
+                    {event.emoji || '📅'}
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs font-bold text-gray-900 truncate mb-1">{event.title}</p>
+                    <p className="text-[10px] text-gray-400 truncate">{event.date} · {event.time}</p>
+                    <p className="text-[10px] text-gray-400 truncate mt-0.5">{event.location}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {nearbyMatches.length > 0 && (
           <div className="px-4 py-2">

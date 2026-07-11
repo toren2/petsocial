@@ -292,15 +292,23 @@ export default function Eventos() {
   useEffect(() => { fetchEvents() }, [])
 
   async function fetchEvents() {
-  setLoading(true)
-  const { data, error } = await supabase
-    .from('events')
-    .select('*, profiles(pet_name, emoji, avatar_url)')
-    .order('date', { ascending: true })
-  console.log('events data:', data, 'error:', error)
-  if (!error && data) setEvents(data)
-  setLoading(false)
-}
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('events')
+      .select('*, profiles(pet_name, emoji, avatar_url)')
+      .order('date', { ascending: true })
+
+    const { data: myAttendance } = await supabase
+      .from('event_attendees')
+      .select('event_id')
+      .eq('user_id', user.id)
+    const joinedIds = new Set(myAttendance?.map(a => a.event_id) || [])
+
+    if (!error && data) {
+      setEvents(data.map(e => ({ ...e, joined: joinedIds.has(e.id) })))
+    }
+    setLoading(false)
+  }
 
   async function createEvent(event) {
     const { data, error } = await supabase
@@ -327,6 +335,12 @@ export default function Eventos() {
     const event = events.find(e => e.id === id)
     if (!event) return
     const newAttendees = event.joined ? event.attendees - 1 : event.attendees + 1
+
+    const attendanceError = event.joined
+      ? (await supabase.from('event_attendees').delete().eq('event_id', id).eq('user_id', user.id)).error
+      : (await supabase.from('event_attendees').insert([{ event_id: id, user_id: user.id }])).error
+    if (attendanceError) return
+
     const { error } = await supabase.from('events').update({ attendees: newAttendees }).eq('id', id)
     if (!error) {
       setEvents(evs => evs.map(e => e.id === id ? { ...e, joined: !e.joined, attendees: newAttendees } : e))

@@ -9,6 +9,7 @@ export default function BottomNav({ active, onNavigate }) {
     { id: 'feed',     label: t('bottomNav.feed'),    Icon: Newspaper     },
     { id: 'match',    label: t('bottomNav.match'),   Icon: Heart         },
     { id: 'chat',     label: t('bottomNav.chat'),    Icon: MessageCircle },
+    { id: 'eventos',  label: t('bottomNav.eventos'), Icon: Calendar      },
     { id: 'lugares',  label: t('bottomNav.places'),  Icon: MapPin        },
     { id: 'perfil',   label: t('bottomNav.profile'), Icon: User          },
   ]
