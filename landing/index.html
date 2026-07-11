@@ -241,6 +241,24 @@
     color: var(--muted);
     font-size: 13px;
   }
+  footer .footer-contact {
+    display: inline-block;
+    margin-top: 10px;
+  }
+  footer .footer-contact a {
+    color: var(--purple-dark);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 13px;
+    border: 1.5px solid #E0D4FC;
+    border-radius: 999px;
+    padding: 6px 16px;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+  footer .footer-contact a:hover {
+    background: #EDE9FE;
+    transform: translateY(-1px);
+  }
 </style>
 </head>
 <body>
@@ -311,7 +329,10 @@
     </div>
   </section>
 
-  <footer id="footer"></footer>
+  <footer>
+    <div id="footer-text"></div>
+    <div class="footer-contact"><a href="mailto:contacto@snoutt.app" id="footer-contact-link"></a></div>
+  </footer>
 
 <script>
   const SUPABASE_URL = 'https://pvlaruqwbaxdpdndwfvh.supabase.co'
@@ -337,6 +358,7 @@
       f5t: 'Cartilla de vacunas', f5d: 'Lleva el registro de vacunas de tu mascota, todo en un solo lugar.',
       f6t: 'Comunidad', f6d: 'Comparte momentos, sigue a otras mascotas y descubre historias del barrio.',
       footer: '© ' + YEAR + ' Snoutt. Hecho con 🐾 en Panamá.',
+      contact: '✉️ Contáctanos',
       toggleLabel: 'EN',
       htmlLang: 'es',
     },
@@ -358,6 +380,7 @@
       f5t: 'Vaccine record', f5d: "Keep track of your pet's vaccines, all in one place.",
       f6t: 'Community', f6d: 'Share moments, follow other pets, and discover neighborhood stories.',
       footer: '© ' + YEAR + ' Snoutt. Made with 🐾 in Panama.',
+      contact: '✉️ Contact us',
       toggleLabel: 'ES',
       htmlLang: 'en',
     },
@@ -377,7 +400,8 @@
       if (dict[key] !== undefined) el.placeholder = dict[key]
     })
     document.getElementById('lang-toggle').textContent = dict.toggleLabel
-    document.getElementById('footer').textContent = dict.footer
+    document.getElementById('footer-text').textContent = dict.footer
+    document.getElementById('footer-contact-link').textContent = dict.contact
   }
 
   document.getElementById('lang-toggle').addEventListener('click', () => {
