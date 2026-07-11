@@ -627,10 +627,11 @@
 
     try {
       await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        from_name: name,
-        from_email: email,
+        name: name,
+        email: email,
         message: message,
-        to_email: 'contacto@snoutt.app',
+        title: 'Formulario de contacto - Snoutt',
+        time: new Date().toLocaleString('es-PA', { timeZone: 'America/Panama' }),
       })
       contactMessageEl.textContent = dict.contactSuccess
       contactMessageEl.className = 'contact-message success'
