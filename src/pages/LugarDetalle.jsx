@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, MapPin, Clock, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, X, MessageCircle, Instagram, Phone } from 'lucide-react'
+import { ArrowLeft, MapPin, Clock, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, UtensilsCrossed, X, MessageCircle, Instagram, Phone, Crown, PawPrint, Loader2 } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 
-const catIcons  = { vet: Stethoscope, groom: Scissors, park: Trees, shop: ShoppingBag, hotel: Building2 }
+const catIcons  = { vet: Stethoscope, groom: Scissors, park: Trees, shop: ShoppingBag, hotel: Building2, restaurant: UtensilsCrossed }
 const catColors = {
-  vet:   { bg: '#EDE9FE', color: '#7C3AED' },
-  groom: { bg: '#FCE7F3', color: '#EC4899' },
-  park:  { bg: '#DCFCE7', color: '#16A34A' },
-  shop:  { bg: '#FEF3C7', color: '#D97706' },
-  hotel: { bg: '#E0F7F4', color: '#0F9B8E' },
+  vet:        { bg: '#EDE9FE', color: '#7C3AED' },
+  groom:      { bg: '#FCE7F3', color: '#EC4899' },
+  park:       { bg: '#DCFCE7', color: '#16A34A' },
+  shop:       { bg: '#FEF3C7', color: '#D97706' },
+  hotel:      { bg: '#E0F7F4', color: '#0F9B8E' },
+  restaurant: { bg: '#FEE2E2', color: '#DC2626' },
 }
 
 function Stars({ rating, size = 14, interactive = false, onRate }) {
@@ -91,11 +92,84 @@ export default function LugarDetalle({ place, onBack }) {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [userProfile, setUserProfile] = useState(null)
+  const [checkedInToday, setCheckedInToday] = useState(false)
+  const [checkingIn, setCheckingIn] = useState(false)
+  const [checkinMessage, setCheckinMessage] = useState(null)
+  const [currentPet, setCurrentPet] = useState(null)
 
   useEffect(() => {
     fetchReviews()
     fetchUserProfile()
+    fetchCheckinStatus()
+    fetchCurrentPet()
   }, [])
+
+  async function fetchCheckinStatus() {
+    const { data } = await supabase
+      .from('place_checkins')
+      .select('checkin_date')
+      .eq('user_id', user.id)
+      .eq('place_id', place.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (!data) return
+    // Panama no tiene horario de verano: UTC-5 todo el año.
+    const todayPanama = new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 10)
+    if (data.checkin_date === todayPanama) setCheckedInToday(true)
+  }
+
+  async function fetchCurrentPet() {
+    const { data: pet } = await supabase
+      .from('place_current_pet')
+      .select('user_id, checkins_this_week')
+      .eq('place_id', place.id)
+      .maybeSingle()
+    if (!pet) { setCurrentPet(null); return }
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('pet_name, emoji, avatar_url')
+      .eq('id', pet.user_id)
+      .maybeSingle()
+    setCurrentPet({ ...pet, profile: prof })
+  }
+
+  function handleCheckin() {
+    if (checkingIn || checkedInToday) return
+    if (!navigator.geolocation) {
+      setCheckinMessage({ type: 'error', text: t('lugarDetalle.checkinNoGeo') })
+      return
+    }
+    setCheckingIn(true)
+    setCheckinMessage(null)
+    navigator.geolocation.getCurrentPosition(
+      async pos => {
+        const { data, error } = await supabase.rpc('checkin_place', {
+          p_place_id: place.id,
+          p_lat: pos.coords.latitude,
+          p_lng: pos.coords.longitude,
+        })
+        if (error) {
+          const text = error.message?.includes('cerca')
+            ? t('lugarDetalle.checkinTooFar')
+            : error.message?.includes('hoy')
+              ? t('lugarDetalle.checkinAlreadyToday')
+              : t('lugarDetalle.checkinError')
+          setCheckinMessage({ type: 'error', text })
+        } else if (data) {
+          setCheckedInToday(true)
+          setCheckinMessage({ type: 'success', text: t('lugarDetalle.checkinSuccess') })
+          fetchCurrentPet()
+        }
+        setCheckingIn(false)
+      },
+      () => {
+        setCheckinMessage({ type: 'error', text: t('lugarDetalle.checkinNoPermission') })
+        setCheckingIn(false)
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    )
+  }
 
   async function fetchReviews() {
     setLoading(true)
@@ -185,6 +259,50 @@ export default function LugarDetalle({ place, onBack }) {
 )}
             </div>
           </div>
+        </div>
+
+        {currentPet?.profile && (
+          <div className="bg-white mx-4 mt-3 rounded-2xl p-3 border border-gray-100 flex items-center gap-3" style={{ borderColor: '#FDE68A' }}>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: '#FEF3C7' }}>
+              {currentPet.profile.avatar_url ? (
+                <img src={currentPet.profile.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xl">{currentPet.profile.emoji || '🐾'}</span>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: '#D97706' }}>
+                <Crown size={13} /> {t('lugarDetalle.placePetTitle')}
+              </div>
+              <div className="text-sm font-bold text-gray-900 truncate">{currentPet.profile.pet_name}</div>
+            </div>
+            <span className="text-xs text-gray-400 flex-shrink-0">{t('lugarDetalle.checkinsThisWeek', { count: currentPet.checkins_this_week })}</span>
+          </div>
+        )}
+
+        <div className="mx-4 mt-3">
+          <button
+            onClick={handleCheckin}
+            disabled={checkingIn || checkedInToday}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold text-sm border-0 cursor-pointer"
+            style={{
+              background: checkedInToday ? '#DCFCE7' : checkingIn ? '#EDE9FE' : '#7C3AED',
+              color: checkedInToday ? '#16A34A' : checkingIn ? '#7C3AED' : 'white',
+            }}
+          >
+            {checkedInToday ? (
+              <>✓ {t('lugarDetalle.checkinDoneToday')}</>
+            ) : checkingIn ? (
+              <><Loader2 size={16} className="animate-spin" /> {t('lugarDetalle.checkinLoading')}</>
+            ) : (
+              <><PawPrint size={16} /> {t('lugarDetalle.checkinButton')}</>
+            )}
+          </button>
+          {checkinMessage && (
+            <p className="text-xs text-center mt-2" style={{ color: checkinMessage.type === 'error' ? '#DC2626' : '#16A34A' }}>
+              {checkinMessage.text}
+            </p>
+          )}
         </div>
 
         {(place.category === 'vet' || place.category === 'groom') && (place.whatsapp_number || place.instagram_handle || place.contact_phone) && (

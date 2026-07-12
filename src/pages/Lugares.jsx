@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Map, MapPin, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Search, Heart, UtensilsCrossed, Navigation } from 'lucide-react'
+import { Map, MapPin, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Search, Heart, UtensilsCrossed, Navigation, Crown } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useLanguage } from '../LanguageContext'
 import LugarDetalle from './LugarDetalle'
@@ -47,8 +47,9 @@ export default function Lugares({ initialCategory = 'all' }) {
   const [selectedPlace, setSelectedPlace] = useState(null)
   const [userLocation, setUserLocation] = useState(null)
   const [showMap, setShowMap] = useState(false)
+  const [placesWithPet, setPlacesWithPet] = useState(new Set())
 
-  useEffect(() => { fetchPlaces() }, [])
+  useEffect(() => { fetchPlaces(); fetchPlacesWithPet() }, [])
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -81,6 +82,11 @@ export default function Lugares({ initialCategory = 'all' }) {
     const { data } = await supabase.from('places').select('*').order('rating', { ascending: false })
     if (data) setPlaces(data)
     setLoading(false)
+  }
+
+  async function fetchPlacesWithPet() {
+    const { data } = await supabase.from('place_current_pet').select('place_id')
+    if (data) setPlacesWithPet(new Set(data.map(d => d.place_id)))
   }
 
   function refreshLocation() {
@@ -224,8 +230,13 @@ export default function Lugares({ initialCategory = 'all' }) {
                 className="bg-white rounded-2xl overflow-hidden border border-gray-100 cursor-pointer active:opacity-80"
               >
                 <div className="flex items-center gap-3 p-3">
-                  <div className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: catColors[featuredPlace.category]?.bg || '#EDE9FE' }}>
+                  <div className="relative w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: catColors[featuredPlace.category]?.bg || '#EDE9FE' }}>
                     {React.createElement(catIcons[featuredPlace.category] || MapPin, { size: 28, color: catColors[featuredPlace.category]?.color || '#7C3AED' })}
+                    {placesWithPet.has(featuredPlace.id) && (
+                      <div className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white" style={{ background: '#FEF3C7' }} title={t('lugares.placePetBadge')}>
+                        <Crown size={11} color="#D97706" />
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-1">
@@ -287,6 +298,11 @@ export default function Lugares({ initialCategory = 'all' }) {
                 <div key={place.id} onClick={() => setSelectedPlace(place)} className="flex gap-3 px-3 py-3 border-b border-gray-100 bg-white cursor-pointer active:bg-gray-50">
                   <div className="relative flex-shrink-0 rounded-2xl flex items-center justify-center" style={{ width: 80, height: 80, background: bg }}>
                     <CatIcon size={28} color={color} />
+                    {placesWithPet.has(place.id) && (
+                      <div className="absolute top-1 left-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white" style={{ background: '#FEF3C7' }} title={t('lugares.placePetBadge')}>
+                        <Crown size={11} color="#D97706" />
+                      </div>
+                    )}
                     <button className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center border-0 cursor-pointer" style={{ background: 'rgba(255,255,255,0.9)' }} onClick={e => e.stopPropagation()}>
                       <Heart size={12} color="#9CA3AF" />
                     </button>

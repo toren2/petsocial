@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, MapPin, Grid3x3, MessageCircle, X, Heart, ChevronLeft, ChevronRight, UserPlus, UserCheck } from 'lucide-react'
+import { ArrowLeft, MapPin, Grid3x3, MessageCircle, X, Heart, ChevronLeft, ChevronRight, UserPlus, UserCheck, Trophy } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import UserActionsMenu from '../components/UserActionsMenu'
 import VerifiedBadge from '../components/VerifiedBadge'
+import HuellasBadge from '../components/HuellasBadge'
+import BadgesModal from '../components/BadgesModal'
 
 const INTERESTS = [
   { key: 'playful', emoji: '🎾' },
@@ -94,6 +96,8 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
   const [followerCount, setFollowerCount] = useState(0)
   const [viewingPhoto, setViewingPhoto] = useState(null)
   const [showInfo, setShowInfo] = useState(false)
+  const [huellasPoints, setHuellasPoints] = useState(0)
+  const [showBadgesModal, setShowBadgesModal] = useState(false)
 
  useEffect(() => {
   fetchProfile()
@@ -102,6 +106,7 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
   checkFollowing()
   fetchFollowerCount()
   checkVerified()
+  fetchHuellas()
 }, [userId])
 
 useEffect(() => {
@@ -160,6 +165,11 @@ useEffect(() => {
       .select('*', { count: 'exact', head: true })
       .eq('following_id', userId)
     setFollowerCount(count || 0)
+  }
+
+  async function fetchHuellas() {
+    const { data } = await supabase.from('user_huellas_totals').select('total_points').eq('user_id', userId).maybeSingle()
+    setHuellasPoints(data?.total_points || 0)
   }
 
   async function checkVerified() {
@@ -255,6 +265,7 @@ useEffect(() => {
                 <MapPin size={11} /> {profile.location}
               </div>
             )}
+            <div className="mt-1.5"><HuellasBadge points={huellasPoints} size="sm" /></div>
             <div className="flex gap-4 mt-2">
               <div className="text-center">
                 <div className="font-bold text-gray-900 text-sm">{posts.length}</div>
@@ -308,12 +319,18 @@ useEffect(() => {
           </div>
         )}
 
-        <div className="px-4 pb-3">
+        <div className="px-4 pb-3 flex gap-2">
           <button
             onClick={() => setShowInfo(s => !s)}
-            className="w-full py-2 rounded-xl text-xs font-medium border border-gray-200 bg-gray-50 cursor-pointer text-gray-600"
+            className="flex-1 py-2 rounded-xl text-xs font-medium border border-gray-200 bg-gray-50 cursor-pointer text-gray-600"
           >
             {showInfo ? t('perfilPublico.hideInfo') : t('perfilPublico.viewFullInfo')}
+          </button>
+          <button
+            onClick={() => setShowBadgesModal(true)}
+            className="flex-1 py-2 rounded-xl text-xs font-medium border border-gray-200 bg-gray-50 cursor-pointer text-gray-600 flex items-center justify-center gap-1.5"
+          >
+            <Trophy size={13} className="text-ps-purple" /> {t('badges.title')}
           </button>
         </div>
 
@@ -374,6 +391,10 @@ useEffect(() => {
           startIndex={viewingPhoto}
           onClose={() => setViewingPhoto(null)}
         />
+      )}
+
+      {showBadgesModal && (
+        <BadgesModal userId={userId} onBack={() => setShowBadgesModal(false)} />
       )}
     </div>
   )

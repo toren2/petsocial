@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft, CheckCircle2, ArrowRight } from 'lucide-react'
+import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft, CheckCircle2, ArrowRight, Trophy } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import Vacunas from '../components/Vacunas'
 import Verificacion from '../components/Verificacion'
 import VerifiedBadge from '../components/VerifiedBadge'
+import HuellasBadge from '../components/HuellasBadge'
+import BadgesModal from '../components/BadgesModal'
 import PerfilPublico from './PerfilPublico'
 
 function getVaccineStatus(list) {
@@ -14,6 +16,13 @@ function getVaccineStatus(list) {
   today.setHours(0, 0, 0, 0)
   const hasOverdue = list.some(v => v.next_due_date && new Date(`${v.next_due_date}T00:00:00`) < today)
   return hasOverdue ? 'overdue' : 'ok'
+}
+
+function isProfileComplete(p, photosCount) {
+  return !!(
+    p.pet_name && p.breed && p.species && p.age > 0 && p.size && p.sex &&
+    p.energy && p.location && p.about && p.interests?.length > 0 && photosCount > 0
+  )
 }
 
 const INTERESTS = [
@@ -82,7 +91,10 @@ export default function Perfil({ onSignOut }) {
   const [isVerified, setIsVerified] = useState(false)
   const [showVacunasModal, setShowVacunasModal] = useState(false)
   const [showPreviewModal, setShowPreviewModal] = useState(false)
+  const [showBadgesModal, setShowBadgesModal] = useState(false)
   const [vaccineStatus, setVaccineStatus] = useState('none')
+  const [huellasPoints, setHuellasPoints] = useState(0)
+  const bonusClaimedRef = useRef(false)
   const fileInputRef = useRef(null)
   const petPhotoRef = useRef(null)
   const [form, setForm] = useState({
@@ -93,11 +105,25 @@ export default function Perfil({ onSignOut }) {
     esterilizado: false, interests: [],
   })
 
-  useEffect(() => { fetchProfile(); fetchStats(); fetchMyPosts(); fetchPetPhotos(); fetchSavedPosts(); fetchVaccinesStatus() }, [])
+  useEffect(() => { fetchProfile(); fetchStats(); fetchMyPosts(); fetchPetPhotos(); fetchSavedPosts(); fetchVaccinesStatus(); fetchHuellas() }, [])
+
+  useEffect(() => {
+    if (bonusClaimedRef.current) return
+    if (!profile) return
+    if (isProfileComplete(profile, petPhotos.length)) {
+      bonusClaimedRef.current = true
+      supabase.rpc('claim_profile_complete_bonus').then(() => fetchHuellas())
+    }
+  }, [profile, petPhotos])
 
   async function fetchVaccinesStatus() {
     const { data } = await supabase.from('vaccines').select('next_due_date').eq('user_id', user.id)
     setVaccineStatus(getVaccineStatus(data))
+  }
+
+  async function fetchHuellas() {
+    const { data } = await supabase.from('user_huellas_totals').select('total_points').eq('user_id', user.id).maybeSingle()
+    setHuellasPoints(data?.total_points || 0)
   }
 
   function toggleInterest(key) {
@@ -398,6 +424,7 @@ export default function Perfil({ onSignOut }) {
             </div>
             <div className="text-sm text-gray-500">{profile.breed} · {t('perfil.ageValue', { age: profile.age })} · {profile.sex}</div>
             {profile.location && <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5"><MapPin size={11} /> {profile.location}</div>}
+            <div className="mt-1.5"><HuellasBadge points={huellasPoints} size="sm" /></div>
             <div className="flex gap-1.5 mt-1.5 flex-wrap">
               {profile.esterilizado && (
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#DCFCE7', color: '#16A34A' }}>
@@ -481,6 +508,16 @@ export default function Perfil({ onSignOut }) {
         >
           <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
             <Syringe size={15} className="text-ps-purple" /> {t('vacunas.title')}
+          </span>
+          <ChevronRight size={16} className="text-gray-300" />
+        </button>
+
+        <button
+          onClick={() => setShowBadgesModal(true)}
+          className="w-full flex items-center justify-between px-4 py-2.5 border-0 bg-transparent cursor-pointer text-left"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <Trophy size={15} className="text-ps-purple" /> {t('badges.title')}
           </span>
           <ChevronRight size={16} className="text-gray-300" />
         </button>
@@ -635,6 +672,10 @@ export default function Perfil({ onSignOut }) {
         <div className="absolute inset-0 bg-white z-50 flex flex-col">
           <PerfilPublico userId={user.id} onBack={() => setShowPreviewModal(false)} />
         </div>
+      )}
+
+      {showBadgesModal && (
+        <BadgesModal userId={user.id} onBack={() => setShowBadgesModal(false)} />
       )}
     </div>
   )
