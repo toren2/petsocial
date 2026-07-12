@@ -24,6 +24,7 @@ export default function App() {
   const [matchedPet, setMatchedPet] = useState(null)
   const [showSplash, setShowSplash] = useState(true)
   const [initialCategory, setInitialCategory] = useState('all')
+  const [pendingChatUserId, setPendingChatUserId] = useState(null)
 
   if (loading) return (
     <div className="phone-shell items-center justify-center flex">
@@ -62,6 +63,7 @@ export default function App() {
   function handleMatch(pet) { setMatchedPet(pet) }
   function handleMatchChat() { setMatchedPet(null); setScreen('chat') }
   function handleKeepSwiping() { setMatchedPet(null) }
+  function openChatWith(uid) { setPendingChatUserId(uid); setScreen('chat') }
 
   return (
     <div className="phone-shell">
@@ -79,9 +81,9 @@ export default function App() {
 
       <div className="flex flex-col flex-1 overflow-hidden relative">
         {screen === 'hub'     && <Hub onNavigate={(s, cat) => { if (cat) setInitialCategory(cat); setScreen(s) }} unreadCount={0} />}
-        {screen === 'feed'    && <Feed />}
+        {screen === 'feed'    && <Feed onOpenChat={openChatWith} />}
         {screen === 'match'   && <Match onMatch={handleMatch} />}
-        {screen === 'chat'    && <Chat />}
+        {screen === 'chat'    && <Chat initialUserId={pendingChatUserId} onConsumeInitialUser={() => setPendingChatUserId(null)} />}
         {screen === 'eventos' && <Eventos />}
         {screen === 'perdidos' && <Perdidos onNavigate={(s) => setScreen(s)} />}
         {screen === 'lugares' && <Lugares initialCategory={initialCategory} />}

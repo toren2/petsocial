@@ -11,52 +11,89 @@ import { useLanguage } from '../LanguageContext'
 function ConversationList({ onOpen }) {
   const { user } = useAuth()
   const { t, language } = useLanguage()
-  const [matches, setMatches] = useState([])
+  const [threads, setThreads] = useState([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState(null)
 
-  useEffect(() => { fetchMatches() }, [])
+  useEffect(() => { fetchThreads() }, [])
 
-  async function fetchMatches() {
+  async function fetchThreads() {
     setLoading(true)
-    const { data } = await supabase
+
+    const { data: matchRows } = await supabase
       .from('matches')
       .select('*')
       .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+
+    const { data: msgRows } = await supabase
+      .from('messages')
+      .select('sender_id, receiver_id, created_at')
+      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
       .order('created_at', { ascending: false })
 
-    if (data && data.length > 0) {
-      const otherIds = data.map(m => m.user1_id === user.id ? m.user2_id : m.user1_id)
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, pet_name, emoji, breed, location, avatar_url')
-        .in('id', otherIds)
+    const byOther = {}
+    ;(matchRows || []).forEach(m => {
+      const otherId = m.user1_id === user.id ? m.user2_id : m.user1_id
+      byOther[otherId] = { otherId, matchId: m.id, lastActivity: m.created_at }
+    })
+    ;(msgRows || []).forEach(msg => {
+      const otherId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id
+      if (!byOther[otherId]) byOther[otherId] = { otherId, matchId: null, lastActivity: msg.created_at }
+      else if (new Date(msg.created_at) > new Date(byOther[otherId].lastActivity)) byOther[otherId].lastActivity = msg.created_at
+    })
 
-      const { data: verifiedRows } = await supabase
-        .from('verification_requests')
-        .select('user_id')
-        .in('user_id', otherIds)
-        .eq('status', 'aprobado')
-      const verifiedIds = new Set(verifiedRows?.map(v => v.user_id) || [])
+    const threadList = Object.values(byOther)
+    if (threadList.length === 0) { setThreads([]); setLoading(false); return }
 
-      const matchesWithProfiles = data.map(m => {
-        const otherId = m.user1_id === user.id ? m.user2_id : m.user1_id
-        const profile = profiles?.find(p => p.id === otherId)
-        return { ...m, otherId, profile, verified: verifiedIds.has(otherId) }
-      })
-      setMatches(matchesWithProfiles)
-    }
+    const otherIds = threadList.map(th => th.otherId)
+
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, pet_name, emoji, breed, location, avatar_url')
+      .in('id', otherIds)
+
+    const { data: verifiedRows } = await supabase
+      .from('verification_requests')
+      .select('user_id')
+      .in('user_id', otherIds)
+      .eq('status', 'aprobado')
+    const verifiedIds = new Set(verifiedRows?.map(v => v.user_id) || [])
+
+    const { data: followingRows } = await supabase
+      .from('follows')
+      .select('following_id')
+      .eq('follower_id', user.id)
+      .in('following_id', otherIds)
+    const followingSet = new Set(followingRows?.map(f => f.following_id) || [])
+
+    const { data: followerRows } = await supabase
+      .from('follows')
+      .select('follower_id')
+      .eq('following_id', user.id)
+      .in('follower_id', otherIds)
+    const followerSet = new Set(followerRows?.map(f => f.follower_id) || [])
+
+    const enriched = threadList
+      .map(th => ({
+        ...th,
+        profile: profiles?.find(p => p.id === th.otherId),
+        verified: verifiedIds.has(th.otherId),
+        mutual: followingSet.has(th.otherId) && followerSet.has(th.otherId),
+      }))
+      .sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity))
+
+    setThreads(enriched)
     setLoading(false)
   }
 
-  async function deleteConversation(matchId) {
-  const match = matches.find(m => m.id === matchId)
-  if (!match) return
-  await supabase.from('messages').delete().or(`and(sender_id.eq.${user.id},receiver_id.eq.${match.otherId}),and(sender_id.eq.${match.otherId},receiver_id.eq.${user.id})`)
-  await supabase.from('matches').delete().eq('id', matchId)
-  setMatches(prev => prev.filter(m => m.id !== matchId))
-  setDeletingId(null)
-}
+  async function deleteConversation(otherId) {
+    const thread = threads.find(th => th.otherId === otherId)
+    if (!thread) return
+    await supabase.from('messages').delete().or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherId}),and(sender_id.eq.${otherId},receiver_id.eq.${user.id})`)
+    if (thread.matchId) await supabase.from('matches').delete().eq('id', thread.matchId)
+    setThreads(prev => prev.filter(th => th.otherId !== otherId))
+    setDeletingId(null)
+  }
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
@@ -69,40 +106,45 @@ function ConversationList({ onOpen }) {
             <span className="text-4xl">🐾</span>
             <p className="text-sm">{t('chat.loadingMessages')}</p>
           </div>
-        ) : matches.length === 0 ? (
+        ) : threads.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
             <span className="text-4xl">💬</span>
             <p className="text-sm">{t('chat.noMatchesYet')}</p>
             <p className="text-xs text-center px-8">{t('chat.noMatchesBody')}</p>
           </div>
         ) : (
-          matches.map(match => (
-            <div key={match.id} className="flex items-center border-b border-gray-100 bg-white">
+          threads.map(th => (
+            <div key={th.otherId} className="flex items-center border-b border-gray-100 bg-white">
               <div
-                onClick={() => onOpen(match)}
+                onClick={() => onOpen(th)}
                 className="flex items-center gap-3 px-4 py-3.5 cursor-pointer active:bg-gray-50 flex-1 min-w-0"
               >
                 <div className="w-12 h-12 rounded-full bg-ps-purple-light flex items-center justify-center text-2xl overflow-hidden flex-shrink-0">
-                  {match.profile?.avatar_url ? (
-                    <img src={match.profile.avatar_url} alt={match.profile.pet_name} className="w-full h-full object-cover" />
+                  {th.profile?.avatar_url ? (
+                    <img src={th.profile.avatar_url} alt={th.profile.pet_name} className="w-full h-full object-cover" />
                   ) : (
-                    match.profile?.emoji || '🐕'
+                    th.profile?.emoji || '🐕'
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-sm text-gray-900 flex items-center gap-1">
-                    {match.profile?.pet_name || t('chat.pet')} <VerifiedBadge verified={match.verified} size={13} />
+                    {th.profile?.pet_name || t('chat.pet')} <VerifiedBadge verified={th.verified} size={13} />
                   </div>
                   <div className="text-xs text-gray-400 truncate mt-0.5">
-                    {match.profile?.breed} · {match.profile?.location}
+                    {th.profile?.breed} · {th.profile?.location}
                   </div>
+                  {!th.mutual && (
+                    <div className="text-[10px] font-medium mt-0.5" style={{ color: '#D97706' }}>
+                      {t('chat.notFollowingBadge')}
+                    </div>
+                  )}
                 </div>
                 <div className="text-xs text-gray-400 flex-shrink-0">
-                  {new Date(match.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short' })}
+                  {new Date(th.lastActivity).toLocaleDateString(language, { day: 'numeric', month: 'short' })}
                 </div>
               </div>
               <button
-                onClick={() => setDeletingId(match.id)}
+                onClick={() => setDeletingId(th.otherId)}
                 className="border-0 bg-transparent cursor-pointer px-4 py-3.5 text-gray-300 active:text-red-400"
               >
                 <Trash2 size={17} />
@@ -153,7 +195,7 @@ function Conversation({ match, onBack }) {
   useEffect(() => {
     fetchMessages()
     const subscription = supabase
-      .channel(`messages:${match.id}`)
+      .channel(`messages:${match.otherId}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -243,19 +285,29 @@ function Conversation({ match, onBack }) {
         <UserActionsMenu
           targetUserId={match.otherId}
           targetPetName={match.profile?.pet_name}
-          matchId={match.id}
+          matchId={match.matchId}
           onBlocked={onBack}
         />
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-2.5 bg-ps-bg">
-        <div
-          className="flex items-center gap-2 rounded-xl p-3 text-sm font-semibold mb-2"
-          style={{ background: 'linear-gradient(90deg, #EDE9FE, #FCE7F3)', color: '#7C3AED' }}
-        >
-          <span>🐾</span>
-          <span>{t('chat.matchBanner')}</span>
-        </div>
+        {match.matchId ? (
+          <div
+            className="flex items-center gap-2 rounded-xl p-3 text-sm font-semibold mb-2"
+            style={{ background: 'linear-gradient(90deg, #EDE9FE, #FCE7F3)', color: '#7C3AED' }}
+          >
+            <span>🐾</span>
+            <span>{t('chat.matchBanner')}</span>
+          </div>
+        ) : !match.mutual && (
+          <div
+            className="flex items-center gap-2 rounded-xl p-3 text-xs font-medium mb-2"
+            style={{ background: '#FEF3C7', color: '#92400E' }}
+          >
+            <span>⚠️</span>
+            <span>{t('chat.notFollowingBanner')}</span>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center text-sm text-gray-400 py-4">{t('chat.loadingConversation')}</div>
@@ -358,8 +410,61 @@ function Conversation({ match, onBack }) {
   )
 }
 
-export default function Chat() {
+export default function Chat({ initialUserId, onConsumeInitialUser }) {
+  const { user } = useAuth()
   const [activeChat, setActiveChat] = useState(null)
+
+  useEffect(() => {
+    if (!initialUserId) return
+    openThreadWith(initialUserId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUserId])
+
+  async function openThreadWith(otherId) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, pet_name, emoji, breed, location, avatar_url')
+      .eq('id', otherId)
+      .single()
+
+    const { data: verifiedRow } = await supabase
+      .from('verification_requests')
+      .select('id')
+      .eq('user_id', otherId)
+      .eq('status', 'aprobado')
+      .maybeSingle()
+
+    const { data: matchRow } = await supabase
+      .from('matches')
+      .select('id, created_at')
+      .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherId}),and(user1_id.eq.${otherId},user2_id.eq.${user.id})`)
+      .maybeSingle()
+
+    const { data: followingRow } = await supabase
+      .from('follows')
+      .select('id')
+      .eq('follower_id', user.id)
+      .eq('following_id', otherId)
+      .maybeSingle()
+
+    const { data: followerRow } = await supabase
+      .from('follows')
+      .select('id')
+      .eq('follower_id', otherId)
+      .eq('following_id', user.id)
+      .maybeSingle()
+
+    setActiveChat({
+      otherId,
+      matchId: matchRow?.id || null,
+      lastActivity: matchRow?.created_at || new Date().toISOString(),
+      profile,
+      verified: !!verifiedRow,
+      mutual: !!followingRow && !!followerRow,
+    })
+    onConsumeInitialUser && onConsumeInitialUser()
+  }
+
   if (activeChat) return <Conversation match={activeChat} onBack={() => setActiveChat(null)} />
   return <ConversationList onOpen={setActiveChat} />
 }

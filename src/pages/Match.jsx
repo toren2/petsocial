@@ -5,6 +5,7 @@ import { useAuth } from '../AuthContext'
 import { notifyMatch } from '../notifications'
 import VerifiedBadge from '../components/VerifiedBadge'
 import { useLanguage } from '../LanguageContext'
+import { isAdult, isMinorUser } from '../age'
 
 const tagColors = {
   'Muy activo':   'bg-green-100 text-green-800',
@@ -259,7 +260,7 @@ export default function Match({ onMatch }) {
       const verifiedIds = new Set(verifiedRows?.map(v => v.user_id) || [])
 
       const filtered = profiles
-        .filter(p => !matchedIds.includes(p.id) && !likedIds.includes(p.id) && !blockedIds.includes(p.id))
+        .filter(p => !matchedIds.includes(p.id) && !likedIds.includes(p.id) && !blockedIds.includes(p.id) && (!p.birthdate || isAdult(p.birthdate)))
         .map(p => ({
           id: p.id,
           name: p.pet_name,
@@ -344,6 +345,14 @@ export default function Match({ onMatch }) {
     opacity: 0,
     transition: 'transform 0.3s, opacity 0.3s',
   } : {}
+
+  if (isMinorUser(user)) return (
+    <div className="flex flex-col flex-1 items-center justify-center gap-3 text-gray-400 px-8 text-center">
+      <span className="text-4xl">🔒</span>
+      <p className="text-sm font-semibold text-gray-600">{t('match.adultsOnlyTitle')}</p>
+      <p className="text-xs text-gray-400">{t('match.adultsOnlyBody')}</p>
+    </div>
+  )
 
   if (loading) return (
     <div className="flex flex-col flex-1 items-center justify-center gap-3 text-gray-400">

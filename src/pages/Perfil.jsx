@@ -251,6 +251,7 @@ export default function Perfil({ onSignOut, onNavigate }) {
     const { error } = await supabase.from('profiles').upsert({
       id: user.id, ...form,
       age: parseInt(form.age) || 0,
+      birthdate: user.user_metadata?.birthdate || null,
       updated_at: new Date().toISOString(),
     })
     if (!error) {

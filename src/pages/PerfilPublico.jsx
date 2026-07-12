@@ -7,6 +7,7 @@ import UserActionsMenu from '../components/UserActionsMenu'
 import VerifiedBadge from '../components/VerifiedBadge'
 import HuellasBadge from '../components/HuellasBadge'
 import BadgesModal from '../components/BadgesModal'
+import { isAdult, isMinorUser } from '../age'
 
 const INTERESTS = [
   { key: 'playful', emoji: '🎾' },
@@ -93,6 +94,7 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
   const [matchId, setMatchId] = useState(null)
   const [isVerified, setIsVerified] = useState(false)
   const [isFollowing, setIsFollowing] = useState(false)
+  const [theyFollow, setTheyFollow] = useState(false)
   const [followerCount, setFollowerCount] = useState(0)
   const [viewingPhoto, setViewingPhoto] = useState(null)
   const [showInfo, setShowInfo] = useState(false)
@@ -104,6 +106,7 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
   fetchPosts()
   checkMatch()
   checkFollowing()
+  checkTheyFollow()
   fetchFollowerCount()
   checkVerified()
   fetchHuellas()
@@ -159,6 +162,16 @@ useEffect(() => {
     setIsFollowing(!!data)
   }
 
+  async function checkTheyFollow() {
+    const { data } = await supabase
+      .from('follows')
+      .select('id')
+      .eq('follower_id', userId)
+      .eq('following_id', user.id)
+      .single()
+    setTheyFollow(!!data)
+  }
+
   async function fetchFollowerCount() {
     const { count } = await supabase
       .from('follows')
@@ -208,6 +221,10 @@ useEffect(() => {
     </div>
   )
 
+  const mutualFollow = isFollowing && theyFollow
+  const bothAdults = !isMinorUser(user) && (!profile.birthdate || isAdult(profile.birthdate))
+  const canMessage = userId !== user.id && (bothAdults || mutualFollow)
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
@@ -217,9 +234,9 @@ useEffect(() => {
         <h2 className="font-bold text-gray-900 text-base flex-1 flex items-center gap-1">
           {profile.pet_name} <VerifiedBadge verified={isVerified} size={15} />
         </h2>
-        {isMatch && onChat && (
+        {canMessage && onChat && (
           <button
-            onClick={onChat}
+            onClick={() => onChat(userId)}
             className="flex items-center gap-1.5 border-0 cursor-pointer px-3 py-1.5 rounded-full text-xs font-semibold"
             style={{ background: '#EDE9FE', color: '#7C3AED' }}
           >

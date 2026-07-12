@@ -14,14 +14,15 @@ export default function Auth() {
   const [resetSent, setResetSent] = useState(false)
 
   const today = new Date()
-  const maxBirthdate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate()).toISOString().slice(0, 10)
+  const maxBirthdate = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate()).toISOString().slice(0, 10)
   const minBirthdate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate()).toISOString().slice(0, 10)
 
-  function isAtLeast18(dateStr) {
+  function isValidBirthdate(dateStr) {
     if (!dateStr) return false
     const birth = new Date(`${dateStr}T00:00:00`)
-    const cutoff = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
-    return birth <= cutoff
+    const maxDate = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate())
+    const minDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate())
+    return birth <= maxDate && birth >= minDate
   }
 
   async function handleSubmit() {
@@ -30,8 +31,8 @@ export default function Auth() {
       setError(t('auth.passwordTooShort'))
       return
     }
-    if (mode === 'register' && !isAtLeast18(birthdate)) {
-      setError(t('auth.underageError'))
+    if (mode === 'register' && !isValidBirthdate(birthdate)) {
+      setError(t('auth.invalidBirthdateError'))
       return
     }
     setLoading(true)

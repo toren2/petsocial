@@ -286,7 +286,7 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
   )
 }
 
-export default function Feed() {
+export default function Feed({ onOpenChat }) {
   const { user } = useAuth()
   const { t } = useLanguage()
   const [posts, setPosts] = useState([])
@@ -464,7 +464,12 @@ export default function Feed() {
 
       {viewingProfile && viewingProfile !== user.id && (
         <div className="absolute inset-0 z-40 bg-ps-bg flex flex-col">
-          <PerfilPublico key={viewingProfile} userId={viewingProfile} onBack={() => setViewingProfile(null)} />
+          <PerfilPublico
+            key={viewingProfile}
+            userId={viewingProfile}
+            onBack={() => setViewingProfile(null)}
+            onChat={onOpenChat ? (uid) => { setViewingProfile(null); onOpenChat(uid) } : undefined}
+          />
         </div>
       )}
 

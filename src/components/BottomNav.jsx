@@ -1,9 +1,13 @@
 import React from 'react'
 import { Home, Heart, MessageCircle, MapPin, Calendar, User, Newspaper } from 'lucide-react'
 import { useLanguage } from '../LanguageContext'
+import { useAuth } from '../AuthContext'
+import { isMinorUser } from '../age'
 
 export default function BottomNav({ active, onNavigate }) {
   const { t } = useLanguage()
+  const { user } = useAuth()
+  const minor = isMinorUser(user)
   const tabs = [
     { id: 'hub',      label: t('bottomNav.home'),    Icon: Home          },
     { id: 'feed',     label: t('bottomNav.feed'),    Icon: Newspaper     },
@@ -12,7 +16,7 @@ export default function BottomNav({ active, onNavigate }) {
     { id: 'eventos',  label: t('bottomNav.eventos'), Icon: Calendar      },
     { id: 'lugares',  label: t('bottomNav.places'),  Icon: MapPin        },
     { id: 'perfil',   label: t('bottomNav.profile'), Icon: User          },
-  ]
+  ].filter(tab => tab.id !== 'match' || !minor)
   return (
     <nav className="flex bg-white border-t border-gray-200 pb-2 pt-1 flex-shrink-0">
       {tabs.map(({ id, label, Icon }) => (
