@@ -223,7 +223,7 @@ export default function LugarDetalle({ place, onBack }) {
 
       <div className="flex-1 overflow-y-auto bg-ps-bg">
         <div className="flex items-center justify-center" style={{ height: 160, background: bg }}>
-          <CatIcon size={64} color={color} />
+          <CatIcon size={64} color={color} strokeWidth={2.1} />
         </div>
 
         <div className="bg-white mx-4 mt-4 rounded-2xl p-4 border border-gray-100">

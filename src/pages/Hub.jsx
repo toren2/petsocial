@@ -370,7 +370,7 @@ export default function Hub({ onNavigate, unreadCount }) {
                 className="flex flex-col items-center gap-1.5 py-3 rounded-2xl border-0 cursor-pointer"
                 style={{ background: bg }}
               >
-                <Icon size={22} color={color} />
+                <Icon size={23} color={color} strokeWidth={2.25} />
                 <span className="text-[10px] font-semibold" style={{ color }}>{label}</span>
               </button>
             ))}
@@ -498,7 +498,7 @@ export default function Hub({ onNavigate, unreadCount }) {
                 className="flex flex-col items-center gap-2 py-4 rounded-2xl border-0 cursor-pointer"
                 style={{ background: bg }}
               >
-                <Icon size={24} color={color} />
+                <Icon size={25} color={color} strokeWidth={2.25} />
                 <span className="text-[10px] font-semibold text-center leading-tight" style={{ color }}>{label}</span>
               </button>
             ))}

@@ -21,7 +21,7 @@ export default function BottomNav({ active, onNavigate }) {
           onClick={() => onNavigate(id)}
           className={`bottom-nav-item ${active === id ? 'active' : ''}`}
         >
-          <Icon size={20} strokeWidth={active === id ? 2.5 : 1.8} />
+          <Icon size={22} strokeWidth={active === id ? 2.75 : 2.1} />
           <span>{label}</span>
         </button>
       ))}

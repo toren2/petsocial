@@ -188,7 +188,7 @@ export default function Lugares({ initialCategory = 'all' }) {
               style={{ background: activeCategory === id ? '#F5F3FF' : 'white' }}
             >
               <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: activeCategory === id ? color : bg }}>
-                <Icon size={20} color={activeCategory === id ? 'white' : color} />
+                <Icon size={21} color={activeCategory === id ? 'white' : color} strokeWidth={2.25} />
               </div>
               <span className="text-[9px] text-center leading-tight font-medium" style={{ color: activeCategory === id ? color : '#9CA3AF' }}>
                 {label}
@@ -231,7 +231,7 @@ export default function Lugares({ initialCategory = 'all' }) {
               >
                 <div className="flex items-center gap-3 p-3">
                   <div className="relative w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: catColors[featuredPlace.category]?.bg || '#EDE9FE' }}>
-                    {React.createElement(catIcons[featuredPlace.category] || MapPin, { size: 28, color: catColors[featuredPlace.category]?.color || '#7C3AED' })}
+                    {React.createElement(catIcons[featuredPlace.category] || MapPin, { size: 28, color: catColors[featuredPlace.category]?.color || '#7C3AED', strokeWidth: 2.25 })}
                     {placesWithPet.has(featuredPlace.id) && (
                       <div className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white" style={{ background: '#FEF3C7' }} title={t('lugares.placePetBadge')}>
                         <Crown size={11} color="#D97706" />
@@ -297,7 +297,7 @@ export default function Lugares({ initialCategory = 'all' }) {
               return (
                 <div key={place.id} onClick={() => setSelectedPlace(place)} className="flex gap-3 px-3 py-3 border-b border-gray-100 bg-white cursor-pointer active:bg-gray-50">
                   <div className="relative flex-shrink-0 rounded-2xl flex items-center justify-center" style={{ width: 80, height: 80, background: bg }}>
-                    <CatIcon size={28} color={color} />
+                    <CatIcon size={28} color={color} strokeWidth={2.25} />
                     {placesWithPet.has(place.id) && (
                       <div className="absolute top-1 left-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white" style={{ background: '#FEF3C7' }} title={t('lugares.placePetBadge')}>
                         <Crown size={11} color="#D97706" />
