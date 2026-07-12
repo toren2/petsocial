@@ -8,6 +8,7 @@ import Verificacion from '../components/Verificacion'
 import VerifiedBadge from '../components/VerifiedBadge'
 import HuellasBadge from '../components/HuellasBadge'
 import BadgesModal from '../components/BadgesModal'
+import PushToggle from '../components/PushToggle'
 import PerfilPublico from './PerfilPublico'
 
 function getVaccineStatus(list) {
@@ -544,6 +545,8 @@ export default function Perfil({ onSignOut, onNavigate }) {
           </span>
           <ChevronRight size={16} className="text-gray-300" />
         </button>
+
+        <PushToggle />
 
         {user?.email === ADMIN_EMAIL && (
           <button

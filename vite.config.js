@@ -6,6 +6,12 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+      },
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'snoutt-icon.png', 'snoutt-logo.png'],
       manifest: {
