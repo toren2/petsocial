@@ -172,6 +172,7 @@ export const translations = {
       matchSubtitle: 'Tú y {{name}} se han gustado ✨',
       sendMessage: 'Enviar mensaje',
       keepExploring: 'Seguir explorando',
+      safetyTip: 'Antes de conocerse en persona, elige un lugar público (revisa Lugares en la app) y cuéntale a alguien de confianza dónde vas a estar.',
     },
     chat: {
       messages: 'Mensajes',
@@ -754,6 +755,7 @@ export const translations = {
       matchSubtitle: 'You and {{name}} liked each other ✨',
       sendMessage: 'Send message',
       keepExploring: 'Keep exploring',
+      safetyTip: 'Before meeting in person, pick a public place (check Places in the app) and let someone you trust know where you\'ll be.',
     },
     chat: {
       messages: 'Messages',
