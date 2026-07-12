@@ -13,6 +13,10 @@ export default function ResetPassword() {
 
   async function handleSubmit() {
     if (!password || !confirmPassword) return
+    if (password.length < 8) {
+      setError(t('resetPassword.tooShortError'))
+      return
+    }
     if (password !== confirmPassword) {
       setError(t('resetPassword.mismatchError'))
       return

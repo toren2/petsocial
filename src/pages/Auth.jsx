@@ -14,6 +14,10 @@ export default function Auth() {
 
   async function handleSubmit() {
     if (!email || !password) return
+    if (mode === 'register' && password.length < 8) {
+      setError(t('auth.passwordTooShort'))
+      return
+    }
     setLoading(true)
     setError('')
     const { error } = mode === 'login'
