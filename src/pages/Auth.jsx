@@ -8,9 +8,21 @@ export default function Auth() {
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [birthdate, setBirthdate] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resetSent, setResetSent] = useState(false)
+
+  const today = new Date()
+  const maxBirthdate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate()).toISOString().slice(0, 10)
+  const minBirthdate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate()).toISOString().slice(0, 10)
+
+  function isAtLeast18(dateStr) {
+    if (!dateStr) return false
+    const birth = new Date(`${dateStr}T00:00:00`)
+    const cutoff = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
+    return birth <= cutoff
+  }
 
   async function handleSubmit() {
     if (!email || !password) return
@@ -18,11 +30,15 @@ export default function Auth() {
       setError(t('auth.passwordTooShort'))
       return
     }
+    if (mode === 'register' && !isAtLeast18(birthdate)) {
+      setError(t('auth.underageError'))
+      return
+    }
     setLoading(true)
     setError('')
     const { error } = mode === 'login'
       ? await signIn(email, password)
-      : await signUp(email, password)
+      : await signUp(email, password, birthdate)
     if (error) setError(error.message)
     setLoading(false)
   }
@@ -173,6 +189,20 @@ export default function Auth() {
                   onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                 />
               </div>
+              {mode === 'register' && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('auth.birthdate')}</label>
+                  <input
+                    type="date"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none bg-ps-bg"
+                    value={birthdate}
+                    max={maxBirthdate}
+                    min={minBirthdate}
+                    onChange={e => setBirthdate(e.target.value)}
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">{t('auth.birthdateHint')}</p>
+                </div>
+              )}
             </div>
 
             {error && (
