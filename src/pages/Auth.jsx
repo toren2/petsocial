@@ -192,7 +192,21 @@ export default function Auth() {
 
             {mode === 'register' && (
               <p className="text-xs text-gray-400 text-center leading-relaxed">
-                {t('auth.termsNotice')}
+                {language === 'es' ? (
+                  <>
+                    Al registrarte aceptas nuestros{' '}
+                    <a href="/terminos.html" target="_blank" rel="noopener noreferrer" className="text-ps-purple font-medium">términos de uso</a>
+                    {' '}y{' '}
+                    <a href="/privacidad.html" target="_blank" rel="noopener noreferrer" className="text-ps-purple font-medium">política de privacidad</a>.
+                  </>
+                ) : (
+                  <>
+                    By signing up you agree to our{' '}
+                    <a href="/terminos.html" target="_blank" rel="noopener noreferrer" className="text-ps-purple font-medium">terms of use</a>
+                    {' '}and{' '}
+                    <a href="/privacidad.html" target="_blank" rel="noopener noreferrer" className="text-ps-purple font-medium">privacy policy</a>.
+                  </>
+                )}
               </p>
             )}
           </>
