@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft, CheckCircle2, ArrowRight, Trophy, AlertTriangle, Trash2, ShieldAlert } from 'lucide-react'
+import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft, CheckCircle2, ArrowRight, Trophy, ShieldAlert, Settings } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -8,7 +8,7 @@ import Verificacion from '../components/Verificacion'
 import VerifiedBadge from '../components/VerifiedBadge'
 import HuellasBadge from '../components/HuellasBadge'
 import BadgesModal from '../components/BadgesModal'
-import PushToggle from '../components/PushToggle'
+import Configuracion from './Configuracion'
 import PerfilPublico from './PerfilPublico'
 
 function getVaccineStatus(list) {
@@ -96,10 +96,7 @@ export default function Perfil({ onSignOut, onNavigate }) {
   const [showBadgesModal, setShowBadgesModal] = useState(false)
   const [vaccineStatus, setVaccineStatus] = useState('none')
   const [huellasPoints, setHuellasPoints] = useState(0)
-  const [showDeleteAccount, setShowDeleteAccount] = useState(false)
-  const [deleteConfirmInput, setDeleteConfirmInput] = useState('')
-  const [deletingAccount, setDeletingAccount] = useState(false)
-  const [deleteAccountError, setDeleteAccountError] = useState('')
+  const [showSettings, setShowSettings] = useState(false)
   const bonusClaimedRef = useRef(false)
   const fileInputRef = useRef(null)
   const petPhotoRef = useRef(null)
@@ -267,18 +264,6 @@ export default function Perfil({ onSignOut, onNavigate }) {
 
   function handle(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
-  async function handleDeleteAccount() {
-    setDeletingAccount(true)
-    setDeleteAccountError('')
-    const { error } = await supabase.rpc('delete_own_account')
-    if (error) {
-      setDeleteAccountError(t('perfil.deleteAccountError'))
-      setDeletingAccount(false)
-      return
-    }
-    onSignOut()
-  }
-
   if (loading) return (
     <div className="flex flex-col flex-1 items-center justify-center gap-3 text-gray-400">
       <span className="text-4xl">🐾</span>
@@ -417,12 +402,6 @@ export default function Perfil({ onSignOut, onNavigate }) {
           {saving ? t('perfil.saving') : t('perfil.saveProfile')}
         </button>
         <button onClick={onSignOut} className="w-full py-3 rounded-full text-sm text-gray-400 border border-gray-200 bg-white cursor-pointer">{t('perfil.signOut')}</button>
-        <button
-          onClick={() => { setDeleteConfirmInput(''); setDeleteAccountError(''); setShowDeleteAccount(true) }}
-          className="w-full py-2.5 text-xs font-medium text-red-500 border-0 bg-transparent cursor-pointer flex items-center justify-center gap-1.5"
-        >
-          <Trash2 size={13} /> {t('perfil.deleteAccount')}
-        </button>
       </div>
     </div>
   )
@@ -431,6 +410,12 @@ export default function Perfil({ onSignOut, onNavigate }) {
     <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex-1 overflow-y-auto bg-white">
         <div className="flex items-center gap-4 px-4 py-4">
+          <button
+            onClick={() => setShowSettings(true)}
+            className="absolute top-3 right-4 z-10 border-0 bg-transparent cursor-pointer text-gray-400"
+          >
+            <Settings size={20} />
+          </button>
           <div className="relative flex-shrink-0 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
             {profile.avatar_url ? (
               <img src={profile.avatar_url} alt="avatar" className="w-20 h-20 rounded-full object-cover border-2 border-ps-purple-light" />
@@ -545,8 +530,6 @@ export default function Perfil({ onSignOut, onNavigate }) {
           </span>
           <ChevronRight size={16} className="text-gray-300" />
         </button>
-
-        <PushToggle />
 
         {user?.email === ADMIN_EMAIL && (
           <button
@@ -716,47 +699,8 @@ export default function Perfil({ onSignOut, onNavigate }) {
         <BadgesModal userId={user.id} onBack={() => setShowBadgesModal(false)} />
       )}
 
-      {showDeleteAccount && (
-        <div className="absolute inset-0 z-50 flex items-end" style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <div className="w-full bg-white rounded-t-3xl p-6 flex flex-col gap-4">
-            <div className="flex items-center gap-2 text-red-500">
-              <AlertTriangle size={20} />
-              <h2 className="text-lg font-bold">{t('perfil.deleteAccountTitle')}</h2>
-            </div>
-            <p className="text-sm text-gray-600 leading-relaxed">{t('perfil.deleteAccountWarning')}</p>
-            <div>
-              <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('perfil.deleteAccountTypeToConfirm')}</label>
-              <input
-                type="text"
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none bg-ps-bg"
-                placeholder={t('perfil.deleteAccountConfirmWord')}
-                value={deleteConfirmInput}
-                onChange={e => setDeleteConfirmInput(e.target.value)}
-              />
-            </div>
-            {deleteAccountError && (
-              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-xs text-red-600">
-                {deleteAccountError}
-              </div>
-            )}
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowDeleteAccount(false)}
-                className="flex-1 py-3 rounded-full text-sm font-semibold border border-gray-200 bg-white cursor-pointer text-gray-600"
-              >
-                {t('perfil.deleteAccountCancel')}
-              </button>
-              <button
-                onClick={handleDeleteAccount}
-                disabled={deletingAccount || deleteConfirmInput.trim().toUpperCase() !== t('perfil.deleteAccountConfirmWord')}
-                className="flex-1 py-3 rounded-full text-sm font-semibold border-0 cursor-pointer text-white"
-                style={{ background: deletingAccount || deleteConfirmInput.trim().toUpperCase() !== t('perfil.deleteAccountConfirmWord') ? '#FCA5A5' : '#DC2626' }}
-              >
-                {deletingAccount ? t('perfil.deleteAccountDeleting') : t('perfil.deleteAccountButton')}
-              </button>
-            </div>
-          </div>
-        </div>
+      {showSettings && (
+        <Configuracion onBack={() => setShowSettings(false)} onSignOut={onSignOut} />
       )}
     </div>
   )

@@ -264,6 +264,12 @@ export const translations = {
       interest_hiking: 'Montañista',
       interest_toys: 'Le encantan los juguetes',
     },
+    settings: {
+      title: 'Ajustes',
+      language: 'Idioma',
+      languageEs: 'Español',
+      languageEn: 'English',
+    },
     perfilPublico: {
       profileNotFound: 'Perfil no encontrado',
       message: 'Mensaje',
@@ -836,6 +842,12 @@ export const translations = {
       interest_water: 'Loves water',
       interest_hiking: 'Loves hiking',
       interest_toys: 'Loves toys',
+    },
+    settings: {
+      title: 'Settings',
+      language: 'Language',
+      languageEs: 'Español',
+      languageEn: 'English',
     },
     perfilPublico: {
       profileNotFound: 'Profile not found',
