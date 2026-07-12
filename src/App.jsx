@@ -14,6 +14,7 @@ import Chat from './pages/Chat'
 import BottomNav from './components/BottomNav'
 import MatchModal from './components/MatchModal'
 import Hub from './pages/Hub'
+import AdminModeracion from './pages/AdminModeracion'
 
 
 export default function App() {
@@ -84,8 +85,9 @@ export default function App() {
         {screen === 'eventos' && <Eventos />}
         {screen === 'perdidos' && <Perdidos onNavigate={(s) => setScreen(s)} />}
         {screen === 'lugares' && <Lugares initialCategory={initialCategory} />}
-        {screen === 'perfil'  && <Perfil onSignOut={signOut} />}
-        
+        {screen === 'perfil'  && <Perfil onSignOut={signOut} onNavigate={setScreen} />}
+        {screen === 'admin'   && <AdminModeracion onBack={() => setScreen('perfil')} />}
+
 
         {matchedPet && (
           <MatchModal

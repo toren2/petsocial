@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft, CheckCircle2, ArrowRight, Trophy, AlertTriangle, Trash2 } from 'lucide-react'
+import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft, CheckCircle2, ArrowRight, Trophy, AlertTriangle, Trash2, ShieldAlert } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -43,6 +43,7 @@ const SIZES    = ['Pequeño', 'Mediano', 'Grande']
 const SEXES    = ['Macho', 'Hembra']
 const ENERGIES = ['Tranquilo', 'Activo', 'Hiperactivo']
 const EMOJIS   = ['🐕', '🐩', '🦮', '🐕‍🦺', '🦊', '🐈', '🐇', '🦜']
+const ADMIN_EMAIL = 'josiplopez23@gmail.com'
 
 function PhotoViewer({ posts, startIndex, onClose }) {
   const { t } = useLanguage()
@@ -71,7 +72,7 @@ function PhotoViewer({ posts, startIndex, onClose }) {
   )
 }
 
-export default function Perfil({ onSignOut }) {
+export default function Perfil({ onSignOut, onNavigate }) {
   const { user } = useAuth()
   const { t } = useLanguage()
   const [profile, setProfile] = useState(null)
@@ -543,6 +544,18 @@ export default function Perfil({ onSignOut }) {
           </span>
           <ChevronRight size={16} className="text-gray-300" />
         </button>
+
+        {user?.email === ADMIN_EMAIL && (
+          <button
+            onClick={() => onNavigate?.('admin')}
+            className="w-full flex items-center justify-between px-4 py-2.5 border-0 bg-transparent cursor-pointer text-left"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <ShieldAlert size={15} className="text-ps-purple" /> Moderación
+            </span>
+            <ChevronRight size={16} className="text-gray-300" />
+          </button>
+        )}
 
         <Verificacion onStatusChange={setIsVerified} />
 
