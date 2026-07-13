@@ -234,7 +234,7 @@ function Conversation({ match, onBack }) {
     if (!error && data) {
       setMsgs(prev => [...prev, data[0]])
       const { data: myProfile } = await supabase.from('profiles').select('pet_name').eq('id', user.id).single()
-      await notifyMessage(match.otherId, myProfile?.pet_name || 'Una mascota')
+      await notifyMessage(match.otherId, myProfile?.pet_name || 'Una mascota', user.id)
     }
   }
 

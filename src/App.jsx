@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
 import { useLanguage } from './LanguageContext'
+import { supabase } from './supabase'
 import Auth from './pages/Auth'
 import ResetPassword from './pages/ResetPassword'
 import Splash from './pages/Splash'
@@ -13,6 +14,7 @@ import Perdidos from './pages/Perdidos'
 import Chat from './pages/Chat'
 import BottomNav from './components/BottomNav'
 import MatchModal from './components/MatchModal'
+import Notifications from './components/Notifications'
 import Hub from './pages/Hub'
 import AdminModeracion from './pages/AdminModeracion'
 
@@ -25,6 +27,33 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true)
   const [initialCategory, setInitialCategory] = useState('all')
   const [pendingChatUserId, setPendingChatUserId] = useState(null)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+    fetchUnreadCount()
+    const subscription = supabase
+      .channel('app-notifications-count')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`,
+      }, () => setUnreadCount(c => c + 1))
+      .subscribe()
+    return () => supabase.removeChannel(subscription)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
+
+  async function fetchUnreadCount() {
+    const { count } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('read', false)
+    setUnreadCount(count || 0)
+  }
 
   if (loading) return (
     <div className="phone-shell items-center justify-center flex">
@@ -64,6 +93,12 @@ export default function App() {
   function handleMatchChat() { setMatchedPet(null); setScreen('chat') }
   function handleKeepSwiping() { setMatchedPet(null) }
   function openChatWith(uid) { setPendingChatUserId(uid); setScreen('chat') }
+  function openNotifications() { setShowNotifications(true); setUnreadCount(0) }
+  function handleNotificationNavigate(n) {
+    setShowNotifications(false)
+    if (n.type === 'match' && n.data?.matchUserId) { openChatWith(n.data.matchUserId); return }
+    if (n.type === 'message' && n.data?.senderId) { openChatWith(n.data.senderId); return }
+  }
 
   return (
     <div className="phone-shell">
@@ -80,8 +115,8 @@ export default function App() {
 </div>
 
       <div className="flex flex-col flex-1 overflow-hidden relative">
-        {screen === 'hub'     && <Hub onNavigate={(s, cat) => { if (cat) setInitialCategory(cat); setScreen(s) }} unreadCount={0} />}
-        {screen === 'feed'    && <Feed onOpenChat={openChatWith} />}
+        {screen === 'hub'     && <Hub onNavigate={(s, cat) => { if (cat) setInitialCategory(cat); setScreen(s) }} unreadCount={unreadCount} onOpenNotifications={openNotifications} />}
+        {screen === 'feed'    && <Feed onOpenChat={openChatWith} unreadCount={unreadCount} onOpenNotifications={openNotifications} />}
         {screen === 'match'   && <Match onMatch={handleMatch} />}
         {screen === 'chat'    && <Chat initialUserId={pendingChatUserId} onConsumeInitialUser={() => setPendingChatUserId(null)} />}
         {screen === 'eventos' && <Eventos />}
@@ -96,6 +131,13 @@ export default function App() {
             pet={matchedPet}
             onChat={handleMatchChat}
             onKeepSwiping={handleKeepSwiping}
+          />
+        )}
+
+        {showNotifications && (
+          <Notifications
+            onClose={() => setShowNotifications(false)}
+            onNavigate={handleNotificationNavigate}
           />
         )}
       </div>

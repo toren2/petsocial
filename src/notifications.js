@@ -21,13 +21,13 @@ export async function notifyMatch(myId, theirId, myPetName, theirPetName) {
   )
 }
 
-export async function notifyMessage(receiverId, senderPetName) {
+export async function notifyMessage(receiverId, senderPetName, senderId) {
   await createNotification(
     receiverId,
     'message',
     'Nuevo mensaje 💬',
     `${senderPetName} te ha enviado un mensaje`,
-    {}
+    { senderId }
   )
 }
 

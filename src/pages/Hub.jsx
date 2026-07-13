@@ -128,7 +128,7 @@ function getWeatherTip(t, weather) {
   }
 }
 
-export default function Hub({ onNavigate, unreadCount }) {
+export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const { user } = useAuth()
   const { t, language, setLanguage } = useLanguage()
   const [profile, setProfile] = useState(null)
@@ -319,7 +319,7 @@ export default function Hub({ onNavigate, unreadCount }) {
               {language === 'es' ? 'EN' : 'ES'}
             </button>
             <button
-              onClick={() => onNavigate('feed')}
+              onClick={() => onOpenNotifications && onOpenNotifications()}
               className="relative w-9 h-9 rounded-full flex items-center justify-center border-0 cursor-pointer"
               style={{ background: 'rgba(255,255,255,0.15)' }}
             >

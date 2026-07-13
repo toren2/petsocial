@@ -22,7 +22,7 @@ function iconBg(type) {
   return '#6B7280'
 }
 
-export default function Notifications({ onClose }) {
+export default function Notifications({ onClose, onNavigate }) {
   const { user } = useAuth()
   const { t, language } = useLanguage()
   const [notifications, setNotifications] = useState([])
@@ -111,7 +111,10 @@ export default function Notifications({ onClose }) {
           notifications.map(n => (
             <div
               key={n.id}
-              onClick={() => markRead(n.id)}
+              onClick={() => {
+                markRead(n.id)
+                if (onNavigate && (n.type === 'match' || n.type === 'message')) onNavigate(n)
+              }}
               className="flex items-start gap-3 px-4 py-3.5 border-b border-gray-100 cursor-pointer"
               style={{ background: n.read ? 'white' : '#F5F3FF' }}
             >

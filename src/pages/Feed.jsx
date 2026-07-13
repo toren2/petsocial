@@ -5,7 +5,6 @@ import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import CreatePostModal from '../components/CreatePostModal'
 import StoriesBar from '../components/StoriesBar'
-import Notifications from '../components/Notifications'
 import PerfilPublico from './PerfilPublico'
 import CommentsModal from '../components/CommentsModal'
 import { notifyLike } from '../notifications'
@@ -286,24 +285,21 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
   )
 }
 
-export default function Feed({ onOpenChat }) {
+export default function Feed({ onOpenChat, unreadCount, onOpenNotifications }) {
   const { user } = useAuth()
   const { t } = useLanguage()
   const [posts, setPosts] = useState([])
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
-  const [showNotifications, setShowNotifications] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const [viewingProfile, setViewingProfile] = useState(null)
-  const [unreadCount, setUnreadCount] = useState(0)
   const [feedTab, setFeedTab] = useState('all')
   const [followingIds, setFollowingIds] = useState([])
 
   useEffect(() => {
     fetchPosts()
     fetchProfile()
-    fetchUnreadCount()
     fetchFollowing()
   }, [])
 
@@ -315,15 +311,6 @@ export default function Feed({ onOpenChat }) {
   async function fetchFollowing() {
     const { data } = await supabase.from('follows').select('following_id').eq('follower_id', user.id)
     if (data) setFollowingIds(data.map(f => f.following_id))
-  }
-
-  async function fetchUnreadCount() {
-    const { count } = await supabase
-      .from('notifications')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('read', false)
-    setUnreadCount(count || 0)
   }
 
   async function fetchPosts() {
@@ -378,7 +365,7 @@ export default function Feed({ onOpenChat }) {
             <Search size={22} />
           </button>
           <button
-            onClick={() => { setShowNotifications(true); setUnreadCount(0) }}
+            onClick={() => onOpenNotifications && onOpenNotifications()}
             className="border-0 bg-transparent cursor-pointer text-gray-500 relative"
           >
             <Bell size={22} />
@@ -471,10 +458,6 @@ export default function Feed({ onOpenChat }) {
             onChat={onOpenChat ? (uid) => { setViewingProfile(null); onOpenChat(uid) } : undefined}
           />
         </div>
-      )}
-
-      {showNotifications && (
-        <Notifications onClose={() => setShowNotifications(false)} />
       )}
 
       {showCreate && (
