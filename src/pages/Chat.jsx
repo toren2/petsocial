@@ -8,6 +8,13 @@ import UserActionsMenu from '../components/UserActionsMenu'
 import VerifiedBadge from '../components/VerifiedBadge'
 import { useLanguage } from '../LanguageContext'
 
+function followLabel(following, follower, t) {
+  if (following && follower) return { text: t('chat.followStatusFriends'), color: '#7C3AED' }
+  if (following && !follower) return { text: t('chat.followStatusFollowing'), color: '#9CA3AF' }
+  if (!following && follower) return { text: t('chat.followStatusFollowsYou'), color: '#9CA3AF' }
+  return { text: t('chat.notFollowingBadge'), color: '#D97706' }
+}
+
 function ConversationList({ onOpen }) {
   const { user } = useAuth()
   const { t, language } = useLanguage()
@@ -78,7 +85,8 @@ function ConversationList({ onOpen }) {
         ...th,
         profile: profiles?.find(p => p.id === th.otherId),
         verified: verifiedIds.has(th.otherId),
-        mutual: followingSet.has(th.otherId) && followerSet.has(th.otherId),
+        following: followingSet.has(th.otherId),
+        follower: followerSet.has(th.otherId),
       }))
       .sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity))
 
@@ -113,7 +121,9 @@ function ConversationList({ onOpen }) {
             <p className="text-xs text-center px-8">{t('chat.noMatchesBody')}</p>
           </div>
         ) : (
-          threads.map(th => (
+          threads.map(th => {
+            const badge = followLabel(th.following, th.follower, t)
+            return (
             <div key={th.otherId} className="flex items-center border-b border-gray-100 bg-white">
               <div
                 onClick={() => onOpen(th)}
@@ -133,11 +143,9 @@ function ConversationList({ onOpen }) {
                   <div className="text-xs text-gray-400 truncate mt-0.5">
                     {th.profile?.breed} · {th.profile?.location}
                   </div>
-                  {!th.mutual && (
-                    <div className="text-[10px] font-medium mt-0.5" style={{ color: '#D97706' }}>
-                      {t('chat.notFollowingBadge')}
-                    </div>
-                  )}
+                  <div className="text-[10px] font-medium mt-0.5" style={{ color: badge.color }}>
+                    {badge.text}
+                  </div>
                 </div>
                 <div className="text-xs text-gray-400 flex-shrink-0">
                   {new Date(th.lastActivity).toLocaleDateString(language, { day: 'numeric', month: 'short' })}
@@ -150,7 +158,8 @@ function ConversationList({ onOpen }) {
                 <Trash2 size={17} />
               </button>
             </div>
-          ))
+            )
+          })
         )}
       </div>
 
@@ -299,7 +308,7 @@ function Conversation({ match, onBack }) {
             <span>🐾</span>
             <span>{t('chat.matchBanner')}</span>
           </div>
-        ) : !match.mutual && (
+        ) : (!match.following && !match.follower) && (
           <div
             className="flex items-center gap-2 rounded-xl p-3 text-xs font-medium mb-2"
             style={{ background: '#FEF3C7', color: '#92400E' }}
@@ -460,7 +469,8 @@ export default function Chat({ initialUserId, onConsumeInitialUser }) {
       lastActivity: matchRow?.created_at || new Date().toISOString(),
       profile,
       verified: !!verifiedRow,
-      mutual: !!followingRow && !!followerRow,
+      following: !!followingRow,
+      follower: !!followerRow,
     })
     onConsumeInitialUser && onConsumeInitialUser()
   }
