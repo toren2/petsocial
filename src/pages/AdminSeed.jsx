@@ -8,6 +8,7 @@ const SEARCHES = [
   { category: 'shop', query: 'pet shops tiendas de mascotas en Ciudad de Panamá' },
   { category: 'hotel', query: 'hoteles para mascotas en Ciudad de Panamá' },
   { category: 'restaurant', query: 'restaurantes pet friendly en Ciudad de Panamá' },
+  { category: 'emergency24h', query: 'hospitales veterinarios de emergencia 24 horas en Ciudad de Panamá' },
 ]
 
 const typeLabels = {
@@ -17,6 +18,7 @@ const typeLabels = {
   shop: 'Pet Shop',
   hotel: 'Hotel para mascotas',
   restaurant: 'Restaurante pet-friendly',
+  emergency24h: 'Hospital veterinario 24h',
 }
 
 export default function AdminSeed() {
