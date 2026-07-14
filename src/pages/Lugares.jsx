@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Map, MapPin, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Search, Heart, UtensilsCrossed, Navigation, Crown, Bookmark, Flag, Calendar, AlertTriangle, LayoutGrid, Plus, ArrowLeft, ImagePlus } from 'lucide-react'
+import { Map, MapPin, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Search, Heart, UtensilsCrossed, Navigation, Crown, Bookmark, Flag, Calendar, AlertTriangle, LayoutGrid, ArrowLeft, ImagePlus } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -9,6 +9,7 @@ import MiniMapaLugares from '../components/MiniMapaLugares'
 import PinMap from '../components/PinMap'
 import ReportModal from '../components/ReportModal'
 import AddPlaceModal from '../components/AddPlaceModal'
+import { useBackButton } from '../useBackButton'
 
 const NEARBY_RADIUS_KM = 10
 
@@ -152,6 +153,12 @@ export default function Lugares({ initialCategory = 'all', onNavigate }) {
     }
   }
 
+  useBackButton(view === 'browse', () => setView('home'))
+  useBackButton(!!selectedPlace, () => setSelectedPlace(null))
+  useBackButton(showAddPlace, () => setShowAddPlace(false))
+  useBackButton(!!reportTarget, () => setReportTarget(null))
+  useBackButton(showMap, () => setShowMap(false))
+
   function enterBrowse(cat) {
     setActiveCategory(cat || 'all')
     setView('browse')
@@ -220,8 +227,11 @@ export default function Lugares({ initialCategory = 'all', onNavigate }) {
     <div className="flex flex-col flex-1 overflow-hidden relative">
       {view === 'home' ? (
         <>
-          <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
-            <h2 className="text-xl font-bold text-gray-900">{t('lugares.title')}</h2>
+          <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
+            <button onClick={() => onNavigate && onNavigate('hub')} className="border-0 bg-transparent cursor-pointer text-ps-purple" aria-label={t('common.back')}>
+              <ArrowLeft size={22} />
+            </button>
+            <h2 className="text-xl font-bold text-gray-900 flex-1">{t('lugares.title')}</h2>
             <button onClick={openMap} className="border-0 bg-transparent cursor-pointer text-ps-purple" aria-label={t('lugares.viewMapAria')}>
               <Map size={22} />
             </button>
@@ -337,15 +347,6 @@ export default function Lugares({ initialCategory = 'all', onNavigate }) {
               </div>
             </div>
           </div>
-
-          <button
-            onClick={() => setShowAddPlace(true)}
-            className="absolute bottom-6 right-4 w-14 h-14 rounded-full flex items-center justify-center border-0 cursor-pointer shadow-lg"
-            style={{ background: '#7C3AED' }}
-            aria-label={t('lugares.taAddPlace')}
-          >
-            <Plus size={26} color="white" />
-          </button>
         </>
       ) : (
         <>

@@ -17,6 +17,7 @@ import MatchModal from './components/MatchModal'
 import Notifications from './components/Notifications'
 import Hub from './pages/Hub'
 import AdminModeracion from './pages/AdminModeracion'
+import { useBackButton } from './useBackButton'
 
 
 export default function App() {
@@ -46,6 +47,12 @@ export default function App() {
     return () => supabase.removeChannel(subscription)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
+
+  // El boton/gesto de "atras" del celular navega dentro de la app en vez de salir:
+  // primero cierra el modal que este abierto, si no hay ninguno vuelve al Hub.
+  useBackButton(!!user && !loading && screen !== 'hub' && screen !== 'splash', () => setScreen('hub'))
+  useBackButton(!!matchedPet, () => setMatchedPet(null))
+  useBackButton(showNotifications, () => setShowNotifications(false))
 
   async function fetchUnreadCount() {
     const { count } = await supabase

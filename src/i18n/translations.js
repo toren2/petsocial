@@ -11,6 +11,7 @@ export const translations = {
       years: 'años',
       seeAll: 'Ver todos',
       you: 'Tú',
+      back: 'Atrás',
     },
     splash: {
       tagline: 'La red social de mascotas',
@@ -668,6 +669,7 @@ export const translations = {
       years: 'years',
       seeAll: 'See all',
       you: 'You',
+      back: 'Back',
     },
     splash: {
       tagline: 'The pet social network',
