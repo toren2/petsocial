@@ -488,7 +488,7 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
                 const CatIcon = catIcons[place.category] || MapPin
                 const catColor = catColors[place.category] || { color: '#7C3AED', bg: '#EDE9FE' }
                 return (
-                  <div key={place.id} onClick={() => onNavigate('lugares')} className="flex items-center gap-3 bg-white rounded-2xl px-3 py-3 border border-gray-100 cursor-pointer active:bg-gray-50">
+                  <div key={place.id} onClick={() => onNavigate('lugares', null, place.id)} className="flex items-center gap-3 bg-white rounded-2xl px-3 py-3 border border-gray-100 cursor-pointer active:bg-gray-50">
                     <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0" style={{ background: catColor.bg }}>
                       {place.image_url ? (
                         <img src={place.image_url} alt={place.name} className="w-full h-full object-cover" />

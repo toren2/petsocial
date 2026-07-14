@@ -27,6 +27,7 @@ export default function App() {
   const [matchedPet, setMatchedPet] = useState(null)
   const [showSplash, setShowSplash] = useState(true)
   const [initialCategory, setInitialCategory] = useState('all')
+  const [pendingPlaceId, setPendingPlaceId] = useState(null)
   const [pendingChatUserId, setPendingChatUserId] = useState(null)
   const [pendingEventId, setPendingEventId] = useState(null)
   const [showNotifications, setShowNotifications] = useState(false)
@@ -125,13 +126,13 @@ export default function App() {
 </div>
 
       <div className="flex flex-col flex-1 overflow-hidden relative">
-        {screen === 'hub'     && <Hub onNavigate={(s, cat) => { if (cat) setInitialCategory(cat); setScreen(s) }} unreadCount={unreadCount} onOpenNotifications={openNotifications} />}
+        {screen === 'hub'     && <Hub onNavigate={(s, cat, placeId) => { if (cat) setInitialCategory(cat); if (placeId) setPendingPlaceId(placeId); setScreen(s) }} unreadCount={unreadCount} onOpenNotifications={openNotifications} />}
         {screen === 'feed'    && <Feed onOpenChat={openChatWith} unreadCount={unreadCount} onOpenNotifications={openNotifications} />}
         {screen === 'match'   && <Match onMatch={handleMatch} />}
         {screen === 'chat'    && <Chat initialUserId={pendingChatUserId} onConsumeInitialUser={() => setPendingChatUserId(null)} />}
         {screen === 'eventos' && <Eventos initialEventId={pendingEventId} onConsumeInitialEvent={() => setPendingEventId(null)} />}
         {screen === 'perdidos' && <Perdidos onNavigate={(s) => setScreen(s)} />}
-        {screen === 'lugares' && <Lugares initialCategory={initialCategory} onNavigate={setScreen} />}
+        {screen === 'lugares' && <Lugares initialCategory={initialCategory} initialPlaceId={pendingPlaceId} onConsumeInitialPlace={() => setPendingPlaceId(null)} onNavigate={setScreen} />}
         {screen === 'perfil'  && <Perfil onSignOut={signOut} onNavigate={setScreen} />}
         {screen === 'admin'   && <AdminModeracion onBack={() => setScreen('perfil')} />}
 

@@ -45,7 +45,7 @@ function getDistance(lat1, lng1, lat2, lng2) {
   return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1)
 }
 
-export default function Lugares({ initialCategory = 'all', onNavigate }) {
+export default function Lugares({ initialCategory = 'all', initialPlaceId = null, onConsumeInitialPlace, onNavigate }) {
   const { user } = useAuth()
   const { t } = useLanguage()
   const categories = [
@@ -73,6 +73,15 @@ export default function Lugares({ initialCategory = 'all', onNavigate }) {
   const [reportTarget, setReportTarget] = useState(null) // { type, place } | null
 
   useEffect(() => { fetchPlaces(); fetchPlacesWithPet(); fetchSaved() }, [])
+
+  useEffect(() => {
+    if (!initialPlaceId || places.length === 0) return
+    const place = places.find(p => p.id === initialPlaceId)
+    if (place) {
+      setSelectedPlace(place)
+      onConsumeInitialPlace && onConsumeInitialPlace()
+    }
+  }, [initialPlaceId, places])
 
   useEffect(() => {
     if (navigator.geolocation) {
