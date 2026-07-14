@@ -21,17 +21,6 @@ export default async function handler(req, res) {
     })
 
     const data = await response.json()
-    console.log('DEBUG places:', JSON.stringify({
-      httpStatus: response.status,
-      errorField: data.error || null,
-      count: data.places?.length || 0,
-      first: data.places?.[0] ? {
-        name: data.places[0].displayName?.text,
-        keys: Object.keys(data.places[0]),
-        hasPhotos: 'photos' in data.places[0],
-        photosLen: data.places[0].photos?.length || 0,
-      } : null,
-    }))
     res.status(200).json(data)
   } catch (err) {
     res.status(500).json({ error: err.message })
