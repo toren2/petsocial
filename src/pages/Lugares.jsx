@@ -207,7 +207,6 @@ export default function Lugares({ initialCategory = 'all', onNavigate }) {
     { id: 'search',    label: t('lugares.qaSearch'),    Icon: Search,        bg: '#EDE9FE', color: '#7C3AED', onClick: () => enterBrowse('all') },
     { id: 'report',    label: t('lugares.qaReport'),    Icon: Flag,          bg: '#FEE2E2', color: '#DC2626', onClick: () => setReportTarget({ type: 'lugar', place: null }) },
     { id: 'event',     label: t('lugares.qaEvent'),     Icon: Calendar,      bg: '#FEF3C7', color: '#D97706', onClick: () => onNavigate && onNavigate('eventos') },
-    { id: 'emergency', label: t('lugares.qaEmergency'), Icon: AlertTriangle, bg: '#FFE4E6', color: '#E11D48', onClick: () => enterBrowse('emergency24h') },
   ]
 
   const toolbarActions = [
@@ -279,7 +278,7 @@ export default function Lugares({ initialCategory = 'all', onNavigate }) {
 
             <div className="px-4 pt-4">
               <h3 className="text-sm font-bold text-gray-900 mb-3">{t('lugares.quickActions')}</h3>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {quickActions.map(({ id, label, Icon, bg, color, onClick }) => (
                   <button
                     key={id}
