@@ -38,3 +38,21 @@
   .bottom-nav-item.active { @apply text-ps-purple; }
   .tag { @apply text-xs px-3 py-1 rounded-full font-medium; }
 }
+
+/* En pantallas de celular real (o el PWA instalado) la maqueta de "telefono"
+   ya no tiene sentido -- se ve como un telefono dentro de otro telefono.
+   Ahi la app debe ocupar toda la pantalla, sin bordes redondeados ni sombra. */
+@media (max-width: 480px) {
+  body {
+    background-color: #F8F7FF;
+    display: block;
+  }
+  .phone-shell {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
