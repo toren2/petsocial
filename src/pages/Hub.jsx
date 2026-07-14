@@ -15,6 +15,20 @@ function getDistance(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
+const catIcons = {
+  vet: Stethoscope, groom: Scissors, park: Trees, shop: ShoppingBag,
+  hotel: Building2, restaurant: UtensilsCrossed, emergency24h: AlertTriangle,
+}
+const catColors = {
+  vet:          { color: '#7C3AED', bg: '#EDE9FE' },
+  groom:        { color: '#EC4899', bg: '#FCE7F3' },
+  park:         { color: '#16A34A', bg: '#DCFCE7' },
+  shop:         { color: '#D97706', bg: '#FEF3C7' },
+  hotel:        { color: '#0F9B8E', bg: '#E0F7F4' },
+  restaurant:   { color: '#DC2626', bg: '#FEE2E2' },
+  emergency24h: { color: '#E11D48', bg: '#FFE4E6' },
+}
+
 const LOST_PET_ALERT_RADIUS_KM = 5
 
 const GENERAL_TIP_KEYS = [
@@ -470,21 +484,29 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
               </button>
             </div>
             <div className="flex flex-col gap-2">
-              {nearbyPlaces.map(place => (
-                <div key={place.id} onClick={() => onNavigate('lugares')} className="flex items-center gap-3 bg-white rounded-2xl px-3 py-3 border border-gray-100 cursor-pointer active:bg-gray-50">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#EDE9FE' }}>
-                    <MapPin size={18} color="#7C3AED" />
+              {nearbyPlaces.map(place => {
+                const CatIcon = catIcons[place.category] || MapPin
+                const catColor = catColors[place.category] || { color: '#7C3AED', bg: '#EDE9FE' }
+                return (
+                  <div key={place.id} onClick={() => onNavigate('lugares')} className="flex items-center gap-3 bg-white rounded-2xl px-3 py-3 border border-gray-100 cursor-pointer active:bg-gray-50">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0" style={{ background: catColor.bg }}>
+                      {place.image_url ? (
+                        <img src={place.image_url} alt={place.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <CatIcon size={20} color={catColor.color} strokeWidth={2.25} />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{place.name}</p>
+                      <p className="text-xs text-gray-400 truncate">{place.type}</p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <span className="text-xs text-yellow-500">⭐</span>
+                      <span className="text-xs font-medium text-gray-700">{place.rating}</span>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{place.name}</p>
-                    <p className="text-xs text-gray-400 truncate">{place.type}</p>
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <span className="text-xs text-yellow-500">⭐</span>
-                    <span className="text-xs font-medium text-gray-700">{place.rating}</span>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
