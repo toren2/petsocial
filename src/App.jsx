@@ -17,6 +17,7 @@ import MatchModal from './components/MatchModal'
 import Notifications from './components/Notifications'
 import Hub from './pages/Hub'
 import AdminModeracion from './pages/AdminModeracion'
+import AdminSeed from './pages/AdminSeed'
 
 
 export default function App() {
@@ -86,6 +87,14 @@ export default function App() {
     return (
       <div className="phone-shell">
         <Auth />
+      </div>
+    )
+  }
+
+  if (typeof window !== 'undefined' && window.location.search.includes('seed=1')) {
+    return (
+      <div className="phone-shell">
+        <AdminSeed />
       </div>
     )
   }
