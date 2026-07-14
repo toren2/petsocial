@@ -17,6 +17,7 @@ import MatchModal from './components/MatchModal'
 import Notifications from './components/Notifications'
 import Hub from './pages/Hub'
 import AdminModeracion from './pages/AdminModeracion'
+import AdminSeed from './pages/AdminSeed'
 
 
 export default function App() {
@@ -66,6 +67,15 @@ export default function App() {
     return (
       <div className="phone-shell">
         <ResetPassword />
+      </div>
+    )
+  }
+
+  const seedMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('seed') === '1'
+  if (seedMode && user) {
+    return (
+      <div className="phone-shell">
+        <AdminSeed />
       </div>
     )
   }
