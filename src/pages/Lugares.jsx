@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Map, MapPin, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Search, Heart, UtensilsCrossed, Navigation, Crown, Bookmark, Flag, Calendar, AlertTriangle, Coffee, Waves, Footprints, Camera, LayoutGrid, Plus, ArrowLeft, ImagePlus } from 'lucide-react'
+import { Map, MapPin, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Search, Heart, UtensilsCrossed, Navigation, Crown, Bookmark, Flag, Calendar, AlertTriangle, LayoutGrid, Plus, ArrowLeft, ImagePlus } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -24,18 +24,14 @@ const catColors = {
 }
 
 const GRID_CATEGORIES = [
-  { id: 'vet',          real: true,  Icon: Stethoscope },
-  { id: 'groom',        real: true,  Icon: Scissors },
-  { id: 'park',         real: true,  Icon: Trees },
-  { id: 'cafes',        real: false, Icon: Coffee,      bg: '#FEF3C7', color: '#D97706' },
-  { id: 'hotel',        real: true,  Icon: Building2 },
-  { id: 'restaurant',   real: true,  Icon: UtensilsCrossed },
-  { id: 'beaches',      real: false, Icon: Waves,       bg: '#E0F7F4', color: '#0F9B8E' },
-  { id: 'shop',         real: true,  Icon: ShoppingBag },
-  { id: 'emergency24h', real: true,  Icon: AlertTriangle },
-  { id: 'trails',       real: false, Icon: Footprints,  bg: '#DCFCE7', color: '#16A34A' },
-  { id: 'photospots',   real: false, Icon: Camera,      bg: '#FCE7F3', color: '#EC4899' },
-  { id: 'more',         real: true,  Icon: LayoutGrid,  bg: '#EDE9FE', color: '#7C3AED' },
+  { id: 'vet',          real: true, Icon: Stethoscope },
+  { id: 'groom',        real: true, Icon: Scissors },
+  { id: 'park',         real: true, Icon: Trees },
+  { id: 'hotel',        real: true, Icon: Building2 },
+  { id: 'restaurant',   real: true, Icon: UtensilsCrossed },
+  { id: 'shop',         real: true, Icon: ShoppingBag },
+  { id: 'emergency24h', real: true, Icon: AlertTriangle },
+  { id: 'more',         real: true, Icon: LayoutGrid, bg: '#EDE9FE', color: '#7C3AED' },
 ]
 
 function getDistance(lat1, lng1, lat2, lng2) {
