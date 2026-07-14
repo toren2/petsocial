@@ -32,6 +32,68 @@ function getTypeColors(t) {
   }
 }
 
+function AttendeesModal({ eventId, onClose }) {
+  const { t } = useLanguage()
+  const [attendees, setAttendees] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => { fetchAttendees() }, [])
+
+  async function fetchAttendees() {
+    setLoading(true)
+    const { data } = await supabase
+      .from('event_attendees')
+      .select('user_id, profiles(pet_name, emoji, avatar_url, breed)')
+      .eq('event_id', eventId)
+    if (data) setAttendees(data)
+    setLoading(false)
+  }
+
+  return (
+    <div className="absolute inset-0 bg-black/50 z-50 flex flex-col justify-end">
+      <div className="bg-white rounded-t-3xl flex flex-col max-h-[70%]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <h3 className="font-bold text-gray-900 text-lg">{t('eventos.attendeesListTitle')}</h3>
+          <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-gray-400">
+            <X size={22} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center h-32 text-gray-400 text-sm">{t('common.loading')}</div>
+          ) : attendees.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-32 gap-2 text-gray-400">
+              <span className="text-3xl">🐾</span>
+              <p className="text-sm">{t('eventos.noAttendeesYet')}</p>
+            </div>
+          ) : (
+            attendees.map(a => (
+              <div key={a.user_id} className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-100">
+                <div className="w-11 h-11 rounded-full bg-ps-purple-light flex items-center justify-center text-xl overflow-hidden flex-shrink-0">
+                  {a.profiles?.avatar_url ? (
+                    <img src={a.profiles.avatar_url} alt={a.profiles.pet_name} className="w-full h-full object-cover" />
+                  ) : (
+                    a.profiles?.emoji || '🐕'
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-sm text-gray-900">{a.profiles?.pet_name}</div>
+                  <div className="text-xs text-gray-400">{a.profiles?.breed}</div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="px-5 py-4 border-t border-gray-100">
+          <button onClick={onClose} className="w-full py-3 rounded-full text-sm text-gray-400 border border-gray-200 bg-white cursor-pointer">
+            {t('common.close')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function EventDetailModal({ event, onClose, onToggle, onInvite, onDelete, currentUserId }) {
   const { t } = useLanguage()
   const typeColors = getTypeColors(t)
@@ -39,6 +101,7 @@ function EventDetailModal({ event, onClose, onToggle, onInvite, onDelete, curren
   const maxAttendees = event.max_attendees || 10
   const pct = Math.round((event.attendees / maxAttendees) * 100)
   const past = isPast(event.date)
+  const [showAttendeesList, setShowAttendeesList] = useState(false)
 
   return (
     <div className="absolute inset-0 bg-white z-50 flex flex-col overflow-y-auto">
@@ -116,9 +179,17 @@ function EventDetailModal({ event, onClose, onToggle, onInvite, onDelete, curren
 
         {/* Barra de progreso */}
         <div>
-          <div className="flex justify-between text-xs text-gray-400 mb-1.5">
+          <div className="flex justify-between items-center text-xs text-gray-400 mb-1.5">
             <span>{t('eventos.attendeesHeader')}</span>
-            <span>{pct}%</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowAttendeesList(true)}
+                className="text-ps-purple font-medium border-0 bg-transparent cursor-pointer p-0"
+              >
+                {t('eventos.viewAttendees')}
+              </button>
+              <span>{pct}%</span>
+            </div>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-2">
             <div className="h-2 rounded-full transition-all" style={{ width: `${pct}%`, background: tc.color }} />
@@ -148,6 +219,10 @@ function EventDetailModal({ event, onClose, onToggle, onInvite, onDelete, curren
           </div>
         )}
       </div>
+
+      {showAttendeesList && (
+        <AttendeesModal eventId={event.id} onClose={() => setShowAttendeesList(false)} />
+      )}
     </div>
   )
 }
