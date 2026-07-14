@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Send, Image, Smile, Trash2, X, Check, CheckCheck } from 'lucide-react'
+import { ArrowLeft, Send, Image, Trash2, X, Check, CheckCheck } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { notifyMessage } from '../notifications'
@@ -426,9 +426,6 @@ function Conversation({ match, onBack }) {
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && sendMsg()}
         />
-        <button className="border-0 bg-transparent cursor-pointer text-gray-400">
-          <Smile size={20} />
-        </button>
         <button
           onClick={sendMsg}
           className="flex items-center justify-center rounded-full bg-ps-purple border-0 cursor-pointer text-white flex-shrink-0"
