@@ -142,12 +142,13 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const [myEvents, setMyEvents] = useState([])
 
   const categories = [
-    { id: 'vet',        label: t('hub.catVet'),        Icon: Stethoscope,     color: '#7C3AED', bg: '#EDE9FE' },
-    { id: 'groom',      label: t('hub.catGroom'),      Icon: Scissors,        color: '#EC4899', bg: '#FCE7F3' },
-    { id: 'park',       label: t('hub.catPark'),       Icon: Trees,           color: '#16A34A', bg: '#DCFCE7' },
-    { id: 'shop',       label: t('hub.catShop'),       Icon: ShoppingBag,     color: '#D97706', bg: '#FEF3C7' },
-    { id: 'hotel',      label: t('hub.catHotel'),      Icon: Building2,       color: '#0F9B8E', bg: '#E0F7F4' },
-    { id: 'restaurant', label: t('hub.catRestaurant'), Icon: UtensilsCrossed, color: '#DC2626', bg: '#FEE2E2' },
+    { id: 'vet',          label: t('hub.catVet'),          Icon: Stethoscope,     color: '#7C3AED', bg: '#EDE9FE' },
+    { id: 'groom',        label: t('hub.catGroom'),        Icon: Scissors,        color: '#EC4899', bg: '#FCE7F3' },
+    { id: 'park',         label: t('hub.catPark'),         Icon: Trees,           color: '#16A34A', bg: '#DCFCE7' },
+    { id: 'shop',         label: t('hub.catShop'),         Icon: ShoppingBag,     color: '#D97706', bg: '#FEF3C7' },
+    { id: 'hotel',        label: t('hub.catHotel'),        Icon: Building2,       color: '#0F9B8E', bg: '#E0F7F4' },
+    { id: 'restaurant',   label: t('hub.catRestaurant'),   Icon: UtensilsCrossed, color: '#DC2626', bg: '#FEE2E2' },
+    { id: 'emergency24h', label: t('hub.catEmergency24h'), Icon: AlertTriangle,   color: '#E11D48', bg: '#FFE4E6' },
   ]
 
   const quickActions = [

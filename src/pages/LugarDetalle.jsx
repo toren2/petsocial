@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, MapPin, Clock, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, UtensilsCrossed, X, MessageCircle, Instagram, Phone, Crown, PawPrint, Loader2 } from 'lucide-react'
+import { ArrowLeft, MapPin, Clock, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, UtensilsCrossed, X, MessageCircle, Instagram, Phone, Crown, PawPrint, Loader2, Bookmark, Flag, AlertTriangle } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 
-const catIcons  = { vet: Stethoscope, groom: Scissors, park: Trees, shop: ShoppingBag, hotel: Building2, restaurant: UtensilsCrossed }
+const catIcons  = { vet: Stethoscope, groom: Scissors, park: Trees, shop: ShoppingBag, hotel: Building2, restaurant: UtensilsCrossed, emergency24h: AlertTriangle }
 const catColors = {
-  vet:        { bg: '#EDE9FE', color: '#7C3AED' },
-  groom:      { bg: '#FCE7F3', color: '#EC4899' },
-  park:       { bg: '#DCFCE7', color: '#16A34A' },
-  shop:       { bg: '#FEF3C7', color: '#D97706' },
-  hotel:      { bg: '#E0F7F4', color: '#0F9B8E' },
-  restaurant: { bg: '#FEE2E2', color: '#DC2626' },
+  vet:          { bg: '#EDE9FE', color: '#7C3AED' },
+  groom:        { bg: '#FCE7F3', color: '#EC4899' },
+  park:         { bg: '#DCFCE7', color: '#16A34A' },
+  shop:         { bg: '#FEF3C7', color: '#D97706' },
+  hotel:        { bg: '#E0F7F4', color: '#0F9B8E' },
+  restaurant:   { bg: '#FEE2E2', color: '#DC2626' },
+  emergency24h: { bg: '#FFE4E6', color: '#E11D48' },
 }
 
 function Stars({ rating, size = 14, interactive = false, onRate }) {
@@ -83,7 +84,7 @@ function ReviewModal({ place, onClose, onSubmit }) {
   )
 }
 
-export default function LugarDetalle({ place, onBack }) {
+export default function LugarDetalle({ place, onBack, saved, onToggleSave, onReport }) {
   const { user } = useAuth()
   const { t, language } = useLanguage()
   const CatIcon = catIcons[place.category] || MapPin
@@ -219,6 +220,16 @@ export default function LugarDetalle({ place, onBack }) {
           <ArrowLeft size={22} />
         </button>
         <h2 className="font-bold text-gray-900 text-base flex-1 truncate">{place.name}</h2>
+        {onToggleSave && (
+          <button onClick={onToggleSave} className="border-0 bg-transparent cursor-pointer flex-shrink-0">
+            <Bookmark size={20} color={saved ? '#7C3AED' : '#9CA3AF'} fill={saved ? '#7C3AED' : 'none'} />
+          </button>
+        )}
+        {onReport && (
+          <button onClick={onReport} className="border-0 bg-transparent cursor-pointer flex-shrink-0">
+            <Flag size={20} color="#9CA3AF" />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto bg-ps-bg">

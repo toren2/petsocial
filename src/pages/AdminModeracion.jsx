@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Flag, BadgeCheck, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, Flag, BadgeCheck, ShieldAlert, MapPin, AlertTriangle } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 
@@ -32,6 +32,8 @@ export default function AdminModeracion({ onBack }) {
   const [tab, setTab] = useState('reportes')
   const [reports, setReports] = useState([])
   const [verifications, setVerifications] = useState([])
+  const [placeSuggestions, setPlaceSuggestions] = useState([])
+  const [appReports, setAppReports] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -43,15 +45,24 @@ export default function AdminModeracion({ onBack }) {
   async function fetchAll() {
     setLoading(true)
     setError('')
-    const [{ data: r, error: rErr }, { data: v, error: vErr }] = await Promise.all([
+    const [
+      { data: r, error: rErr },
+      { data: v, error: vErr },
+      { data: ps, error: psErr },
+      { data: ar, error: arErr },
+    ] = await Promise.all([
       supabase.rpc('admin_list_reports'),
       supabase.rpc('admin_list_verification_requests'),
+      supabase.rpc('admin_list_place_suggestions'),
+      supabase.rpc('admin_list_app_reports'),
     ])
-    if (rErr || vErr) {
-      setError((rErr || vErr).message)
+    if (rErr || vErr || psErr || arErr) {
+      setError((rErr || vErr || psErr || arErr).message)
     } else {
       setReports(r || [])
       setVerifications(v || [])
+      setPlaceSuggestions(ps || [])
+      setAppReports(ar || [])
     }
     setLoading(false)
   }
@@ -66,10 +77,24 @@ export default function AdminModeracion({ onBack }) {
     await supabase.rpc('admin_update_verification_status', { p_request_id: id, p_status: status })
   }
 
+  async function updatePlaceSuggestion(id, status) {
+    setPlaceSuggestions(prev => prev.map(s => s.id === id ? { ...s, status } : s))
+    await supabase.rpc('admin_update_place_suggestion_status', { p_suggestion_id: id, p_status: status })
+  }
+
+  async function updateAppReport(id, status) {
+    setAppReports(prev => prev.map(r => r.id === id ? { ...r, status } : r))
+    await supabase.rpc('admin_update_app_report_status', { p_report_id: id, p_status: status })
+  }
+
   const pendingReports = reports.filter(r => r.status === 'pendiente')
   const otherReports = reports.filter(r => r.status !== 'pendiente')
   const pendingVerifications = verifications.filter(v => v.status === 'pendiente')
   const otherVerifications = verifications.filter(v => v.status !== 'pendiente')
+  const pendingSuggestions = placeSuggestions.filter(s => s.status === 'pendiente')
+  const otherSuggestions = placeSuggestions.filter(s => s.status !== 'pendiente')
+  const pendingAppReports = appReports.filter(r => r.status === 'pendiente')
+  const otherAppReports = appReports.filter(r => r.status !== 'pendiente')
 
   if (!isAdmin) {
     return (
@@ -90,20 +115,34 @@ export default function AdminModeracion({ onBack }) {
         <h2 className="text-lg font-bold text-gray-900">Moderación</h2>
       </div>
 
-      <div className="flex bg-white border-b border-gray-100 flex-shrink-0">
+      <div className="flex bg-white border-b border-gray-100 flex-shrink-0 overflow-x-auto">
         <button
           onClick={() => setTab('reportes')}
-          className="flex-1 py-2.5 text-sm font-medium border-0 bg-transparent cursor-pointer border-b-2 flex items-center justify-center gap-1.5"
+          className="flex-1 py-2.5 px-2 text-sm font-medium border-0 bg-transparent cursor-pointer border-b-2 flex items-center justify-center gap-1.5 whitespace-nowrap"
           style={{ color: tab === 'reportes' ? '#7C3AED' : '#9CA3AF', borderBottomColor: tab === 'reportes' ? '#7C3AED' : 'transparent' }}
         >
           <Flag size={14} /> Reportes {pendingReports.length > 0 && `(${pendingReports.length})`}
         </button>
         <button
           onClick={() => setTab('verificaciones')}
-          className="flex-1 py-2.5 text-sm font-medium border-0 bg-transparent cursor-pointer border-b-2 flex items-center justify-center gap-1.5"
+          className="flex-1 py-2.5 px-2 text-sm font-medium border-0 bg-transparent cursor-pointer border-b-2 flex items-center justify-center gap-1.5 whitespace-nowrap"
           style={{ color: tab === 'verificaciones' ? '#7C3AED' : '#9CA3AF', borderBottomColor: tab === 'verificaciones' ? '#7C3AED' : 'transparent' }}
         >
           <BadgeCheck size={14} /> Verificaciones {pendingVerifications.length > 0 && `(${pendingVerifications.length})`}
+        </button>
+        <button
+          onClick={() => setTab('lugares')}
+          className="flex-1 py-2.5 px-2 text-sm font-medium border-0 bg-transparent cursor-pointer border-b-2 flex items-center justify-center gap-1.5 whitespace-nowrap"
+          style={{ color: tab === 'lugares' ? '#7C3AED' : '#9CA3AF', borderBottomColor: tab === 'lugares' ? '#7C3AED' : 'transparent' }}
+        >
+          <MapPin size={14} /> Lugares {pendingSuggestions.length > 0 && `(${pendingSuggestions.length})`}
+        </button>
+        <button
+          onClick={() => setTab('appReportes')}
+          className="flex-1 py-2.5 px-2 text-sm font-medium border-0 bg-transparent cursor-pointer border-b-2 flex items-center justify-center gap-1.5 whitespace-nowrap"
+          style={{ color: tab === 'appReportes' ? '#7C3AED' : '#9CA3AF', borderBottomColor: tab === 'appReportes' ? '#7C3AED' : 'transparent' }}
+        >
+          <AlertTriangle size={14} /> App {pendingAppReports.length > 0 && `(${pendingAppReports.length})`}
         </button>
       </div>
 
@@ -148,7 +187,7 @@ export default function AdminModeracion({ onBack }) {
               ))}
             </div>
           )
-        ) : (
+        ) : tab === 'verificaciones' ? (
           [...pendingVerifications, ...otherVerifications].length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
               <BadgeCheck size={32} className="text-gray-200" />
@@ -182,6 +221,73 @@ export default function AdminModeracion({ onBack }) {
                       </button>
                       <button onClick={() => updateVerification(v.id, 'rechazado')} className="flex-1 py-2 rounded-full text-xs font-semibold border-0 cursor-pointer" style={{ background: '#FEE2E2', color: '#DC2626' }}>
                         Rechazar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        ) : tab === 'lugares' ? (
+          [...pendingSuggestions, ...otherSuggestions].length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
+              <MapPin size={32} className="text-gray-200" />
+              <p className="text-sm">No hay lugares sugeridos</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {[...pendingSuggestions, ...otherSuggestions].map(s => (
+                <div key={s.id} className="bg-white rounded-2xl p-4 border border-gray-100 flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-gray-900">{s.name}</span>
+                    <StatusBadge status={s.status} />
+                  </div>
+                  <div className="text-xs text-gray-500">Sugerido por {s.user_pet_name || 'alguien'} · categoría: <span className="font-medium text-gray-700">{s.category}</span></div>
+                  {s.address && <div className="text-xs text-gray-500">{s.address}</div>}
+                  {s.description && <div className="text-xs text-gray-500">{s.description}</div>}
+                  {s.contact_phone && <div className="text-xs text-gray-500">Tel: {s.contact_phone}</div>}
+                  <div className="text-[10px] text-gray-400">{formatDate(s.created_at)}</div>
+                  {s.status === 'pendiente' && (
+                    <div className="flex gap-2 mt-1">
+                      <button onClick={() => updatePlaceSuggestion(s.id, 'aprobado')} className="flex-1 py-2 rounded-full text-xs font-semibold border-0 cursor-pointer" style={{ background: '#DCFCE7', color: '#16A34A' }}>
+                        Aprobar (agregar a Lugares)
+                      </button>
+                      <button onClick={() => updatePlaceSuggestion(s.id, 'rechazado')} className="flex-1 py-2 rounded-full text-xs font-semibold border-0 cursor-pointer" style={{ background: '#FEE2E2', color: '#DC2626' }}>
+                        Rechazar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        ) : (
+          [...pendingAppReports, ...otherAppReports].length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
+              <AlertTriangle size={32} className="text-gray-200" />
+              <p className="text-sm">No hay reportes de la app</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {[...pendingAppReports, ...otherAppReports].map(r => (
+                <div key={r.id} className="bg-white rounded-2xl p-4 border border-gray-100 flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-gray-900">
+                      {r.type === 'lugar' ? `Reporte de lugar${r.place_name ? ': ' + r.place_name : ''}` : 'Problema de la app'}
+                    </span>
+                    <StatusBadge status={r.status} />
+                  </div>
+                  <div className="text-xs text-gray-500">De {r.user_pet_name || 'alguien'}</div>
+                  {r.reason && <div className="text-xs text-gray-500">Motivo: <span className="font-medium text-gray-700">{r.reason}</span></div>}
+                  {r.details && <div className="text-xs text-gray-500">{r.details}</div>}
+                  <div className="text-[10px] text-gray-400">{formatDate(r.created_at)}</div>
+                  {r.status === 'pendiente' && (
+                    <div className="flex gap-2 mt-1">
+                      <button onClick={() => updateAppReport(r.id, 'revisado')} className="flex-1 py-2 rounded-full text-xs font-semibold border-0 cursor-pointer" style={{ background: '#EDE9FE', color: '#7C3AED' }}>
+                        Marcar revisado
+                      </button>
+                      <button onClick={() => updateAppReport(r.id, 'descartado')} className="flex-1 py-2 rounded-full text-xs font-semibold border-0 cursor-pointer" style={{ background: '#F3F4F6', color: '#6B7280' }}>
+                        Descartar
                       </button>
                     </div>
                   )}

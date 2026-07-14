@@ -124,7 +124,7 @@ export default function App() {
         {screen === 'chat'    && <Chat initialUserId={pendingChatUserId} onConsumeInitialUser={() => setPendingChatUserId(null)} />}
         {screen === 'eventos' && <Eventos initialEventId={pendingEventId} onConsumeInitialEvent={() => setPendingEventId(null)} />}
         {screen === 'perdidos' && <Perdidos onNavigate={(s) => setScreen(s)} />}
-        {screen === 'lugares' && <Lugares initialCategory={initialCategory} />}
+        {screen === 'lugares' && <Lugares initialCategory={initialCategory} onNavigate={setScreen} />}
         {screen === 'perfil'  && <Perfil onSignOut={signOut} onNavigate={setScreen} />}
         {screen === 'admin'   && <AdminModeracion onBack={() => setScreen('perfil')} />}
 
