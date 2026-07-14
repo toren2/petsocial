@@ -230,8 +230,19 @@ export default function Lugares({ initialCategory = 'all' }) {
                 className="bg-white rounded-2xl overflow-hidden border border-gray-100 cursor-pointer active:opacity-80"
               >
                 <div className="flex items-center gap-3 p-3">
-                  <div className="relative w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: catColors[featuredPlace.category]?.bg || '#EDE9FE' }}>
-                    {React.createElement(catIcons[featuredPlace.category] || MapPin, { size: 28, color: catColors[featuredPlace.category]?.color || '#7C3AED', strokeWidth: 2.25 })}
+                  <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0" style={{ background: catColors[featuredPlace.category]?.bg || '#EDE9FE' }}>
+                    {featuredPlace.image_url ? (
+                      <img src={featuredPlace.image_url} alt={featuredPlace.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        {React.createElement(catIcons[featuredPlace.category] || MapPin, { size: 28, color: catColors[featuredPlace.category]?.color || '#7C3AED', strokeWidth: 2.25 })}
+                      </div>
+                    )}
+                    {featuredPlace.image_url && (
+                      <div className="absolute bottom-0.5 right-0.5 w-5 h-5 rounded-full flex items-center justify-center border border-white" style={{ background: catColors[featuredPlace.category]?.color || '#7C3AED' }}>
+                        {React.createElement(catIcons[featuredPlace.category] || MapPin, { size: 10, color: 'white', strokeWidth: 2.5 })}
+                      </div>
+                    )}
                     {placesWithPet.has(featuredPlace.id) && (
                       <div className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white" style={{ background: '#FEF3C7' }} title={t('lugares.placePetBadge')}>
                         <Crown size={11} color="#D97706" />
@@ -296,8 +307,19 @@ export default function Lugares({ initialCategory = 'all' }) {
               const { bg, color } = catColors[place.category] || { bg: '#EDE9FE', color: '#7C3AED' }
               return (
                 <div key={place.id} onClick={() => setSelectedPlace(place)} className="flex gap-3 px-3 py-3 border-b border-gray-100 bg-white cursor-pointer active:bg-gray-50">
-                  <div className="relative flex-shrink-0 rounded-2xl flex items-center justify-center" style={{ width: 80, height: 80, background: bg }}>
-                    <CatIcon size={28} color={color} strokeWidth={2.25} />
+                  <div className="relative flex-shrink-0 rounded-2xl overflow-hidden" style={{ width: 80, height: 80, background: bg }}>
+                    {place.image_url ? (
+                      <img src={place.image_url} alt={place.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <CatIcon size={28} color={color} strokeWidth={2.25} />
+                      </div>
+                    )}
+                    {place.image_url && (
+                      <div className="absolute bottom-1 left-1 w-6 h-6 rounded-full flex items-center justify-center border border-white" style={{ background: color }}>
+                        <CatIcon size={12} color="white" strokeWidth={2.5} />
+                      </div>
+                    )}
                     {placesWithPet.has(place.id) && (
                       <div className="absolute top-1 left-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white" style={{ background: '#FEF3C7' }} title={t('lugares.placePetBadge')}>
                         <Crown size={11} color="#D97706" />

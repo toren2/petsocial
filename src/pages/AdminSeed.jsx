@@ -63,6 +63,25 @@ export default function AdminSeed() {
 
           if (!row.lat || !row.lng) continue
 
+          if (place.photos && place.photos.length > 0) {
+            try {
+              const photoRes = await fetch(`/api/place-photo?name=${encodeURIComponent(place.photos[0].name)}`)
+              if (photoRes.ok) {
+                const blob = await photoRes.blob()
+                const path = `${search.category}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`
+                const { error: uploadError } = await supabase.storage.from('places').upload(path, blob, { contentType: 'image/jpeg' })
+                if (!uploadError) {
+                  const { data: urlData } = supabase.storage.from('places').getPublicUrl(path)
+                  row.image_url = urlData.publicUrl
+                } else {
+                  addLog(`  (sin foto para ${row.name}: ${uploadError.message})`)
+                }
+              }
+            } catch (photoErr) {
+              addLog(`  (sin foto para ${row.name}: ${photoErr.message})`)
+            }
+          }
+
           const { error } = await supabase.from('places').insert([row])
           if (error) {
             addLog(`  Error insertando ${row.name}: ${error.message}`)

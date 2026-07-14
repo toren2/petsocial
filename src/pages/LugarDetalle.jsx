@@ -222,8 +222,17 @@ export default function LugarDetalle({ place, onBack }) {
       </div>
 
       <div className="flex-1 overflow-y-auto bg-ps-bg">
-        <div className="flex items-center justify-center" style={{ height: 160, background: bg }}>
-          <CatIcon size={64} color={color} strokeWidth={2.1} />
+        <div className="relative flex items-center justify-center overflow-hidden" style={{ height: 160, background: bg }}>
+          {place.image_url ? (
+            <img src={place.image_url} alt={place.name} className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <CatIcon size={64} color={color} strokeWidth={2.1} />
+          )}
+          {place.image_url && (
+            <div className="absolute bottom-3 left-3 w-10 h-10 rounded-full flex items-center justify-center border-2 border-white" style={{ background: color }}>
+              <CatIcon size={18} color="white" strokeWidth={2.25} />
+            </div>
+          )}
         </div>
 
         <div className="bg-white mx-4 mt-4 rounded-2xl p-4 border border-gray-100">
