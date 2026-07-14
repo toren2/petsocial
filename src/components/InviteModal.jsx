@@ -51,7 +51,7 @@ export default function InviteModal({ event, onClose }) {
     .select('pet_name')
     .eq('id', user.id)
     .single()
-  await notifyEventInvite(receiverId, myProfile?.pet_name || t('inviteModal.somePet'), event.title)
+  await notifyEventInvite(receiverId, myProfile?.pet_name || t('inviteModal.somePet'), event.title, event.id)
 }
   }
 

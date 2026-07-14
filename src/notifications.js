@@ -31,13 +31,13 @@ export async function notifyMessage(receiverId, senderPetName, senderId) {
   )
 }
 
-export async function notifyEventInvite(receiverId, senderPetName, eventTitle) {
+export async function notifyEventInvite(receiverId, senderPetName, eventTitle, eventId) {
   await createNotification(
     receiverId,
     'event_invite',
     'Te invitaron a un evento 🎉',
     `${senderPetName} te invitó a: ${eventTitle}`,
-    {}
+    { eventId }
   )
 }
 

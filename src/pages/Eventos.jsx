@@ -331,7 +331,7 @@ function CreateEventModal({ onClose, onCreate }) {
   )
 }
 
-export default function Eventos() {
+export default function Eventos({ initialEventId, onConsumeInitialEvent }) {
   const { user } = useAuth()
   const { t } = useLanguage()
   const types = getTypes(t)
@@ -343,6 +343,16 @@ export default function Eventos() {
   const [selectedEvent, setSelectedEvent] = useState(null)
 
   useEffect(() => { fetchEvents() }, [])
+
+  useEffect(() => {
+    if (!initialEventId || events.length === 0) return
+    const found = events.find(e => e.id === initialEventId)
+    if (found) {
+      setSelectedEvent(found)
+      onConsumeInitialEvent && onConsumeInitialEvent()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialEventId, events])
 
   async function fetchEvents() {
     setLoading(true)

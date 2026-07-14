@@ -27,6 +27,7 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true)
   const [initialCategory, setInitialCategory] = useState('all')
   const [pendingChatUserId, setPendingChatUserId] = useState(null)
+  const [pendingEventId, setPendingEventId] = useState(null)
   const [showNotifications, setShowNotifications] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
 
@@ -93,11 +94,13 @@ export default function App() {
   function handleMatchChat() { setMatchedPet(null); setScreen('chat') }
   function handleKeepSwiping() { setMatchedPet(null) }
   function openChatWith(uid) { setPendingChatUserId(uid); setScreen('chat') }
+  function openEvent(eid) { setPendingEventId(eid); setScreen('eventos') }
   function openNotifications() { setShowNotifications(true); setUnreadCount(0) }
   function handleNotificationNavigate(n) {
     setShowNotifications(false)
     if (n.type === 'match' && n.data?.matchUserId) { openChatWith(n.data.matchUserId); return }
     if (n.type === 'message' && n.data?.senderId) { openChatWith(n.data.senderId); return }
+    if (n.type === 'event_invite' && n.data?.eventId) { openEvent(n.data.eventId); return }
   }
 
   return (
@@ -119,7 +122,7 @@ export default function App() {
         {screen === 'feed'    && <Feed onOpenChat={openChatWith} unreadCount={unreadCount} onOpenNotifications={openNotifications} />}
         {screen === 'match'   && <Match onMatch={handleMatch} />}
         {screen === 'chat'    && <Chat initialUserId={pendingChatUserId} onConsumeInitialUser={() => setPendingChatUserId(null)} />}
-        {screen === 'eventos' && <Eventos />}
+        {screen === 'eventos' && <Eventos initialEventId={pendingEventId} onConsumeInitialEvent={() => setPendingEventId(null)} />}
         {screen === 'perdidos' && <Perdidos onNavigate={(s) => setScreen(s)} />}
         {screen === 'lugares' && <Lugares initialCategory={initialCategory} />}
         {screen === 'perfil'  && <Perfil onSignOut={signOut} onNavigate={setScreen} />}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Send, Image, Smile, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Send, Image, Smile, Trash2, X, Check, CheckCheck } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { notifyMessage } from '../notifications'
@@ -211,7 +211,18 @@ function Conversation({ match, onBack }) {
         table: 'messages',
         filter: `receiver_id=eq.${user.id}`,
       }, payload => {
+        if (payload.new.sender_id !== match.otherId) return
         setMsgs(prev => [...prev, payload.new])
+        supabase.from('messages').update({ read: true }).eq('id', payload.new.id)
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'messages',
+        filter: `sender_id=eq.${user.id}`,
+      }, payload => {
+        if (payload.new.receiver_id !== match.otherId) return
+        setMsgs(prev => prev.map(m => m.id === payload.new.id ? { ...m, read: payload.new.read } : m))
       })
       .subscribe()
     return () => supabase.removeChannel(subscription)
@@ -230,6 +241,16 @@ function Conversation({ match, onBack }) {
       .order('created_at', { ascending: true })
     if (data) setMsgs(data)
     setLoading(false)
+    markIncomingAsRead()
+  }
+
+  async function markIncomingAsRead() {
+    await supabase
+      .from('messages')
+      .update({ read: true })
+      .eq('sender_id', match.otherId)
+      .eq('receiver_id', user.id)
+      .eq('read', false)
   }
 
   async function sendMsg() {
@@ -354,6 +375,13 @@ function Conversation({ match, onBack }) {
                 <span className="text-[10px] text-gray-400">
                   {new Date(msg.created_at).toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' })}
                 </span>
+                {msg.sender_id === user.id && (
+                  msg.read ? (
+                    <CheckCheck size={13} color="#7C3AED" />
+                  ) : (
+                    <Check size={13} className="text-gray-300" />
+                  )
+                )}
                 {selectedMsg === msg.id && msg.sender_id === user.id && (
                   <button
                     onClick={() => deleteMessage(msg.id)}
