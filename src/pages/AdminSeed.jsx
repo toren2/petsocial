@@ -1,21 +1,15 @@
 import React, { useState } from 'react'
 import { supabase } from '../supabase'
 
-// TEMPORAL: solo emergency24h activa para no duplicar las categorías ya importadas.
-// Restaurar la lista completa después de correr este import una vez.
 const SEARCHES = [
+  { category: 'vet', query: 'veterinarias en Ciudad de Panamá' },
+  { category: 'groom', query: 'peluquerías caninas grooming en Ciudad de Panamá' },
+  { category: 'park', query: 'parques pet friendly en Ciudad de Panamá' },
+  { category: 'shop', query: 'pet shops tiendas de mascotas en Ciudad de Panamá' },
+  { category: 'hotel', query: 'hoteles para mascotas en Ciudad de Panamá' },
+  { category: 'restaurant', query: 'restaurantes pet friendly en Ciudad de Panamá' },
   { category: 'emergency24h', query: 'veterinaria urgencias 24 horas Panamá' },
 ]
-
-// const SEARCHES = [
-//   { category: 'vet', query: 'veterinarias en Ciudad de Panamá' },
-//   { category: 'groom', query: 'peluquerías caninas grooming en Ciudad de Panamá' },
-//   { category: 'park', query: 'parques pet friendly en Ciudad de Panamá' },
-//   { category: 'shop', query: 'pet shops tiendas de mascotas en Ciudad de Panamá' },
-//   { category: 'hotel', query: 'hoteles para mascotas en Ciudad de Panamá' },
-//   { category: 'restaurant', query: 'restaurantes pet friendly en Ciudad de Panamá' },
-//   { category: 'emergency24h', query: 'veterinaria urgencias 24 horas Panamá' },
-// ]
 
 const typeLabels = {
   vet: 'Veterinaria',
