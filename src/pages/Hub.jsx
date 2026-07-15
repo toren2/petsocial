@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Bell, MapPin, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Utensils, Heart, ChevronRight, AlertTriangle, Flame } from 'lucide-react'
+import { Bell, MapPin, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Utensils, Heart, ChevronRight, AlertTriangle, Flame, Trophy } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -197,6 +197,7 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const [myEvents, setMyEvents] = useState([])
   const [streak, setStreak] = useState(0)
   const [checkedInToday, setCheckedInToday] = useState(false)
+  const [progress, setProgress] = useState({ visited: 0, checkins: 0, badges: 0 })
 
   const categories = [
     { id: 'vet',          label: t('hub.catVet'),          Icon: Stethoscope,     color: '#7C3AED', bg: '#EDE9FE' },
@@ -223,6 +224,7 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
     fetchUpcomingEvents()
     fetchMyEvents()
     fetchStreak()
+    fetchProgress()
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async pos => {
@@ -255,6 +257,15 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
     const { data } = await supabase.rpc('get_checkin_streak', { p_user_id: user.id })
     setStreak(data?.streak || 0)
     setCheckedInToday(!!data?.checked_in_today)
+  }
+
+  async function fetchProgress() {
+    const [{ data: checkins }, { count: badgesCount }] = await Promise.all([
+      supabase.from('place_checkins').select('place_id').eq('user_id', user.id),
+      supabase.from('user_badges').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+    ])
+    const visited = checkins ? new Set(checkins.map(c => c.place_id)).size : 0
+    setProgress({ visited, checkins: checkins?.length || 0, badges: badgesCount || 0 })
   }
 
   async function fetchNearbyMatches() {
@@ -576,6 +587,32 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
                 <span className="text-xs font-semibold whitespace-nowrap" style={{ color }}>{label}</span>
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="px-4 pb-4">
+          <div
+            onClick={() => onNavigate('perfil')}
+            className="flex items-center gap-3 bg-white rounded-2xl border border-gray-100 px-4 py-3 cursor-pointer active:bg-gray-50"
+          >
+            <Trophy size={18} color="#D97706" className="flex-shrink-0" />
+            <div className="flex-1 flex items-center justify-around">
+              <div className="text-center">
+                <p className="text-sm font-bold text-gray-900">{progress.visited}</p>
+                <p className="text-[10px] text-gray-400">{t('hub.progressVisited')}</p>
+              </div>
+              <div className="w-px h-8 bg-gray-100" />
+              <div className="text-center">
+                <p className="text-sm font-bold text-gray-900">{progress.checkins}</p>
+                <p className="text-[10px] text-gray-400">{t('hub.progressCheckins')}</p>
+              </div>
+              <div className="w-px h-8 bg-gray-100" />
+              <div className="text-center">
+                <p className="text-sm font-bold text-gray-900">{progress.badges}</p>
+                <p className="text-[10px] text-gray-400">{t('hub.progressBadges')}</p>
+              </div>
+            </div>
+            <ChevronRight size={16} color="#9CA3AF" className="flex-shrink-0" />
           </div>
         </div>
 
