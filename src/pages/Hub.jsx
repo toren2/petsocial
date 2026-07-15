@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Bell, MapPin, Calendar, MessageCircle, Newspaper, Stethoscope, Scissors, Trees, ShoppingBag, Building2, UtensilsCrossed, Heart, ChevronRight, AlertTriangle } from 'lucide-react'
+import { Bell, MapPin, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Utensils, Heart, ChevronRight, AlertTriangle } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -17,7 +17,7 @@ function getDistance(lat1, lng1, lat2, lng2) {
 
 const catIcons = {
   vet: Stethoscope, groom: Scissors, park: Trees, shop: ShoppingBag,
-  hotel: Building2, restaurant: UtensilsCrossed, emergency24h: AlertTriangle,
+  hotel: Building2, restaurant: Utensils, emergency24h: AlertTriangle,
 }
 const catColors = {
   vet:          { color: '#7C3AED', bg: '#EDE9FE' },
@@ -25,7 +25,7 @@ const catColors = {
   park:         { color: '#16A34A', bg: '#DCFCE7' },
   shop:         { color: '#D97706', bg: '#FEF3C7' },
   hotel:        { color: '#0F9B8E', bg: '#E0F7F4' },
-  restaurant:   { color: '#DC2626', bg: '#FEE2E2' },
+  restaurant:   { color: '#F97316', bg: '#FFEDD5' },
   emergency24h: { color: '#E11D48', bg: '#FFE4E6' },
 }
 
@@ -161,16 +161,8 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
     { id: 'park',         label: t('hub.catPark'),         Icon: Trees,           color: '#16A34A', bg: '#DCFCE7' },
     { id: 'shop',         label: t('hub.catShop'),         Icon: ShoppingBag,     color: '#D97706', bg: '#FEF3C7' },
     { id: 'hotel',        label: t('hub.catHotel'),        Icon: Building2,       color: '#0F9B8E', bg: '#E0F7F4' },
-    { id: 'restaurant',   label: t('hub.catRestaurant'),   Icon: UtensilsCrossed, color: '#DC2626', bg: '#FEE2E2' },
+    { id: 'restaurant',   label: t('hub.catRestaurant'),   Icon: Utensils, color: '#F97316', bg: '#FFEDD5' },
     { id: 'emergency24h', label: t('hub.catEmergency24h'), Icon: AlertTriangle,   color: '#E11D48', bg: '#FFE4E6' },
-  ]
-
-  const quickActions = [
-    { id: 'feed',     label: t('hub.qaFeed'),     Icon: Newspaper,     color: '#7C3AED', bg: '#EDE9FE' },
-    { id: 'match',    label: t('hub.qaMatch'),    Icon: Heart,         color: '#EC4899', bg: '#FCE7F3' },
-    { id: 'chat',     label: t('hub.qaChat'),     Icon: MessageCircle, color: '#0F9B8E', bg: '#E0F7F4' },
-    { id: 'eventos',  label: t('hub.qaEventos'),  Icon: Calendar,      color: '#D97706', bg: '#FEF3C7' },
-    { id: 'perdidos', label: t('hub.qaPerdidos'), Icon: AlertTriangle, color: '#DC2626', bg: '#FEE2E2' },
   ]
 
   function getGreeting() {
@@ -376,20 +368,15 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
         </div>
 
         <div className="px-4 py-2">
-          <h3 className="text-sm font-bold text-gray-900 mb-3">{t('hub.quickActions')}</h3>
-          <div className="grid grid-cols-5 gap-2">
-            {quickActions.map(({ id, label, Icon, color, bg }) => (
-              <button
-                key={id}
-                onClick={() => onNavigate(id)}
-                className="flex flex-col items-center gap-1.5 py-3 rounded-2xl border-0 cursor-pointer"
-                style={{ background: bg }}
-              >
-                <Icon size={23} color={color} strokeWidth={2.25} />
-                <span className="text-[10px] font-semibold" style={{ color }}>{label}</span>
-              </button>
-            ))}
-          </div>
+          <button
+            onClick={() => onNavigate('perdidos')}
+            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border-0 cursor-pointer"
+            style={{ background: '#FEE2E2' }}
+          >
+            <AlertTriangle size={20} color="#DC2626" strokeWidth={2.25} />
+            <span className="text-sm font-semibold flex-1 text-left" style={{ color: '#DC2626' }}>{t('hub.qaPerdidos')}</span>
+            <ChevronRight size={16} color="#DC2626" />
+          </button>
         </div>
 
         {upcomingEvents.length > 0 && (

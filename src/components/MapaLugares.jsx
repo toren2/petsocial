@@ -7,7 +7,7 @@ const categoryColors = {
   park:       '#16A34A',
   shop:       '#D97706',
   hotel:      '#0F9B8E',
-  restaurant: '#DC2626',
+  restaurant: '#F97316',
 }
 
 const categoryEmojis = {

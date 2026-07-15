@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Map, MapPin, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Search, Heart, UtensilsCrossed, Navigation, Crown, Bookmark, Flag, Calendar, AlertTriangle, LayoutGrid, ArrowLeft, ImagePlus } from 'lucide-react'
+import { Map, MapPin, Star, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Search, Heart, Utensils, Navigation, Crown, Bookmark, Flag, Calendar, AlertTriangle, LayoutGrid, ArrowLeft, ImagePlus } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -13,14 +13,14 @@ import { useBackButton } from '../useBackButton'
 
 const NEARBY_RADIUS_KM = 10
 
-const catIcons  = { vet: Stethoscope, groom: Scissors, park: Trees, shop: ShoppingBag, hotel: Building2, restaurant: UtensilsCrossed, emergency24h: AlertTriangle }
+const catIcons  = { vet: Stethoscope, groom: Scissors, park: Trees, shop: ShoppingBag, hotel: Building2, restaurant: Utensils, emergency24h: AlertTriangle }
 const catColors = {
   vet:          { bg: '#EDE9FE', color: '#7C3AED' },
   groom:        { bg: '#FCE7F3', color: '#EC4899' },
   park:         { bg: '#DCFCE7', color: '#16A34A' },
   shop:         { bg: '#FEF3C7', color: '#D97706' },
   hotel:        { bg: '#E0F7F4', color: '#0F9B8E' },
-  restaurant:   { bg: '#FEE2E2', color: '#DC2626' },
+  restaurant:   { bg: '#FFEDD5', color: '#F97316' },
   emergency24h: { bg: '#FFE4E6', color: '#E11D48' },
 }
 
@@ -29,7 +29,7 @@ const GRID_CATEGORIES = [
   { id: 'groom',        real: true, Icon: Scissors },
   { id: 'park',         real: true, Icon: Trees },
   { id: 'hotel',        real: true, Icon: Building2 },
-  { id: 'restaurant',   real: true, Icon: UtensilsCrossed },
+  { id: 'restaurant',   real: true, Icon: Utensils },
   { id: 'shop',         real: true, Icon: ShoppingBag },
   { id: 'emergency24h', real: true, Icon: AlertTriangle },
   { id: 'more',         real: true, Icon: LayoutGrid, bg: '#EDE9FE', color: '#7C3AED' },
@@ -55,7 +55,7 @@ export default function Lugares({ initialCategory = 'all', initialPlaceId = null
     { id: 'park',         label: t('lugares.catPark'),         Icon: Trees,          bg: '#DCFCE7', color: '#16A34A' },
     { id: 'shop',         label: t('lugares.catShop'),         Icon: ShoppingBag,    bg: '#FEF3C7', color: '#D97706' },
     { id: 'hotel',        label: t('lugares.catHotel'),        Icon: Building2,      bg: '#E0F7F4', color: '#0F9B8E' },
-    { id: 'restaurant',   label: t('lugares.catRestaurant'),   Icon: UtensilsCrossed, bg: '#FEE2E2', color: '#DC2626' },
+    { id: 'restaurant',   label: t('lugares.catRestaurant'),   Icon: Utensils, bg: '#FFEDD5', color: '#F97316' },
     { id: 'emergency24h', label: t('lugares.catEmergency24h'), Icon: AlertTriangle,  bg: '#FFE4E6', color: '#E11D48' },
   ]
   const [view, setView] = useState('home') // 'home' | 'browse'
