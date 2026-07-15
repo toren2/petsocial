@@ -541,16 +541,16 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
 
         <div className="px-4 py-2 pb-4">
           <h3 className="text-sm font-bold text-gray-900 mb-3">{t('hub.exploreByCategory')}</h3>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1">
             {categories.map(({ id, label, Icon, color, bg }) => (
               <button
                 key={id}
                 onClick={() => onNavigate('lugares', id)}
-                className="flex flex-col items-center gap-2 py-4 rounded-2xl border-0 cursor-pointer"
+                className="flex items-center gap-1.5 pl-2.5 pr-3.5 py-2 rounded-full border-0 cursor-pointer flex-shrink-0"
                 style={{ background: bg }}
               >
-                <Icon size={25} color={color} strokeWidth={2.25} />
-                <span className="text-[10px] font-semibold text-center leading-tight" style={{ color }}>{label}</span>
+                <Icon size={15} color={color} strokeWidth={2.25} />
+                <span className="text-xs font-semibold whitespace-nowrap" style={{ color }}>{label}</span>
               </button>
             ))}
           </div>

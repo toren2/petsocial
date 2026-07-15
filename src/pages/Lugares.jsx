@@ -58,7 +58,7 @@ export default function Lugares({ initialCategory = 'all', initialPlaceId = null
     { id: 'restaurant',   label: t('lugares.catRestaurant'),   Icon: Utensils, bg: '#FFEDD5', color: '#F97316' },
     { id: 'emergency24h', label: t('lugares.catEmergency24h'), Icon: AlertTriangle,  bg: '#FFE4E6', color: '#E11D48' },
   ]
-  const [view, setView] = useState('home') // 'home' | 'browse'
+  const [view, setView] = useState(initialCategory && initialCategory !== 'all' ? 'browse' : 'home') // 'home' | 'browse'
   const [places, setPlaces] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState(initialCategory)
