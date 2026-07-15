@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Bell, MapPin, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Utensils, Heart, ChevronRight, AlertTriangle, Flame, Trophy } from 'lucide-react'
+import { Bell, MapPin, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Utensils, Heart, ChevronRight, AlertTriangle, Flame, Trophy, Calendar } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -499,14 +499,25 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
           </div>
         )}
 
-        {upcomingEvents.length > 0 && (
-          <div className="px-4 py-2">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">{t('hub.eventsUpcoming')}</h3>
-              <button onClick={() => onNavigate('eventos')} className="flex items-center gap-1 text-xs font-medium border-0 bg-transparent cursor-pointer" style={{ color: '#7C3AED' }}>
-                {t('common.seeAll')} <ChevronRight size={14} />
-              </button>
-            </div>
+        <div className="px-4 py-2">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-gray-900">{t('hub.eventsUpcoming')}</h3>
+            <button onClick={() => onNavigate('eventos')} className="flex items-center gap-1 text-xs font-medium border-0 bg-transparent cursor-pointer" style={{ color: '#7C3AED' }}>
+              {t('common.seeAll')} <ChevronRight size={14} />
+            </button>
+          </div>
+          {upcomingEvents.length === 0 ? (
+            <button
+              onClick={() => onNavigate('eventos')}
+              className="w-full flex items-center gap-3 bg-white rounded-2xl border border-gray-100 px-3 py-3 cursor-pointer active:bg-gray-50"
+            >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#EDE9FE' }}>
+                <Calendar size={18} color="#7C3AED" strokeWidth={2.25} />
+              </div>
+              <span className="text-sm text-gray-500 flex-1 text-left">{t('hub.noEventsYet')}</span>
+              <ChevronRight size={16} color="#9CA3AF" />
+            </button>
+          ) : (
             <div className="flex gap-3 overflow-x-auto pb-2">
               {upcomingEvents.map(event => (
                 <div
@@ -542,8 +553,8 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {nearbyMatches.length > 0 && (
           <div className="px-4 py-2">
