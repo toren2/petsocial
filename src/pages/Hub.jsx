@@ -198,6 +198,7 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const [streak, setStreak] = useState(0)
   const [checkedInToday, setCheckedInToday] = useState(false)
   const [progress, setProgress] = useState({ visited: 0, checkins: 0, badges: 0 })
+  const [recentPosts, setRecentPosts] = useState([])
 
   const categories = [
     { id: 'vet',          label: t('hub.catVet'),          Icon: Stethoscope,     color: '#7C3AED', bg: '#EDE9FE' },
@@ -225,6 +226,7 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
     fetchMyEvents()
     fetchStreak()
     fetchProgress()
+    fetchRecentPosts()
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async pos => {
@@ -266,6 +268,25 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
     ])
     const visited = checkins ? new Set(checkins.map(c => c.place_id)).size : 0
     setProgress({ visited, checkins: checkins?.length || 0, badges: badgesCount || 0 })
+  }
+
+  async function fetchRecentPosts() {
+    const { data: blocks } = await supabase
+      .from('blocked_users')
+      .select('blocker_id, blocked_id')
+      .or(`blocker_id.eq.${user.id},blocked_id.eq.${user.id}`)
+    const blockedIds = blocks?.map(b => b.blocker_id === user.id ? b.blocked_id : b.blocker_id) || []
+
+    let query = supabase
+      .from('posts')
+      .select('id, pet_name, pet_emoji, image_url, user_id')
+      .not('image_url', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(8)
+    if (blockedIds.length > 0) query = query.not('user_id', 'in', `(${blockedIds.join(',')})`)
+
+    const { data } = await query
+    if (data) setRecentPosts(data)
   }
 
   async function fetchNearbyMatches() {
@@ -456,6 +477,27 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
             ))}
           </div>
         </div>
+
+        {recentPosts.length > 0 && (
+          <div className="px-4 py-2">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-gray-900">{t('hub.community')}</h3>
+              <button onClick={() => onNavigate('feed')} className="flex items-center gap-1 text-xs font-medium border-0 bg-transparent cursor-pointer" style={{ color: '#7C3AED' }}>
+                {t('common.seeAll')} <ChevronRight size={14} />
+              </button>
+            </div>
+            <div className="flex gap-2.5 overflow-x-auto pb-2">
+              {recentPosts.map(post => (
+                <div key={post.id} onClick={() => onNavigate('feed', null, null, post.id)} className="flex-shrink-0 cursor-pointer" style={{ width: 84 }}>
+                  <div className="w-full rounded-xl overflow-hidden bg-ps-purple-light" style={{ height: 84 }}>
+                    <img src={post.image_url} alt={post.pet_name} className="w-full h-full object-cover" />
+                  </div>
+                  <p className="text-[10px] font-semibold text-gray-500 mt-1 truncate">{post.pet_name}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {upcomingEvents.length > 0 && (
           <div className="px-4 py-2">

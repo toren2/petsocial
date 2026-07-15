@@ -131,7 +131,7 @@ export default function App() {
 </div>
 
       <div className="flex flex-col flex-1 overflow-hidden relative">
-        {screen === 'hub'     && <Hub onNavigate={(s, cat, placeId) => { if (cat) setInitialCategory(cat); if (placeId) setPendingPlaceId(placeId); setScreen(s) }} unreadCount={unreadCount} onOpenNotifications={openNotifications} />}
+        {screen === 'hub'     && <Hub onNavigate={(s, cat, placeId, postId) => { if (cat) setInitialCategory(cat); if (placeId) setPendingPlaceId(placeId); if (postId) { setPendingPostId(postId); setPendingPostAction('view') }; setScreen(s) }} unreadCount={unreadCount} onOpenNotifications={openNotifications} />}
         {screen === 'feed'    && <Feed onOpenChat={openChatWith} unreadCount={unreadCount} onOpenNotifications={openNotifications} initialPostId={pendingPostId} initialPostAction={pendingPostAction} onConsumeInitialPost={() => { setPendingPostId(null); setPendingPostAction(null) }} />}
         {screen === 'match'   && <Match onMatch={handleMatch} />}
         {screen === 'chat'    && <Chat initialUserId={pendingChatUserId} onConsumeInitialUser={() => setPendingChatUserId(null)} />}
