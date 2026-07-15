@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Bell, MapPin, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Utensils, Heart, ChevronRight, AlertTriangle } from 'lucide-react'
+import { Bell, MapPin, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Utensils, Heart, ChevronRight, AlertTriangle, Flame } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -183,6 +183,14 @@ function getWeatherTip(t, weather) {
   }
 }
 
+function getStreakTip(t, streak, checkedInToday) {
+  if (checkedInToday) return null
+  if (streak > 0) {
+    return { emoji: '🔥', color: '#DC2626', bg: '#FEE2E2', title: t('hub.streakAtRiskTitle', { days: streak }), body: t('hub.streakAtRiskBody') }
+  }
+  return { emoji: '🔥', color: '#D97706', bg: '#FEF3C7', title: t('hub.streakStartTitle'), body: t('hub.streakStartBody') }
+}
+
 export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const { user } = useAuth()
   const { t, language, setLanguage } = useLanguage()
@@ -195,6 +203,8 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const [lostPets, setLostPets] = useState([])
   const [upcomingEvents, setUpcomingEvents] = useState([])
   const [myEvents, setMyEvents] = useState([])
+  const [streak, setStreak] = useState(0)
+  const [checkedInToday, setCheckedInToday] = useState(false)
 
   const categories = [
     { id: 'vet',          label: t('hub.catVet'),          Icon: Stethoscope,     color: '#7C3AED', bg: '#EDE9FE' },
@@ -220,6 +230,7 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
     fetchLostPets()
     fetchUpcomingEvents()
     fetchMyEvents()
+    fetchStreak()
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async pos => {
@@ -246,6 +257,12 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   async function fetchProfile() {
     const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     if (data) setProfile(data)
+  }
+
+  async function fetchStreak() {
+    const { data } = await supabase.rpc('get_checkin_streak', { p_user_id: user.id })
+    setStreak(data?.streak || 0)
+    setCheckedInToday(!!data?.checked_in_today)
   }
 
   async function fetchNearbyMatches() {
@@ -328,7 +345,8 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const vaccineTip = getVaccineTip(t, vaccines)
   const weatherTip = getWeatherTip(t, weather)
   const dailyTip = getDailyTip(t, profile?.species)
-  const tips = [lostPetTip, eventTip, vaccineTip, weatherTip, dailyTip].filter(Boolean)
+  const streakTip = getStreakTip(t, streak, checkedInToday)
+  const tips = [lostPetTip, eventTip, vaccineTip, weatherTip, streakTip, dailyTip].filter(Boolean)
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -361,6 +379,12 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
+              {streak > 0 && (
+                <div className="flex items-center gap-1 rounded-full px-2.5 py-1" style={{ background: 'rgba(255,255,255,0.15)' }} title={t('hub.streakAtRiskTitle', { days: streak })}>
+                  <Flame size={13} color="#FED7AA" fill="#FED7AA" />
+                  <span className="text-white text-[11px] font-bold">{streak}</span>
+                </div>
+              )}
               <button
                 onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
                 className="border-0 cursor-pointer rounded-full px-2.5 py-1 text-[11px] font-bold text-white"
