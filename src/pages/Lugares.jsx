@@ -32,6 +32,7 @@ const GRID_CATEGORIES = [
   { id: 'restaurant',   real: true, Icon: Utensils },
   { id: 'shop',         real: true, Icon: ShoppingBag },
   { id: 'emergency24h', real: true, Icon: AlertTriangle },
+  { id: 'saved',        real: true, Icon: Bookmark },
   { id: 'more',         real: true, Icon: LayoutGrid, bg: '#EDE9FE', color: '#7C3AED' },
 ]
 
@@ -50,6 +51,7 @@ export default function Lugares({ initialCategory = 'all', initialPlaceId = null
   const { t } = useLanguage()
   const categories = [
     { id: 'all',          label: t('lugares.catAll'),          Icon: MapPin,         bg: '#EDE9FE', color: '#7C3AED' },
+    { id: 'saved',        label: t('lugares.catSaved'),        Icon: Bookmark,       bg: '#EDE9FE', color: '#7C3AED' },
     { id: 'vet',          label: t('lugares.catVet'),          Icon: Stethoscope,    bg: '#EDE9FE', color: '#7C3AED' },
     { id: 'groom',        label: t('lugares.catGroom'),        Icon: Scissors,       bg: '#FCE7F3', color: '#EC4899' },
     { id: 'park',         label: t('lugares.catPark'),         Icon: Trees,          bg: '#DCFCE7', color: '#16A34A' },
@@ -170,6 +172,7 @@ export default function Lugares({ initialCategory = 'all', initialPlaceId = null
 
   function enterBrowse(cat) {
     setActiveCategory(cat || 'all')
+    if (cat === 'saved') setActiveTab('todos')
     setView('browse')
   }
 
@@ -201,7 +204,7 @@ export default function Lugares({ initialCategory = 'all', initialPlaceId = null
   const featuredHome = nearestSorted[0] || bestRated
 
   let filtered = places.filter(p => {
-    const matchCat    = activeCategory === 'all' || p.category === activeCategory
+    const matchCat    = activeCategory === 'saved' ? savedIds.has(p.id) : (activeCategory === 'all' || p.category === activeCategory)
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.type.toLowerCase().includes(search.toLowerCase())
     return matchCat && matchSearch
   })
@@ -410,7 +413,7 @@ export default function Lugares({ initialCategory = 'all', initialPlaceId = null
               {categories.map(({ id, label, Icon, bg, color }) => (
                 <button
                   key={id}
-                  onClick={() => setActiveCategory(id)}
+                  onClick={() => { setActiveCategory(id); if (id === 'saved') setActiveTab('todos') }}
                   className="flex flex-col items-center gap-1 py-3 px-1 border-0 cursor-pointer flex-shrink-0 transition-colors"
                   style={{ background: activeCategory === id ? '#F5F3FF' : 'white' }}
                 >
