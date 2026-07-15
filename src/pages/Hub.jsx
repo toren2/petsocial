@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react'
-import { Bell, MapPin, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Utensils, Heart, ChevronRight, AlertTriangle, Flame, Trophy, Calendar } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Bell, MapPin, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Utensils, ChevronRight, AlertTriangle, Flame, Trophy, Calendar } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
-import VerifiedBadge from '../components/VerifiedBadge'
 
 function getDistance(lat1, lng1, lat2, lng2) {
   const R = 6371
@@ -187,7 +186,6 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const { user } = useAuth()
   const { t, language, setLanguage } = useLanguage()
   const [profile, setProfile] = useState(null)
-  const [nearbyMatches, setNearbyMatches] = useState([])
   const [nearbyPlaces, setNearbyPlaces] = useState([])
   const [userLocation, setUserLocation] = useState(null)
   const [weather, setWeather] = useState(null)
@@ -219,7 +217,6 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
 
   useEffect(() => {
     fetchProfile()
-    fetchNearbyMatches()
     fetchVaccines()
     fetchLostPets()
     fetchUpcomingEvents()
@@ -289,40 +286,6 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
     if (data) setRecentPosts(data)
   }
 
-  async function fetchNearbyMatches() {
-    const { data: existingMatches } = await supabase
-      .from('matches')
-      .select('user1_id, user2_id')
-      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-    const matchedIds = existingMatches?.map(m => m.user1_id === user.id ? m.user2_id : m.user1_id) || []
-
-    const { data: blocks } = await supabase
-      .from('blocked_users')
-      .select('blocker_id, blocked_id')
-      .or(`blocker_id.eq.${user.id},blocked_id.eq.${user.id}`)
-    const blockedIds = blocks?.map(b => b.blocker_id === user.id ? b.blocked_id : b.blocker_id) || []
-
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, pet_name, breed, age, emoji, avatar_url, location')
-      .neq('id', user.id)
-      .not('id', 'in', `(${[user.id, ...matchedIds, ...blockedIds].join(',')})`)
-      .limit(6)
-
-    if (data && data.length > 0) {
-      const ids = data.map(p => p.id)
-      const { data: verifiedRows } = await supabase
-        .from('verification_requests')
-        .select('user_id')
-        .in('user_id', ids)
-        .eq('status', 'aprobado')
-      const verifiedIds = new Set(verifiedRows?.map(v => v.user_id) || [])
-      setNearbyMatches(data.map(p => ({ ...p, verified: verifiedIds.has(p.id) })))
-    } else {
-      setNearbyMatches([])
-    }
-  }
-
   async function fetchVaccines() {
     const { data } = await supabase.from('vaccines').select('*').eq('user_id', user.id)
     if (data) setVaccines(data)
@@ -371,21 +334,27 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const dailyTip = getDailyTip(t, profile?.species)
   const tips = [lostPetTip, eventTip, vaccineTip, weatherTip, dailyTip].filter(Boolean)
 
+  const scrollRef = useRef(null)
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="flex-1 overflow-y-auto bg-ps-bg">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto bg-ps-bg">
 
         <div
           className="px-5 pt-4 pb-4"
           style={{ background: 'linear-gradient(160deg, #6D28D9, #7C3AED)' }}
         >
-          <div style={{ overflow: 'hidden', height: '36px', display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+          <button
+            onClick={() => scrollRef.current && scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="border-0 bg-transparent cursor-pointer p-0"
+            style={{ overflow: 'hidden', height: '36px', display: 'flex', alignItems: 'center', marginBottom: '8px' }}
+          >
             <img
               src="/snoutt-logo.png"
               alt="Snoutt"
               style={{ height: '64px', width: 'auto', filter: 'brightness(0) invert(1)', transformOrigin: '45% center' }}
             />
-          </div>
+          </button>
 
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
@@ -555,43 +524,6 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
             </div>
           )}
         </div>
-
-        {nearbyMatches.length > 0 && (
-          <div className="px-4 py-2">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">{t('hub.matchNearby')}</h3>
-              <button onClick={() => onNavigate('match')} className="flex items-center gap-1 text-xs font-medium border-0 bg-transparent cursor-pointer" style={{ color: '#7C3AED' }}>
-                {t('common.seeAll')} <ChevronRight size={14} />
-              </button>
-            </div>
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              {nearbyMatches.map(pet => (
-                <div key={pet.id} className="flex-shrink-0 bg-white rounded-2xl overflow-hidden border border-gray-100" style={{ width: 110 }}>
-                  <div className="flex items-center justify-center" style={{ height: 90, background: '#EDE9FE', fontSize: 48 }}>
-                    {pet.avatar_url ? (
-                      <img src={pet.avatar_url} alt={pet.pet_name} className="w-full h-full object-cover" />
-                    ) : (
-                      pet.emoji || '🐕'
-                    )}
-                  </div>
-                  <div className="p-2">
-                    <p className="text-xs font-bold text-gray-900 truncate flex items-center gap-0.5">
-                      {pet.pet_name} <VerifiedBadge verified={pet.verified} size={11} />
-                    </p>
-                    <p className="text-[10px] text-gray-400 truncate">{pet.age} {t('common.years')} · {pet.breed}</p>
-                    <button
-                      onClick={() => onNavigate('match')}
-                      className="mt-1.5 w-full flex items-center justify-center gap-1 py-1 rounded-full border-0 cursor-pointer text-[10px] font-semibold"
-                      style={{ background: '#FCE7F3', color: '#EC4899' }}
-                    >
-                      <Heart size={10} /> {t('match.title')}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {nearbyPlaces.length > 0 && (
           <div className="px-4 py-2 pb-4">
