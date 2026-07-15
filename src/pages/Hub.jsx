@@ -545,26 +545,26 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
                 {t('common.seeAll')} <ChevronRight size={14} />
               </button>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex gap-3 overflow-x-auto pb-2">
               {nearbyPlaces.map(place => {
                 const CatIcon = catIcons[place.category] || MapPin
                 const catColor = catColors[place.category] || { color: '#7C3AED', bg: '#EDE9FE' }
                 return (
-                  <div key={place.id} onClick={() => onNavigate('lugares', null, place.id)} className="flex items-center gap-3 bg-white rounded-2xl px-3 py-3 border border-gray-100 cursor-pointer active:bg-gray-50">
-                    <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0" style={{ background: catColor.bg }}>
+                  <div key={place.id} onClick={() => onNavigate('lugares', null, place.id)} className="flex-shrink-0 bg-white rounded-2xl overflow-hidden border border-gray-100 cursor-pointer active:bg-gray-50" style={{ width: 130 }}>
+                    <div className="w-full h-20 overflow-hidden flex items-center justify-center" style={{ background: catColor.bg }}>
                       {place.image_url ? (
                         <img src={place.image_url} alt={place.name} className="w-full h-full object-cover" />
                       ) : (
-                        <CatIcon size={20} color={catColor.color} strokeWidth={2.25} />
+                        <CatIcon size={24} color={catColor.color} strokeWidth={2.25} />
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{place.name}</p>
-                      <p className="text-xs text-gray-400 truncate">{place.type}</p>
-                    </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <span className="text-xs text-yellow-500">⭐</span>
-                      <span className="text-xs font-medium text-gray-700">{place.rating}</span>
+                    <div className="p-2">
+                      <p className="text-xs font-bold text-gray-900 truncate">{place.name}</p>
+                      <p className="text-[10px] text-gray-400 truncate">{place.type}</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className="text-[10px] text-yellow-500">⭐</span>
+                        <span className="text-[10px] font-medium text-gray-700">{place.rating}</span>
+                      </div>
                     </div>
                   </div>
                 )
