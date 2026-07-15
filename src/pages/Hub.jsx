@@ -183,14 +183,6 @@ function getWeatherTip(t, weather) {
   }
 }
 
-function getStreakTip(t, streak, checkedInToday) {
-  if (checkedInToday) return null
-  if (streak > 0) {
-    return { emoji: '🔥', color: '#DC2626', bg: '#FEE2E2', title: t('hub.streakAtRiskTitle', { days: streak }), body: t('hub.streakAtRiskBody') }
-  }
-  return { emoji: '🔥', color: '#D97706', bg: '#FEF3C7', title: t('hub.streakStartTitle'), body: t('hub.streakStartBody') }
-}
-
 export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const { user } = useAuth()
   const { t, language, setLanguage } = useLanguage()
@@ -204,7 +196,6 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const [upcomingEvents, setUpcomingEvents] = useState([])
   const [myEvents, setMyEvents] = useState([])
   const [streak, setStreak] = useState(0)
-  const [checkedInToday, setCheckedInToday] = useState(false)
 
   const categories = [
     { id: 'vet',          label: t('hub.catVet'),          Icon: Stethoscope,     color: '#7C3AED', bg: '#EDE9FE' },
@@ -262,7 +253,6 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   async function fetchStreak() {
     const { data } = await supabase.rpc('get_checkin_streak', { p_user_id: user.id })
     setStreak(data?.streak || 0)
-    setCheckedInToday(!!data?.checked_in_today)
   }
 
   async function fetchNearbyMatches() {
@@ -345,8 +335,7 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const vaccineTip = getVaccineTip(t, vaccines)
   const weatherTip = getWeatherTip(t, weather)
   const dailyTip = getDailyTip(t, profile?.species)
-  const streakTip = getStreakTip(t, streak, checkedInToday)
-  const tips = [lostPetTip, eventTip, vaccineTip, weatherTip, streakTip, dailyTip].filter(Boolean)
+  const tips = [lostPetTip, eventTip, vaccineTip, weatherTip, dailyTip].filter(Boolean)
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
