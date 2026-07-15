@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, Heart, MessageCircle, Calendar, Bell } from 'lucide-react'
+import { X, Heart, MessageCircle, Calendar, Bell, Flame } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -10,6 +10,7 @@ function NotificationIcon({ type }) {
   if (type === 'event_invite') return <Calendar size={18} color="white" />
   if (type === 'like') return <Heart size={18} color="white" />
   if (type === 'comment') return <MessageCircle size={18} color="white" />
+  if (type === 'streak_reminder') return <Flame size={18} color="white" />
   return <Bell size={18} color="white" />
 }
 
@@ -19,6 +20,7 @@ function iconBg(type) {
   if (type === 'event_invite') return '#0F9B8E'
   if (type === 'like') return '#EC4899'
   if (type === 'comment') return '#D97706'
+  if (type === 'streak_reminder') return '#F97316'
   return '#6B7280'
 }
 
@@ -113,7 +115,7 @@ export default function Notifications({ onClose, onNavigate }) {
               key={n.id}
               onClick={() => {
                 markRead(n.id)
-                if (onNavigate && (n.type === 'match' || n.type === 'message' || n.type === 'event_invite')) onNavigate(n)
+                if (onNavigate && (n.type === 'match' || n.type === 'message' || n.type === 'event_invite' || n.type === 'streak_reminder')) onNavigate(n)
               }}
               className="flex items-start gap-3 px-4 py-3.5 border-b border-gray-100 cursor-pointer"
               style={{ background: n.read ? 'white' : '#F5F3FF' }}

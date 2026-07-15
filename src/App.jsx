@@ -109,6 +109,7 @@ export default function App() {
     if (n.type === 'match' && n.data?.matchUserId) { openChatWith(n.data.matchUserId); return }
     if (n.type === 'message' && n.data?.senderId) { openChatWith(n.data.senderId); return }
     if (n.type === 'event_invite' && n.data?.eventId) { openEvent(n.data.eventId); return }
+    if (n.type === 'streak_reminder') { setScreen('lugares'); return }
   }
 
   return (
