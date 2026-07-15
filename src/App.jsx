@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
-import { useLanguage } from './LanguageContext'
 import { supabase } from './supabase'
 import Auth from './pages/Auth'
 import ResetPassword from './pages/ResetPassword'
@@ -22,7 +21,6 @@ import { useBackButton } from './useBackButton'
 
 export default function App() {
   const { user, loading, signOut, isPasswordRecovery } = useAuth()
-  const { t } = useLanguage()
   const [screen, setScreen] = useState('splash')
   const [matchedPet, setMatchedPet] = useState(null)
   const [showSplash, setShowSplash] = useState(true)
@@ -118,15 +116,6 @@ export default function App() {
 
   return (
     <div className="phone-shell">
-      <div className="flex justify-end items-center px-5 py-1.5 bg-white text-xs font-medium text-gray-700 flex-shrink-0">
-  <button
-    onClick={signOut}
-    className="text-xs text-ps-purple border-0 bg-transparent cursor-pointer font-medium"
-  >
-    {t('app.logout')}
-  </button>
-</div>
-
       <div className="flex flex-col flex-1 overflow-hidden relative">
         {screen === 'hub'     && <Hub onNavigate={(s, cat, placeId, postId) => { if (cat) setInitialCategory(cat); if (placeId) setPendingPlaceId(placeId); if (postId) { setPendingPostId(postId); setPendingPostAction('view') }; setScreen(s) }} unreadCount={unreadCount} onOpenNotifications={openNotifications} />}
         {screen === 'feed'    && <Feed onOpenChat={openChatWith} unreadCount={unreadCount} onOpenNotifications={openNotifications} initialPostId={pendingPostId} initialPostAction={pendingPostAction} onConsumeInitialPost={() => { setPendingPostId(null); setPendingPostAction(null) }} />}
