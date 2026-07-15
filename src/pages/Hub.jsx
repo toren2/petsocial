@@ -427,31 +427,34 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
           </div>
         </div>
 
+        <div className="px-4 pt-4">
+          <button
+            onClick={() => onNavigate('perdidos')}
+            className="w-full flex items-center gap-3 bg-white rounded-2xl border border-gray-100 px-3 py-3 cursor-pointer active:bg-gray-50"
+          >
+            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#FEE2E2' }}>
+              <AlertTriangle size={18} color="#DC2626" strokeWidth={2.25} />
+            </div>
+            <span className="text-sm font-semibold flex-1 text-left text-gray-900">{t('hub.qaPerdidos')}</span>
+            <ChevronRight size={16} color="#9CA3AF" />
+          </button>
+        </div>
+
         <div className="px-4 pt-4 pb-2">
           <h3 className="text-sm font-bold text-gray-900 mb-3">{t('hub.forToday')}</h3>
           <div className="flex flex-col gap-2">
             {tips.map((tip, i) => (
-              <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: tip.bg }}>
-                <span className="text-2xl flex-shrink-0">{tip.emoji}</span>
-                <div>
+              <div key={i} className="flex items-center gap-3 bg-white rounded-2xl border border-gray-100 px-3 py-3">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: tip.bg }}>
+                  <span className="text-lg">{tip.emoji}</span>
+                </div>
+                <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold" style={{ color: tip.color }}>{tip.title}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{tip.body}</p>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-
-        <div className="px-4 py-2">
-          <button
-            onClick={() => onNavigate('perdidos')}
-            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border-0 cursor-pointer"
-            style={{ background: '#FEE2E2' }}
-          >
-            <AlertTriangle size={20} color="#DC2626" strokeWidth={2.25} />
-            <span className="text-sm font-semibold flex-1 text-left" style={{ color: '#DC2626' }}>{t('hub.qaPerdidos')}</span>
-            <ChevronRight size={16} color="#DC2626" />
-          </button>
         </div>
 
         {upcomingEvents.length > 0 && (
