@@ -118,16 +118,13 @@ export default function App() {
 
   return (
     <div className="phone-shell">
-      <div className="flex justify-between items-center px-5 py-2 bg-white text-xs font-medium text-gray-700 flex-shrink-0">
-  <span>{new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}</span>
-  <div className="flex gap-3 items-center text-gray-500">
-    <button
-      onClick={signOut}
-      className="text-xs text-ps-purple border-0 bg-transparent cursor-pointer font-medium"
-    >
-      {t('app.logout')}
-    </button>
-  </div>
+      <div className="flex justify-end items-center px-5 py-1.5 bg-white text-xs font-medium text-gray-700 flex-shrink-0">
+  <button
+    onClick={signOut}
+    className="text-xs text-ps-purple border-0 bg-transparent cursor-pointer font-medium"
+  >
+    {t('app.logout')}
+  </button>
 </div>
 
       <div className="flex flex-col flex-1 overflow-hidden relative">

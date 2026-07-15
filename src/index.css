@@ -43,9 +43,16 @@
    ya no tiene sentido -- se ve como un telefono dentro de otro telefono.
    Ahi la app debe ocupar toda la pantalla, sin bordes redondeados ni sombra. */
 @media (max-width: 480px) {
+  html, body {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior-y: none;
+  }
   body {
     background-color: #F8F7FF;
     display: block;
+    min-height: 0;
   }
   .phone-shell {
     width: 100vw;
