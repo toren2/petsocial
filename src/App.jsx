@@ -30,6 +30,8 @@ export default function App() {
   const [pendingPlaceId, setPendingPlaceId] = useState(null)
   const [pendingChatUserId, setPendingChatUserId] = useState(null)
   const [pendingEventId, setPendingEventId] = useState(null)
+  const [pendingPostId, setPendingPostId] = useState(null)
+  const [pendingPostAction, setPendingPostAction] = useState(null)
   const [showNotifications, setShowNotifications] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
 
@@ -110,6 +112,8 @@ export default function App() {
     if (n.type === 'message' && n.data?.senderId) { openChatWith(n.data.senderId); return }
     if (n.type === 'event_invite' && n.data?.eventId) { openEvent(n.data.eventId); return }
     if (n.type === 'streak_reminder') { setScreen('lugares'); return }
+    if (n.type === 'like' && n.data?.postId) { setPendingPostId(n.data.postId); setPendingPostAction('view'); setScreen('feed'); return }
+    if (n.type === 'comment' && n.data?.postId) { setPendingPostId(n.data.postId); setPendingPostAction('comments'); setScreen('feed'); return }
   }
 
   return (
@@ -128,7 +132,7 @@ export default function App() {
 
       <div className="flex flex-col flex-1 overflow-hidden relative">
         {screen === 'hub'     && <Hub onNavigate={(s, cat, placeId) => { if (cat) setInitialCategory(cat); if (placeId) setPendingPlaceId(placeId); setScreen(s) }} unreadCount={unreadCount} onOpenNotifications={openNotifications} />}
-        {screen === 'feed'    && <Feed onOpenChat={openChatWith} unreadCount={unreadCount} onOpenNotifications={openNotifications} />}
+        {screen === 'feed'    && <Feed onOpenChat={openChatWith} unreadCount={unreadCount} onOpenNotifications={openNotifications} initialPostId={pendingPostId} initialPostAction={pendingPostAction} onConsumeInitialPost={() => { setPendingPostId(null); setPendingPostAction(null) }} />}
         {screen === 'match'   && <Match onMatch={handleMatch} />}
         {screen === 'chat'    && <Chat initialUserId={pendingChatUserId} onConsumeInitialUser={() => setPendingChatUserId(null)} />}
         {screen === 'eventos' && <Eventos initialEventId={pendingEventId} onConsumeInitialEvent={() => setPendingEventId(null)} />}

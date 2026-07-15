@@ -107,7 +107,7 @@ function SearchPanel({ onClose, onViewProfile }) {
   )
 }
 
-function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
+function Post({ post, currentUserId, myPetName, onViewProfile, onDelete, autoOpenComments = false }) {
   const { t, language } = useLanguage()
   const [liked, setLiked] = useState(post.liked)
   const [likes, setLikes] = useState(post.likes)
@@ -116,6 +116,10 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
   const [saved, setSaved] = useState(post.saved || false)
   const [showPaw, setShowPaw] = useState(false)
   const lastTapRef = useRef(0)
+
+  useEffect(() => {
+    if (autoOpenComments) setShowComments(true)
+  }, [autoOpenComments])
 
   async function toggleSave() {
     const newSaved = !saved
@@ -169,7 +173,7 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
   }
 
   return (
-    <div className="bg-white border-b border-gray-100">
+    <div id={`post-${post.id}`} className="bg-white border-b border-gray-100">
       <div className="flex items-center gap-2.5 px-4 py-3">
         <div
           className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center text-xl flex-shrink-0 overflow-hidden cursor-pointer"
@@ -285,7 +289,7 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete }) {
   )
 }
 
-export default function Feed({ onOpenChat, unreadCount, onOpenNotifications }) {
+export default function Feed({ onOpenChat, unreadCount, onOpenNotifications, initialPostId = null, initialPostAction = null, onConsumeInitialPost }) {
   const { user } = useAuth()
   const { t } = useLanguage()
   const [posts, setPosts] = useState([])
@@ -302,6 +306,15 @@ export default function Feed({ onOpenChat, unreadCount, onOpenNotifications }) {
     fetchProfile()
     fetchFollowing()
   }, [])
+
+  useEffect(() => {
+    if (!initialPostId || posts.length === 0) return
+    const match = posts.find(p => p.id === initialPostId)
+    if (!match) { onConsumeInitialPost && onConsumeInitialPost(); return }
+    const el = document.getElementById(`post-${initialPostId}`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    onConsumeInitialPost && onConsumeInitialPost()
+  }, [initialPostId, posts])
 
   async function fetchProfile() {
     const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
@@ -441,7 +454,7 @@ export default function Feed({ onOpenChat, unreadCount, onOpenNotifications }) {
             )}
           </div>
         ) : (
-          displayedPosts.map(p => <Post key={p.id} post={p} currentUserId={user.id} myPetName={profile?.pet_name} onViewProfile={setViewingProfile} onDelete={deletePost} />)
+          displayedPosts.map(p => <Post key={p.id} post={p} currentUserId={user.id} myPetName={profile?.pet_name} onViewProfile={setViewingProfile} onDelete={deletePost} autoOpenComments={p.id === initialPostId && initialPostAction === 'comments'} />)
         )}
       </div>
 
