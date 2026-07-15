@@ -196,6 +196,7 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const [upcomingEvents, setUpcomingEvents] = useState([])
   const [myEvents, setMyEvents] = useState([])
   const [streak, setStreak] = useState(0)
+  const [checkedInToday, setCheckedInToday] = useState(false)
 
   const categories = [
     { id: 'vet',          label: t('hub.catVet'),          Icon: Stethoscope,     color: '#7C3AED', bg: '#EDE9FE' },
@@ -253,6 +254,7 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   async function fetchStreak() {
     const { data } = await supabase.rpc('get_checkin_streak', { p_user_id: user.id })
     setStreak(data?.streak || 0)
+    setCheckedInToday(!!data?.checked_in_today)
   }
 
   async function fetchNearbyMatches() {
@@ -368,12 +370,6 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              {streak > 0 && (
-                <div className="flex items-center gap-1 rounded-full px-2.5 py-1" style={{ background: 'rgba(255,255,255,0.15)' }} title={t('hub.streakAtRiskTitle', { days: streak })}>
-                  <Flame size={13} color="#FED7AA" fill="#FED7AA" />
-                  <span className="text-white text-[11px] font-bold">{streak}</span>
-                </div>
-              )}
               <button
                 onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
                 className="border-0 cursor-pointer rounded-full px-2.5 py-1 text-[11px] font-bold text-white"
@@ -403,6 +399,20 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
           >
             <MapPin size={16} color="white" />
             <span className="text-white/80 text-xs">{t('hub.searchPlaces')}</span>
+          </div>
+
+          <div
+            onClick={() => onNavigate('lugares')}
+            className="flex items-center gap-2 rounded-full px-3 py-1.5 mt-2 cursor-pointer"
+            style={{ background: 'rgba(255,255,255,0.15)' }}
+          >
+            <Flame size={14} color="#FED7AA" fill={streak > 0 ? '#FED7AA' : 'none'} />
+            <span className="text-white text-[11px] font-bold flex-1">
+              {streak > 0 ? t('hub.streakAtRiskTitle', { days: streak }) : t('hub.streakStartTitle')}
+            </span>
+            <span className="text-[11px] font-bold" style={{ color: '#FED7AA' }}>
+              {checkedInToday ? t('hub.streakDoneToday') : `${t('hub.streakCta')} →`}
+            </span>
           </div>
         </div>
 
