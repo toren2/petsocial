@@ -360,16 +360,22 @@ export default function Feed({ onOpenChat, unreadCount, onOpenNotifications, ini
     ? posts.filter(p => followingIds.includes(p.user_id))
     : posts
 
+  const feedScrollRef = useRef(null)
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
-    <div style={{ overflow: 'hidden', height: '44px', display: 'flex', alignItems: 'center' }}>
+    <button
+      onClick={() => feedScrollRef.current && feedScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' })}
+      className="border-0 bg-transparent cursor-pointer p-0"
+      style={{ overflow: 'hidden', height: '44px', display: 'flex', alignItems: 'center' }}
+    >
   <img
     src="/snoutt-logo.png"
     alt="Snoutt"
     style={{ height: '79px', width: 'auto' }}
   />
-</div>
+</button>
         <div className="flex gap-3">
           <button
             onClick={() => setShowSearch(true)}
@@ -408,7 +414,7 @@ export default function Feed({ onOpenChat, unreadCount, onOpenNotifications, ini
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-ps-bg">
+      <div ref={feedScrollRef} className="flex-1 overflow-y-auto bg-ps-bg">
         <StoriesBar profile={profile} />
         <div className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center overflow-hidden flex-shrink-0">
