@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, MapPin, Grid3x3, MessageCircle, X, Heart, ChevronLeft, ChevronRight, UserPlus, UserCheck, Trophy } from 'lucide-react'
+import { ArrowLeft, MapPin, Grid3x3, MessageCircle, X, Heart, ChevronLeft, ChevronRight, UserPlus, UserCheck, Trophy, Syringe } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -100,6 +100,7 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
   const [showInfo, setShowInfo] = useState(false)
   const [huellasPoints, setHuellasPoints] = useState(0)
   const [showBadgesModal, setShowBadgesModal] = useState(false)
+  const [vaccineStatus, setVaccineStatus] = useState(null)
 
  useEffect(() => {
   fetchProfile()
@@ -110,6 +111,7 @@ export default function PerfilPublico({ userId, onBack, onChat }) {
   fetchFollowerCount()
   checkVerified()
   fetchHuellas()
+  fetchVaccineStatus()
 }, [userId])
 
 useEffect(() => {
@@ -132,6 +134,11 @@ useEffect(() => {
       .single()
     if (data) setProfile(data)
     setLoading(false)
+  }
+
+  async function fetchVaccineStatus() {
+    const { data } = await supabase.rpc('get_vaccine_status', { p_user_id: userId })
+    setVaccineStatus(data || null)
   }
 
   async function fetchPosts() {
@@ -283,6 +290,13 @@ useEffect(() => {
               </div>
             )}
             <div className="mt-1.5"><HuellasBadge points={huellasPoints} size="sm" /></div>
+            {vaccineStatus === 'ok' && (
+              <div className="mt-1.5">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit" style={{ background: '#DBEAFE', color: '#3B82F6' }}>
+                  <Syringe size={10} /> {t('perfil.vaccinesUpToDate')}
+                </span>
+              </div>
+            )}
             <div className="flex gap-4 mt-2">
               <div className="text-center">
                 <div className="font-bold text-gray-900 text-sm">{posts.length}</div>
