@@ -50,12 +50,53 @@ const GENERAL_TIP_STYLE = {
   tipCar:        { emoji: '🚗', color: '#DC2626', bg: '#FEE2E2' },
 }
 
-function getDailyTip(t, date = new Date()) {
+const DOG_TIP_KEYS = [
+  'tipDogHydration', 'tipDogDental', 'tipDogPaws', 'tipDogNails', 'tipDogBrush', 'tipDogFleas',
+  'tipDogExercise', 'tipDogFood', 'tipDogVetCheckup', 'tipDogPlay', 'tipDogId', 'tipDogCar',
+]
+const DOG_TIP_STYLE = {
+  tipDogHydration:  { emoji: '💧', color: '#3B82F6', bg: '#DBEAFE' },
+  tipDogDental:     { emoji: '🦷', color: '#0F9B8E', bg: '#E0F7F4' },
+  tipDogPaws:       { emoji: '🐾', color: '#D97706', bg: '#FEF3C7' },
+  tipDogNails:      { emoji: '✂️', color: '#EC4899', bg: '#FCE7F3' },
+  tipDogBrush:      { emoji: '🪮', color: '#7C3AED', bg: '#EDE9FE' },
+  tipDogFleas:      { emoji: '🦟', color: '#16A34A', bg: '#DCFCE7' },
+  tipDogExercise:   { emoji: '🏃', color: '#DC2626', bg: '#FEE2E2' },
+  tipDogFood:       { emoji: '🍖', color: '#D97706', bg: '#FEF3C7' },
+  tipDogVetCheckup: { emoji: '🩺', color: '#7C3AED', bg: '#EDE9FE' },
+  tipDogPlay:       { emoji: '🎾', color: '#EC4899', bg: '#FCE7F3' },
+  tipDogId:         { emoji: '🏷️', color: '#0F9B8E', bg: '#E0F7F4' },
+  tipDogCar:        { emoji: '🚗', color: '#DC2626', bg: '#FEE2E2' },
+}
+
+const CAT_TIP_KEYS = [
+  'tipCatHydration', 'tipCatDental', 'tipCatLitter', 'tipCatNails', 'tipCatBrush', 'tipCatFleas',
+  'tipCatExercise', 'tipCatFood', 'tipCatVetCheckup', 'tipCatPlay', 'tipCatId', 'tipCatCar',
+]
+const CAT_TIP_STYLE = {
+  tipCatHydration:  { emoji: '💧', color: '#3B82F6', bg: '#DBEAFE' },
+  tipCatDental:     { emoji: '🦷', color: '#0F9B8E', bg: '#E0F7F4' },
+  tipCatLitter:     { emoji: '🧹', color: '#D97706', bg: '#FEF3C7' },
+  tipCatNails:      { emoji: '✂️', color: '#EC4899', bg: '#FCE7F3' },
+  tipCatBrush:      { emoji: '🪮', color: '#7C3AED', bg: '#EDE9FE' },
+  tipCatFleas:      { emoji: '🦟', color: '#16A34A', bg: '#DCFCE7' },
+  tipCatExercise:   { emoji: '🧶', color: '#DC2626', bg: '#FEE2E2' },
+  tipCatFood:       { emoji: '🍖', color: '#D97706', bg: '#FEF3C7' },
+  tipCatVetCheckup: { emoji: '🩺', color: '#7C3AED', bg: '#EDE9FE' },
+  tipCatPlay:       { emoji: '🎣', color: '#EC4899', bg: '#FCE7F3' },
+  tipCatId:         { emoji: '🏷️', color: '#0F9B8E', bg: '#E0F7F4' },
+  tipCatCar:        { emoji: '🧳', color: '#DC2626', bg: '#FEE2E2' },
+}
+
+function getDailyTip(t, species, date = new Date()) {
   const start = new Date(date.getFullYear(), 0, 0)
   const dayOfYear = Math.floor((date - start) / 86400000)
-  const key = GENERAL_TIP_KEYS[dayOfYear % GENERAL_TIP_KEYS.length]
-  const style = GENERAL_TIP_STYLE[key]
-  return { ...style, title: t(`hub.${key}Title`), body: t(`hub.${key}Body`) }
+  let keys = GENERAL_TIP_KEYS
+  let style = GENERAL_TIP_STYLE
+  if (species === 'Perro') { keys = DOG_TIP_KEYS; style = DOG_TIP_STYLE }
+  else if (species === 'Gato') { keys = CAT_TIP_KEYS; style = CAT_TIP_STYLE }
+  const key = keys[dayOfYear % keys.length]
+  return { ...style[key], title: t(`hub.${key}Title`), body: t(`hub.${key}Body`) }
 }
 
 function getLostPetTip(t, lostPets, userLocation) {
@@ -286,7 +327,7 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const eventTip = getEventTip(t, myEvents)
   const vaccineTip = getVaccineTip(t, vaccines)
   const weatherTip = getWeatherTip(t, weather)
-  const dailyTip = getDailyTip(t)
+  const dailyTip = getDailyTip(t, profile?.species)
   const tips = [lostPetTip, eventTip, vaccineTip, weatherTip, dailyTip].filter(Boolean)
 
   return (
