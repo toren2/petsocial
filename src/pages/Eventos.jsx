@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Plus, MapPin, Clock, Users, X, Trash2, ArrowLeft, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
@@ -300,10 +300,58 @@ function CreateEventModal({ onClose, onCreate }) {
   const [form, setForm] = useState({
     title: '', type: 'paseo', date: '', time: '',
     location: '', maxAttendees: 10, description: '', image: '',
+    lat: null, lng: null,
   })
   const [imageUploading, setImageUploading] = useState(false)
+  const locationInputRef = useRef(null)
+  const autocompleteRef = useRef(null)
 
   function handle(k, v) { setForm(f => ({ ...f, [k]: v })) }
+
+  // Autocompletado de Google Places en el campo de ubicacion: asi
+  // capturamos lat/lng reales del lugar del evento (no solo el texto),
+  // necesarios para el recordatorio de "eventos cerca de ti".
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY
+
+    function attachAutocomplete() {
+      if (!locationInputRef.current || !window.google?.maps?.places) return
+      autocompleteRef.current = new window.google.maps.places.Autocomplete(locationInputRef.current, {
+        fields: ['formatted_address', 'geometry', 'name'],
+        componentRestrictions: { country: 'pa' },
+      })
+      autocompleteRef.current.addListener('place_changed', () => {
+        const place = autocompleteRef.current.getPlace()
+        if (!place.geometry) return
+        setForm(f => ({
+          ...f,
+          location: place.formatted_address || place.name || f.location,
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng(),
+        }))
+      })
+    }
+
+    if (window.google && window.google.maps) {
+      attachAutocomplete()
+      return
+    }
+    if (document.querySelector('script[src*="maps.googleapis.com"]')) {
+      const checkReady = setInterval(() => {
+        if (window.google && window.google.maps) {
+          clearInterval(checkReady)
+          attachAutocomplete()
+        }
+      }, 100)
+      return () => clearInterval(checkReady)
+    }
+    const script = document.createElement('script')
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
+    script.async = true
+    script.defer = true
+    script.onload = attachAutocomplete
+    document.head.appendChild(script)
+  }, [])
 
   async function handleImageUpload(e) {
     const file = e.target.files[0]
@@ -366,7 +414,13 @@ function CreateEventModal({ onClose, onCreate }) {
           </div>
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('eventos.location')}</label>
-            <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg" placeholder={t('eventos.locationPlaceholder')} value={form.location} onChange={e => handle('location', e.target.value)} />
+            <input
+              ref={locationInputRef}
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none bg-ps-bg"
+              placeholder={t('eventos.locationPlaceholder')}
+              value={form.location}
+              onChange={e => setForm(f => ({ ...f, location: e.target.value, lat: null, lng: null }))}
+            />
           </div>
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('eventos.eventImage')}</label>
@@ -459,6 +513,7 @@ export default function Eventos({ initialEventId, onConsumeInitialEvent }) {
         max_attendees: event.maxAttendees, attendees: 1,
         host: 'hoshi_oficial', description: event.description, bg: event.bg,
         image_url: event.image || null,
+        lat: event.lat || null, lng: event.lng || null,
         user_id: user.id,
       }])
       .select('*, profiles(pet_name, emoji, avatar_url)')

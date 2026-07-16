@@ -231,6 +231,12 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
         async pos => {
           const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }
           setUserLocation(loc)
+          // Guardamos la ultima ubicacion conocida en el perfil (sin esperar
+          // la respuesta) para que el recordatorio de "eventos cerca de ti"
+          // en el servidor tenga con que calcular distancias.
+          supabase.from('profiles').update({
+            lat: loc.lat, lng: loc.lng, location_updated_at: new Date().toISOString(),
+          }).eq('id', user.id).then(() => {})
           try {
             const apiKey = import.meta.env.VITE_OPENWEATHER_KEY
             const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${loc.lat}&lon=${loc.lng}&units=metric&appid=${apiKey}`)

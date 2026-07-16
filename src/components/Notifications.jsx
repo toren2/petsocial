@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, Heart, MessageCircle, Calendar, Bell, Flame, Syringe } from 'lucide-react'
+import { X, Heart, MessageCircle, Calendar, Bell, Flame, Syringe, MapPin } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -12,6 +12,7 @@ function NotificationIcon({ type }) {
   if (type === 'comment') return <MessageCircle size={18} color="white" />
   if (type === 'streak_reminder') return <Flame size={18} color="white" />
   if (type === 'vaccine_reminder') return <Syringe size={18} color="white" />
+  if (type === 'event_nearby') return <MapPin size={18} color="white" />
   return <Bell size={18} color="white" />
 }
 
@@ -23,6 +24,7 @@ function iconBg(type) {
   if (type === 'comment') return '#D97706'
   if (type === 'streak_reminder') return '#F97316'
   if (type === 'vaccine_reminder') return '#3B82F6'
+  if (type === 'event_nearby') return '#16A34A'
   return '#6B7280'
 }
 
@@ -117,7 +119,7 @@ export default function Notifications({ onClose, onNavigate }) {
               key={n.id}
               onClick={() => {
                 markRead(n.id)
-                if (onNavigate && (n.type === 'match' || n.type === 'message' || n.type === 'event_invite' || n.type === 'streak_reminder' || n.type === 'vaccine_reminder' || n.type === 'like' || n.type === 'comment')) onNavigate(n)
+                if (onNavigate && (n.type === 'match' || n.type === 'message' || n.type === 'event_invite' || n.type === 'streak_reminder' || n.type === 'vaccine_reminder' || n.type === 'event_nearby' || n.type === 'like' || n.type === 'comment')) onNavigate(n)
               }}
               className="flex items-start gap-3 px-4 py-3.5 border-b border-gray-100 cursor-pointer"
               style={{ background: n.read ? 'white' : '#F5F3FF' }}

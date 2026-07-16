@@ -187,6 +187,7 @@ export default function App() {
     if (n.type === 'event_invite' && n.data?.eventId) { openEvent(n.data.eventId); return }
     if (n.type === 'streak_reminder') { setScreen('lugares'); return }
     if (n.type === 'vaccine_reminder') { setPendingOpenVacunas(true); setScreen('perfil'); return }
+    if (n.type === 'event_nearby' && n.data?.eventId) { openEvent(n.data.eventId); return }
     if (n.type === 'like' && n.data?.postId) { setPendingPostId(n.data.postId); setPendingPostAction('view'); setScreen('feed'); return }
     if (n.type === 'comment' && n.data?.postId) { setPendingPostId(n.data.postId); setPendingPostAction('comments'); setScreen('feed'); return }
   }
