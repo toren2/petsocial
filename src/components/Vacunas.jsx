@@ -6,6 +6,8 @@ import { useLanguage } from '../LanguageContext'
 import VerifiedBadge from './VerifiedBadge'
 import TarjetaVacunas from './TarjetaVacunas'
 import MediaEditor from './MediaEditor'
+import PetSwitcher from './PetSwitcher'
+import AgregarMascotaModal from './AgregarMascotaModal'
 
 const VACCINE_PRESETS = [
   { name: 'Rábica (Rabia)', intervalDays: 365 },
@@ -69,7 +71,7 @@ function getOverallStatus(vaccines, t) {
 }
 
 export default function Vacunas({ hideTitle = false, petInfo = {} }) {
-  const { user } = useAuth()
+  const { user, pets, activePet, activePetId, switchPet } = useAuth()
   const { t, language } = useLanguage()
   const [vaccines, setVaccines] = useState([])
   const [loading, setLoading] = useState(true)
@@ -80,6 +82,7 @@ export default function Vacunas({ hideTitle = false, petInfo = {} }) {
   const [uploadingReceipt, setUploadingReceipt] = useState(false)
   const [showTarjeta, setShowTarjeta] = useState(false)
   const [editingReceiptFile, setEditingReceiptFile] = useState(null)
+  const [showAddPet, setShowAddPet] = useState(false)
   const receiptInputRef = useRef(null)
   const [form, setForm] = useState({
     name: VACCINE_PRESETS[0].name,
@@ -92,14 +95,19 @@ export default function Vacunas({ hideTitle = false, petInfo = {} }) {
     receipt_url: '',
   })
 
-  useEffect(() => { fetchVaccines() }, [])
+  useEffect(() => {
+    if (!activePet) return
+    fetchVaccines()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePet?.id])
 
   async function fetchVaccines() {
+    if (!activePet) return
     setLoading(true)
     const { data } = await supabase
       .from('vaccines')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('pet_id', activePet.id)
       .order('next_due_date', { ascending: true, nullsFirst: false })
     if (data) setVaccines(data)
     setLoading(false)
@@ -134,10 +142,11 @@ export default function Vacunas({ hideTitle = false, petInfo = {} }) {
 
   async function saveVaccine() {
     const name = form.name === 'Otra' ? form.customName.trim() : form.name
-    if (!name || !form.date_given) return
+    if (!name || !form.date_given || !activePet) return
     setSaving(true)
     const { error } = await supabase.from('vaccines').insert([{
       user_id: user.id,
+      pet_id: activePet.id,
       name,
       date_given: form.date_given,
       next_due_date: form.next_due_date || null,
@@ -249,6 +258,15 @@ export default function Vacunas({ hideTitle = false, petInfo = {} }) {
 
   return (
     <div className="px-4 pb-3">
+      {pets.length > 0 && (
+        <PetSwitcher
+          pets={pets}
+          activePetId={activePetId}
+          onSwitch={switchPet}
+          onAddClick={() => setShowAddPet(true)}
+        />
+      )}
+
       {petInfo.name && (
         <div className="mb-3">
           <div className="flex items-center gap-3 mb-3">
@@ -425,7 +443,7 @@ export default function Vacunas({ hideTitle = false, petInfo = {} }) {
 
           <button
             onClick={saveVaccine}
-            disabled={saving || (form.name === 'Otra' ? !form.customName.trim() : false) || !form.date_given}
+            disabled={saving || (form.name === 'Otra' ? !form.customName.trim() : false) || !form.date_given || !activePet}
             className="w-full py-2.5 rounded-full font-semibold text-white text-sm border-0 cursor-pointer"
             style={{ background: saving ? '#C4B5FD' : '#7C3AED' }}
           >
@@ -501,6 +519,10 @@ export default function Vacunas({ hideTitle = false, petInfo = {} }) {
           lastUpdated={lastUpdatedLabel}
           onClose={() => setShowTarjeta(false)}
         />
+      )}
+
+      {showAddPet && (
+        <AgregarMascotaModal onClose={() => setShowAddPet(false)} />
       )}
     </div>
   )

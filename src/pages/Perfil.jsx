@@ -5,6 +5,8 @@ import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import Vacunas from '../components/Vacunas'
 import HistorialMedico from '../components/HistorialMedico'
+import PetSwitcher from '../components/PetSwitcher'
+import AgregarMascotaModal from '../components/AgregarMascotaModal'
 import MediaEditor from '../components/MediaEditor'
 import Verificacion from '../components/Verificacion'
 import VerifiedBadge from '../components/VerifiedBadge'
@@ -77,7 +79,7 @@ function PhotoViewer({ posts, startIndex, onClose }) {
 }
 
 export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onConsumeInitialOpenVacunas }) {
-  const { user } = useAuth()
+  const { user, pets, activePet, activePetId, switchPet } = useAuth()
   const { t } = useLanguage()
   const [profile, setProfile] = useState(null)
   const [editing, setEditing] = useState(false)
@@ -106,6 +108,7 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
   const petPhotoRef = useRef(null)
   const [editingAvatarFile, setEditingAvatarFile] = useState(null)
   const [editingPetPhotoFile, setEditingPetPhotoFile] = useState(null)
+  const [showAddPet, setShowAddPet] = useState(false)
   const [form, setForm] = useState({
     pet_name: '', breed: '', species: 'Perro', age: '',
     size: 'Mediano', sex: 'Macho', energy: 'Activo',
@@ -114,7 +117,16 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
     esterilizado: false, interests: [],
   })
 
-  useEffect(() => { fetchProfile(); fetchStats(); fetchMyPosts(); fetchPetPhotos(); fetchSavedPosts(); fetchVaccinesStatus(); fetchHuellas() }, [])
+  useEffect(() => { fetchProfile(); fetchStats(); fetchMyPosts(); fetchSavedPosts(); fetchHuellas() }, [])
+
+  // Fotos de match y estado de vacunas son "de mascota" (Fase 1) -- se
+  // recargan cada vez que se cambia la mascota activa.
+  useEffect(() => {
+    if (!activePet) return
+    fetchPetPhotos()
+    fetchVaccinesStatus()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePet?.id])
 
   // Al tocar una notificacion de recordatorio de vacuna, abrimos el modal
   // de Vacunas automaticamente en vez de dejar al usuario en el perfil sin
@@ -136,7 +148,8 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
   }, [profile, petPhotos])
 
   async function fetchVaccinesStatus() {
-    const { data } = await supabase.from('vaccines').select('next_due_date').eq('user_id', user.id)
+    if (!activePet) return
+    const { data } = await supabase.from('vaccines').select('next_due_date').eq('pet_id', activePet.id)
     setVaccineStatus(getVaccineStatus(data))
   }
 
@@ -218,7 +231,8 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
   }
 
   async function fetchPetPhotos() {
-    const { data } = await supabase.from('pet_photos').select('*').eq('user_id', user.id).order('order_index', { ascending: true })
+    if (!activePet) return
+    const { data } = await supabase.from('pet_photos').select('*').eq('pet_id', activePet.id).order('order_index', { ascending: true })
     if (data) setPetPhotos(data)
   }
 
@@ -255,13 +269,14 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
 
   async function uploadPetPhoto(file) {
     if (petPhotos.length >= 5) { alert(t('perfil.maxPhotosAlert')); return }
+    if (!activePet) return
     setUploadingPetPhoto(true)
     const ext = file.name.split('.').pop()
     const path = `${user.id}/${Date.now()}.${ext}`
     const { error } = await supabase.storage.from('pet-photos').upload(path, file)
     if (!error) {
       const { data } = supabase.storage.from('pet-photos').getPublicUrl(path)
-      await supabase.from('pet_photos').insert([{ user_id: user.id, photo_url: data.publicUrl, order_index: petPhotos.length }])
+      await supabase.from('pet_photos').insert([{ user_id: user.id, pet_id: activePet.id, photo_url: data.publicUrl, order_index: petPhotos.length }])
       fetchPetPhotos()
     }
     setUploadingPetPhoto(false)
@@ -664,6 +679,14 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
 
         {/* Fotos de match */}
         <div className="px-4 pt-4 pb-3 border-t border-gray-100 mt-2">
+          {pets.length > 0 && (
+            <PetSwitcher
+              pets={pets}
+              activePetId={activePetId}
+              onSwitch={switchPet}
+              onAddClick={() => setShowAddPet(true)}
+            />
+          )}
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-semibold text-gray-900">{t('perfil.matchPhotos', { count: petPhotos.length })}</h3>
             {petPhotos.length < 5 && (
@@ -740,12 +763,12 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
             <Vacunas
               hideTitle
               petInfo={{
-                name: profile.pet_name,
-                breed: profile.breed,
-                age: profile.age,
-                sex: profile.sex,
-                avatarUrl: profile.avatar_url,
-                emoji: profile.emoji,
+                name: activePet?.pet_name || profile.pet_name,
+                breed: activePet?.breed || profile.breed,
+                age: activePet?.age || profile.age,
+                sex: activePet?.sex || profile.sex,
+                avatarUrl: activePet?.avatar_url || profile.avatar_url,
+                emoji: activePet?.emoji || profile.emoji,
                 verified: isVerified,
               }}
             />
@@ -769,6 +792,10 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
           onConfirm={file => { setEditingPetPhotoFile(null); uploadPetPhoto(file) }}
           onCancel={() => setEditingPetPhotoFile(null)}
         />
+      )}
+
+      {showAddPet && (
+        <AgregarMascotaModal onClose={() => setShowAddPet(false)} />
       )}
 
       {showHistorialModal && (

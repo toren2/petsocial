@@ -514,6 +514,11 @@ export const translations = {
       aspectLandscape: 'Horizontal',
       videoNotice: 'Los videos se publican tal cual, sin edición',
     },
+    mascotas: {
+      addPet: '+ Agregar mascota',
+      addPetTitle: 'Agregar mascota',
+      savePet: 'Guardar mascota',
+    },
     perdidos: {
       timeAgoMoment: 'hace un momento',
       timeAgoHours: 'hace {{h}}h',
@@ -1365,6 +1370,11 @@ export const translations = {
       aspectStory: 'Story',
       aspectLandscape: 'Landscape',
       videoNotice: 'Videos are posted as-is, without editing',
+    },
+    mascotas: {
+      addPet: '+ Add pet',
+      addPetTitle: 'Add pet',
+      savePet: 'Save pet',
     },
     perdidos: {
       timeAgoMoment: 'just now',

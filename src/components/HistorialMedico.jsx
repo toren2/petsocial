@@ -4,6 +4,8 @@ import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import MediaEditor from './MediaEditor'
+import PetSwitcher from './PetSwitcher'
+import AgregarMascotaModal from './AgregarMascotaModal'
 
 // Historial medico ampliado: alergias, condiciones cronicas, medicamentos,
 // cirugias, notas de consulta, peso y documentos (laboratorio/rayos x).
@@ -93,7 +95,7 @@ function WeightChart({ logs, language }) {
 }
 
 export default function HistorialMedico() {
-  const { user } = useAuth()
+  const { user, pets, activePet, activePetId, switchPet } = useAuth()
   const { t, language } = useLanguage()
   const [activeTab, setActiveTab] = useState('allergy')
   const [records, setRecords] = useState([])
@@ -104,6 +106,7 @@ export default function HistorialMedico() {
   const [saving, setSaving] = useState(false)
   const [uploadingDoc, setUploadingDoc] = useState(false)
   const [editingDocFile, setEditingDocFile] = useState(null)
+  const [showAddPet, setShowAddPet] = useState(false)
   const docFileRef = useRef(null)
 
   const emptyRecordForm = { title: '', date: '', end_date: '', extra: '', notes: '' }
@@ -114,15 +117,20 @@ export default function HistorialMedico() {
 
   const CATEGORY_CONFIG = getCategoryConfig(t)
 
-  useEffect(() => { fetchAll() }, [])
+  useEffect(() => {
+    if (!activePet) return
+    fetchAll()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePet?.id])
   useEffect(() => { setShowForm(false) }, [activeTab])
 
   async function fetchAll() {
+    if (!activePet) return
     setLoading(true)
     const [recordsRes, weightRes, docsRes] = await Promise.all([
-      supabase.from('pet_medical_records').select('*').eq('user_id', user.id).order('date', { ascending: false, nullsFirst: false }),
-      supabase.from('pet_weight_logs').select('*').eq('user_id', user.id).order('date', { ascending: false }),
-      supabase.from('pet_medical_documents').select('*').eq('user_id', user.id).order('date', { ascending: false, nullsFirst: false }),
+      supabase.from('pet_medical_records').select('*').eq('pet_id', activePet.id).order('date', { ascending: false, nullsFirst: false }),
+      supabase.from('pet_weight_logs').select('*').eq('pet_id', activePet.id).order('date', { ascending: false }),
+      supabase.from('pet_medical_documents').select('*').eq('pet_id', activePet.id).order('date', { ascending: false, nullsFirst: false }),
     ])
     if (recordsRes.data) setRecords(recordsRes.data)
     if (weightRes.data) setWeightLogs(weightRes.data)
@@ -131,10 +139,11 @@ export default function HistorialMedico() {
   }
 
   async function saveRecord() {
-    if (!recordForm.title.trim()) return
+    if (!recordForm.title.trim() || !activePet) return
     setSaving(true)
     const { error } = await supabase.from('pet_medical_records').insert([{
       user_id: user.id,
+      pet_id: activePet.id,
       category: activeTab,
       title: recordForm.title.trim(),
       date: recordForm.date || null,
@@ -158,10 +167,10 @@ export default function HistorialMedico() {
 
   async function saveWeight() {
     const kg = parseFloat(weightForm.weight_kg)
-    if (!weightForm.date || !kg || kg <= 0) return
+    if (!weightForm.date || !kg || kg <= 0 || !activePet) return
     setSaving(true)
     const { error } = await supabase.from('pet_weight_logs').insert([{
-      user_id: user.id, date: weightForm.date, weight_kg: kg,
+      user_id: user.id, pet_id: activePet.id, date: weightForm.date, weight_kg: kg,
     }])
     if (!error) {
       setWeightForm({ date: new Date().toISOString().slice(0, 10), weight_kg: '' })
@@ -190,10 +199,11 @@ export default function HistorialMedico() {
   }
 
   async function saveDocument() {
-    if (!docForm.title.trim() || !docForm.file_url) return
+    if (!docForm.title.trim() || !docForm.file_url || !activePet) return
     setSaving(true)
     const { error } = await supabase.from('pet_medical_documents').insert([{
       user_id: user.id,
+      pet_id: activePet.id,
       title: docForm.title.trim(),
       date: docForm.date || null,
       doc_type: docForm.doc_type,
@@ -231,6 +241,15 @@ export default function HistorialMedico() {
 
   return (
     <div className="px-4 pb-3">
+      {pets.length > 0 && (
+        <PetSwitcher
+          pets={pets}
+          activePetId={activePetId}
+          onSwitch={switchPet}
+          onAddClick={() => setShowAddPet(true)}
+        />
+      )}
+
       <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
         {tabs.map(([key, label]) => (
           <button
@@ -311,7 +330,7 @@ export default function HistorialMedico() {
           </div>
           <button
             onClick={saveRecord}
-            disabled={saving || !recordForm.title.trim()}
+            disabled={saving || !recordForm.title.trim() || !activePet}
             className="w-full py-2.5 rounded-full font-semibold text-white text-sm border-0 cursor-pointer"
             style={{ background: saving ? '#C4B5FD' : '#7C3AED' }}
           >
@@ -348,7 +367,7 @@ export default function HistorialMedico() {
           </div>
           <button
             onClick={saveWeight}
-            disabled={saving || !weightForm.weight_kg}
+            disabled={saving || !weightForm.weight_kg || !activePet}
             className="w-full py-2.5 rounded-full font-semibold text-white text-sm border-0 cursor-pointer"
             style={{ background: saving ? '#C4B5FD' : '#7C3AED' }}
           >
@@ -426,7 +445,7 @@ export default function HistorialMedico() {
           </div>
           <button
             onClick={saveDocument}
-            disabled={saving || !docForm.title.trim() || !docForm.file_url}
+            disabled={saving || !docForm.title.trim() || !docForm.file_url || !activePet}
             className="w-full py-2.5 rounded-full font-semibold text-white text-sm border-0 cursor-pointer"
             style={{ background: saving ? '#C4B5FD' : '#7C3AED' }}
           >
@@ -538,6 +557,10 @@ export default function HistorialMedico() {
             ))}
           </div>
         )
+      )}
+
+      {showAddPet && (
+        <AgregarMascotaModal onClose={() => setShowAddPet(false)} />
       )}
     </div>
   )
