@@ -247,6 +247,31 @@ function QuotedPreview({ msg, mine, t }) {
   )
 }
 
+function StoryReplyPreview({ msg, mine, t }) {
+  if (!msg.story_id && !msg.story_preview_url) return null
+  return (
+    <div
+      className="flex items-center gap-2 rounded-lg px-2 py-1.5 mb-1.5"
+      style={{ background: mine ? 'rgba(255,255,255,0.15)' : '#F3F4F6' }}
+    >
+      {msg.story_preview_url && (
+        <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0" style={{ border: mine ? '1px solid rgba(255,255,255,0.5)' : '1px solid #E5E7EB' }}>
+          {msg.story_is_video ? (
+            <video src={msg.story_preview_url} muted className="w-full h-full object-cover" />
+          ) : (
+            <img src={msg.story_preview_url} alt="historia" className="w-full h-full object-cover" />
+          )}
+        </div>
+      )}
+      <span className="text-[10px]" style={{ color: mine ? 'rgba(255,255,255,0.8)' : '#9CA3AF' }}>
+        {mine ? t('chat.repliedToTheirStory') : t('chat.repliedToYourStory')}
+      </span>
+    </div>
+  )
+}
+
+const QUICK_EMOJIS = ['❤️', '😂', '😮', '😢', '👍', '🐾']
+
 function Conversation({ match, onBack }) {
   const { user } = useAuth()
   const { t, language } = useLanguage()
@@ -259,6 +284,7 @@ function Conversation({ match, onBack }) {
   const [uploadingFile, setUploadingFile] = useState(false)
   const [uploadingAudio, setUploadingAudio] = useState(false)
   const [replyTo, setReplyTo] = useState(null)
+  const [reactions, setReactions] = useState({})
   const [recording, setRecording] = useState(false)
   const [recordingSeconds, setRecordingSeconds] = useState(0)
   const [micError, setMicError] = useState(false)
@@ -274,6 +300,9 @@ function Conversation({ match, onBack }) {
     msgs.forEach(m => { map[m.id] = m })
     return map
   }, [msgs])
+
+  const msgIdsRef = useRef(new Set())
+  useEffect(() => { msgIdsRef.current = new Set(msgs.map(m => m.id)) }, [msgs])
 
   useEffect(() => {
     fetchMessages()
@@ -298,6 +327,37 @@ function Conversation({ match, onBack }) {
         if (payload.new.receiver_id !== match.otherId) return
         setMsgs(prev => prev.map(m => m.id === payload.new.id ? { ...m, read: payload.new.read } : m))
       })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'message_reactions',
+      }, payload => {
+        if (!msgIdsRef.current.has(payload.new.message_id)) return
+        setReactions(prev => {
+          const list = (prev[payload.new.message_id] || []).filter(r => r.user_id !== payload.new.user_id)
+          return { ...prev, [payload.new.message_id]: [...list, payload.new] }
+        })
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'message_reactions',
+      }, payload => {
+        if (!msgIdsRef.current.has(payload.new.message_id)) return
+        setReactions(prev => {
+          const list = (prev[payload.new.message_id] || []).filter(r => r.user_id !== payload.new.user_id)
+          return { ...prev, [payload.new.message_id]: [...list, payload.new] }
+        })
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'message_reactions',
+      }, payload => {
+        const mid = payload.old.message_id
+        if (!msgIdsRef.current.has(mid)) return
+        setReactions(prev => ({ ...prev, [mid]: (prev[mid] || []).filter(r => r.user_id !== payload.old.user_id) }))
+      })
       .subscribe()
     return () => {
       supabase.removeChannel(subscription)
@@ -320,9 +380,46 @@ function Conversation({ match, onBack }) {
       .select('*')
       .or(`and(sender_id.eq.${user.id},receiver_id.eq.${match.otherId}),and(sender_id.eq.${match.otherId},receiver_id.eq.${user.id})`)
       .order('created_at', { ascending: true })
-    if (data) setMsgs(data)
+    if (data) {
+      setMsgs(data)
+      fetchReactions(data.map(m => m.id))
+    }
     setLoading(false)
     markIncomingAsRead()
+  }
+
+  async function fetchReactions(messageIds) {
+    if (!messageIds.length) { setReactions({}); return }
+    const { data } = await supabase
+      .from('message_reactions')
+      .select('*')
+      .in('message_id', messageIds)
+    const map = {}
+    ;(data || []).forEach(r => {
+      if (!map[r.message_id]) map[r.message_id] = []
+      map[r.message_id].push(r)
+    })
+    setReactions(map)
+  }
+
+  async function toggleReaction(messageId, emoji) {
+    const existing = (reactions[messageId] || []).find(r => r.user_id === user.id)
+    if (existing && existing.emoji === emoji) {
+      await supabase.from('message_reactions').delete().eq('message_id', messageId).eq('user_id', user.id)
+      setReactions(prev => ({ ...prev, [messageId]: (prev[messageId] || []).filter(r => r.user_id !== user.id) }))
+    } else {
+      const { data, error } = await supabase
+        .from('message_reactions')
+        .upsert([{ message_id: messageId, user_id: user.id, emoji }], { onConflict: 'message_id,user_id' })
+        .select()
+      if (!error && data) {
+        setReactions(prev => {
+          const list = (prev[messageId] || []).filter(r => r.user_id !== user.id)
+          return { ...prev, [messageId]: [...list, data[0]] }
+        })
+      }
+    }
+    setSelectedMsg(null)
   }
 
   async function markIncomingAsRead() {
@@ -587,7 +684,38 @@ function Conversation({ match, onBack }) {
                   onClick={() => setSelectedMsg(selectedMsg === msg.id ? null : msg.id)}
                 >
                   {quoted && <QuotedPreview msg={quoted} mine={mine} t={t} />}
+                  <StoryReplyPreview msg={msg} mine={mine} t={t} />
                   {msg.text}
+                </div>
+              )}
+              {selectedMsg === msg.id && (
+                <div className="flex items-center gap-1.5 mt-1 px-1">
+                  {QUICK_EMOJIS.map(e => (
+                    <button
+                      key={e}
+                      onClick={() => toggleReaction(msg.id, e)}
+                      className="text-base leading-none border-0 bg-transparent cursor-pointer p-0.5"
+                      style={{ opacity: reactions[msg.id]?.some(r => r.user_id === user.id && r.emoji === e) ? 1 : 0.55 }}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {reactions[msg.id]?.length > 0 && (
+                <div className="flex items-center gap-1 mt-1 flex-wrap px-1">
+                  {Object.entries(
+                    reactions[msg.id].reduce((acc, r) => { acc[r.emoji] = (acc[r.emoji] || 0) + 1; return acc }, {})
+                  ).map(([emoji, count]) => (
+                    <button
+                      key={emoji}
+                      onClick={() => toggleReaction(msg.id, emoji)}
+                      className="flex items-center gap-0.5 text-[11px] px-1.5 py-0.5 rounded-full border-0 cursor-pointer"
+                      style={{ background: reactions[msg.id].some(r => r.user_id === user.id && r.emoji === emoji) ? '#EDE9FE' : '#F3F4F6' }}
+                    >
+                      <span>{emoji}</span>{count > 1 && <span className="text-gray-500">{count}</span>}
+                    </button>
+                  ))}
                 </div>
               )}
               <div className="flex items-center gap-2 mt-1 px-1">

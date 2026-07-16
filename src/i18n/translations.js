@@ -269,6 +269,8 @@ export const translations = {
       sendingFile: 'Enviando documento...',
       replyMsg: 'Responder',
       replyingTo: 'Respondiendo a {{name}}',
+      repliedToYourStory: 'Respondió tu historia',
+      repliedToTheirStory: 'Respondiste a su historia',
     },
     perfil: {
       loadingProfile: 'Cargando perfil...',
@@ -663,6 +665,8 @@ export const translations = {
       publishStory: 'Publicar historia',
       myStory: 'Tu historia',
       sharedAsPost: '¡Historia compartida como post! 🐾',
+      replyPlaceholder: 'Responder a la historia...',
+      replySent: '¡Respuesta enviada!',
     },
     notifications: {
       title: 'Notificaciones',
@@ -1004,6 +1008,8 @@ export const translations = {
       sendingFile: 'Sending document...',
       replyMsg: 'Reply',
       replyingTo: 'Replying to {{name}}',
+      repliedToYourStory: 'Replied to your story',
+      repliedToTheirStory: 'You replied to their story',
     },
     perfil: {
       loadingProfile: 'Loading profile...',
@@ -1398,6 +1404,8 @@ export const translations = {
       publishStory: 'Post story',
       myStory: 'Your story',
       sharedAsPost: 'Story shared as a post! 🐾',
+      replyPlaceholder: 'Reply to story...',
+      replySent: 'Reply sent!',
     },
     notifications: {
       title: 'Notifications',

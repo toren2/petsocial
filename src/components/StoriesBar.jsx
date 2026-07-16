@@ -3,6 +3,7 @@ import { X, Plus, Send, Trash2, Camera, Eye, Repeat, Video } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
+import { notifyMessage } from '../notifications'
 
 function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, currentUserId }) {
   const { t, language } = useLanguage()
@@ -11,6 +12,10 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
   const [showViewers, setShowViewers] = useState(false)
   const [viewers, setViewers] = useState([])
   const [sharing, setSharing] = useState(false)
+  const [replyText, setReplyText] = useState('')
+  const [sendingReply, setSendingReply] = useState(false)
+  const [inputFocused, setInputFocused] = useState(false)
+  const [replySent, setReplySent] = useState(false)
   const timerRef = useRef(null)
   const story = stories[index]
   const isVideo = !!story?.video_url
@@ -18,9 +23,16 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
   useEffect(() => {
     setProgress(0)
     setShowViewers(false)
+  }, [index])
 
-    if (isVideo) return // no auto-avanzar en videos
-
+  // Separado del efecto de arriba para poder pausar/reanudar el avance
+  // automatico mientras el usuario esta escribiendo una respuesta, sin
+  // reiniciar el progreso de la historia actual.
+  useEffect(() => {
+    if (isVideo || inputFocused) {
+      if (timerRef.current) clearInterval(timerRef.current)
+      return
+    }
     timerRef.current = setInterval(() => {
       setProgress(p => {
         if (p >= 100) {
@@ -36,7 +48,8 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
       })
     }, 100)
     return () => clearInterval(timerRef.current)
-  }, [index])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index, isVideo, inputFocused])
 
   useEffect(() => {
     if (!story) return
@@ -68,6 +81,28 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
     setSharing(true)
     await onShareAsPost(story)
     setSharing(false)
+  }
+
+  async function sendStoryReply() {
+    const text = replyText.trim()
+    if (!text || sendingReply || !story) return
+    setSendingReply(true)
+    const { error } = await supabase.from('messages').insert([{
+      sender_id: currentUserId,
+      receiver_id: story.user_id,
+      text,
+      story_id: story.id,
+      story_preview_url: story.image_url || story.video_url || null,
+      story_is_video: !!story.video_url,
+    }])
+    if (!error) {
+      setReplyText('')
+      setReplySent(true)
+      setTimeout(() => setReplySent(false), 2000)
+      const { data: myProfile } = await supabase.from('profiles').select('pet_name').eq('id', currentUserId).single()
+      await notifyMessage(story.user_id, myProfile?.pet_name || 'Una mascota', currentUserId)
+    }
+    setSendingReply(false)
   }
 
   if (!story) return null
@@ -165,7 +200,39 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
             <span className="text-white text-sm">{t('stories.sharing')}</span>
           </div>
         )}
+        {replySent && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 px-4 py-2 rounded-full z-20">
+            <span className="text-white text-xs">{t('stories.replySent')}</span>
+          </div>
+        )}
       </div>
+
+      {story.user_id !== currentUserId && !showViewers && (
+        <div
+          className="flex items-center gap-2 px-4 py-3 flex-shrink-0"
+          style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
+        >
+          <input
+            type="text"
+            value={replyText}
+            onChange={e => setReplyText(e.target.value)}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
+            onKeyDown={e => { if (e.key === 'Enter') sendStoryReply() }}
+            placeholder={t('stories.replyPlaceholder')}
+            className="flex-1 rounded-full px-4 py-2.5 text-sm text-white outline-none"
+            style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)' }}
+          />
+          <button
+            onClick={sendStoryReply}
+            disabled={!replyText.trim() || sendingReply}
+            className="w-10 h-10 rounded-full flex items-center justify-center border-0 cursor-pointer flex-shrink-0"
+            style={{ background: replyText.trim() ? '#7C3AED' : 'rgba(255,255,255,0.15)' }}
+          >
+            <Send size={16} color="white" />
+          </button>
+        </div>
+      )}
 
       {showViewers && (
         <div className="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl z-10 max-h-[60%] flex flex-col">
