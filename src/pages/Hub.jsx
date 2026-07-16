@@ -5,6 +5,10 @@ import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import { usePullToRefresh } from '../usePullToRefresh'
 import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
+import PushPermissionPrompt from '../components/PushPermissionPrompt'
+import { isPushSupported, getPushSubscriptionStatus } from '../push'
+
+const PUSH_PROMPT_SEEN_KEY = 'snoutt-push-prompt-seen'
 
 function getDistance(lat1, lng1, lat2, lng2) {
   const R = 6371
@@ -199,6 +203,7 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const [checkedInToday, setCheckedInToday] = useState(false)
   const [progress, setProgress] = useState({ visited: 0, checkins: 0, badges: 0 })
   const [recentPosts, setRecentPosts] = useState([])
+  const [showPushPrompt, setShowPushPrompt] = useState(false)
 
   const categories = [
     { id: 'vet',          label: t('hub.catVet'),          Icon: Stethoscope,     color: '#7C3AED', bg: '#EDE9FE' },
@@ -254,6 +259,26 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   useEffect(() => {
     if (userLocation) fetchNearbyPlaces()
   }, [userLocation])
+
+  // Pedimos permiso de notificaciones apenas el perfil ya esta completo
+  // (pet_name lleno), tanto para el usuario que lo acaba de crear como
+  // para uno existente que nunca decidio. Solo se muestra una vez por
+  // dispositivo (localStorage), y solo si el navegador aun no tiene una
+  // decision tomada (ni activado ni bloqueado).
+  useEffect(() => {
+    if (!profile || !profile.pet_name) return
+    if (localStorage.getItem(PUSH_PROMPT_SEEN_KEY)) return
+    if (!isPushSupported()) return
+    getPushSubscriptionStatus().then(status => {
+      if (status === 'unsubscribed') setShowPushPrompt(true)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.pet_name])
+
+  function closePushPrompt() {
+    localStorage.setItem(PUSH_PROMPT_SEEN_KEY, '1')
+    setShowPushPrompt(false)
+  }
 
   async function fetchProfile() {
     const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
@@ -359,7 +384,7 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const { containerRef, scrollRef, pullDistance, refreshing, threshold } = usePullToRefresh(refreshHub)
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden relative">
       <div ref={containerRef} className="flex-1 overflow-y-auto bg-ps-bg">
         <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} threshold={threshold} />
 
@@ -636,6 +661,8 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
         </div>
 
       </div>
+
+      {showPushPrompt && <PushPermissionPrompt onClose={closePushPrompt} />}
     </div>
   )
 }

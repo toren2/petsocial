@@ -358,6 +358,13 @@ export const translations = {
       languageEs: 'Español',
       languageEn: 'English',
     },
+    pushPrompt: {
+      title: 'Activa las notificaciones',
+      body: 'Entérate al instante de matches, mensajes, vacunas próximas y eventos cerca de ti.',
+      activate: 'Activar notificaciones',
+      activating: 'Activando...',
+      notNow: 'Ahora no',
+    },
     perfilPublico: {
       profileNotFound: 'Perfil no encontrado',
       message: 'Mensaje',
@@ -1099,6 +1106,13 @@ export const translations = {
       language: 'Language',
       languageEs: 'Español',
       languageEn: 'English',
+    },
+    pushPrompt: {
+      title: 'Turn on notifications',
+      body: 'Find out instantly about matches, messages, upcoming vaccines, and events near you.',
+      activate: 'Turn on notifications',
+      activating: 'Turning on...',
+      notNow: 'Not now',
     },
     perfilPublico: {
       profileNotFound: 'Profile not found',
