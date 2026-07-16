@@ -55,12 +55,18 @@
     max-height: none;
     border-radius: 0;
     box-shadow: none;
-    /* Evita que el scroll interno de una pantalla (ej. el fondo de Feed o
-       Hub) encadene hacia el documento y arrastre todo el phone-shell
-       (incluido el bottom nav) fuera de la vista al llegar al final del
-       contenido. A diferencia de bloquear el scroll del body por completo,
-       "contain" solo corta el encadenamiento -- no toca el pull-to-refresh
-       nativo del navegador/PWA, que sigue funcionando normalmente. */
-    overscroll-behavior: contain;
+  }
+
+  /* .phone-shell ya tiene overflow:hidden (ver arriba) y nunca es el que
+     hace scroll -- el que realmente scrollea es el div interno de cada
+     pantalla (className="... overflow-y-auto ..."). Ponerle
+     overscroll-behavior a .phone-shell o a html/body no sirve (no forman
+     parte de la cadena de scroll) y de hecho bloquea el pull-to-refresh
+     nativo del navegador/PWA, que se detecta a nivel de documento. La forma
+     correcta de evitar que el scroll de esos paneles internos encadene
+     hacia el documento (y arrastre el phone-shell / bottom nav) es cortar
+     el encadenamiento justo en esos paneles, sin tocar nada por encima. */
+  .overflow-y-auto {
+    overscroll-behavior-y: contain;
   }
 }
