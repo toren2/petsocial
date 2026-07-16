@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft, CheckCircle2, Trophy, ShieldAlert, Settings, Newspaper, Plus } from 'lucide-react'
+import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft, CheckCircle2, Trophy, ShieldAlert, Settings, Newspaper, Plus, ClipboardList } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import Vacunas from '../components/Vacunas'
+import HistorialMedico from '../components/HistorialMedico'
 import Verificacion from '../components/Verificacion'
 import VerifiedBadge from '../components/VerifiedBadge'
 import HuellasBadge from '../components/HuellasBadge'
@@ -93,6 +94,7 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
   const [showInfo, setShowInfo] = useState(false)
   const [isVerified, setIsVerified] = useState(false)
   const [showVacunasModal, setShowVacunasModal] = useState(false)
+  const [showHistorialModal, setShowHistorialModal] = useState(false)
   const [showBadgesModal, setShowBadgesModal] = useState(false)
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [vaccineStatus, setVaccineStatus] = useState('none')
@@ -554,6 +556,16 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
         </button>
 
         <button
+          onClick={() => setShowHistorialModal(true)}
+          className="w-full flex items-center justify-between px-4 py-2.5 border-0 bg-transparent cursor-pointer text-left"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <ClipboardList size={15} className="text-ps-purple" /> {t('historial.title')}
+          </span>
+          <ChevronRight size={16} className="text-gray-300" />
+        </button>
+
+        <button
           onClick={() => setShowBadgesModal(true)}
           className="w-full flex items-center justify-between px-4 py-2.5 border-0 bg-transparent cursor-pointer text-left"
         >
@@ -734,6 +746,22 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
                 verified: isVerified,
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {showHistorialModal && (
+        <div className="absolute inset-0 bg-white z-50 flex flex-col">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 flex-shrink-0">
+            <button onClick={() => setShowHistorialModal(false)} className="border-0 bg-transparent cursor-pointer text-ps-purple">
+              <ArrowLeft size={22} />
+            </button>
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-1.5">
+              <ClipboardList size={17} className="text-ps-purple" /> {t('historial.title')}
+            </h2>
+          </div>
+          <div className="flex-1 overflow-y-auto bg-white pt-3">
+            <HistorialMedico />
           </div>
         </div>
       )}
