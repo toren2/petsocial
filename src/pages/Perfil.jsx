@@ -722,7 +722,18 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
             </h2>
           </div>
           <div className="flex-1 overflow-y-auto bg-white pt-3">
-            <Vacunas hideTitle />
+            <Vacunas
+              hideTitle
+              petInfo={{
+                name: profile.pet_name,
+                breed: profile.breed,
+                age: profile.age,
+                sex: profile.sex,
+                avatarUrl: profile.avatar_url,
+                emoji: profile.emoji,
+                verified: isVerified,
+              }}
+            />
           </div>
         </div>
       )}

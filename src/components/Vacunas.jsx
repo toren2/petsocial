@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Syringe, Plus, X, Calendar, ChevronLeft, Camera } from 'lucide-react'
+import { Syringe, Plus, X, Calendar, ChevronLeft, Camera, CreditCard } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
+import VerifiedBadge from './VerifiedBadge'
+import TarjetaVacunas from './TarjetaVacunas'
 
 const VACCINE_PRESETS = [
   { name: 'Rábica (Rabia)', intervalDays: 365 },
@@ -51,7 +53,21 @@ function getCategory(nextDueDate) {
   return 'uptodate'
 }
 
-export default function Vacunas({ hideTitle = false }) {
+function getOverallStatus(vaccines, t) {
+  if (!vaccines || vaccines.length === 0) {
+    return { key: 'none', label: t('vacunas.summaryStatusNone'), color: '#9CA3AF', bg: '#F3F4F6' }
+  }
+  const categories = vaccines.map(v => getCategory(v.next_due_date))
+  if (categories.includes('overdue')) {
+    return { key: 'overdue', label: t('vacunas.summaryStatusOverdue'), color: '#DC2626', bg: '#FEE2E2' }
+  }
+  if (categories.includes('upcoming')) {
+    return { key: 'upcoming', label: t('vacunas.summaryStatusUpcoming'), color: '#D97706', bg: '#FEF3C7' }
+  }
+  return { key: 'uptodate', label: t('vacunas.summaryStatusUpToDate'), color: '#16A34A', bg: '#DCFCE7' }
+}
+
+export default function Vacunas({ hideTitle = false, petInfo = {} }) {
   const { user } = useAuth()
   const { t, language } = useLanguage()
   const [vaccines, setVaccines] = useState([])
@@ -61,6 +77,7 @@ export default function Vacunas({ hideTitle = false }) {
   const [activeTab, setActiveTab] = useState('all')
   const [viewingVaccine, setViewingVaccine] = useState(null)
   const [uploadingReceipt, setUploadingReceipt] = useState(false)
+  const [showTarjeta, setShowTarjeta] = useState(false)
   const receiptInputRef = useRef(null)
   const [form, setForm] = useState({
     name: VACCINE_PRESETS[0].name,
@@ -153,6 +170,17 @@ export default function Vacunas({ hideTitle = false }) {
   ]
   const filteredVaccines = activeTab === 'all' ? vaccines : vaccines.filter(v => getCategory(v.next_due_date) === activeTab)
 
+  // Resumen para el encabezado y la tarjeta digital
+  const appliedCount = vaccines.length
+  const upcomingCount = vaccines.filter(v => v.next_due_date).length
+  const overallStatus = getOverallStatus(vaccines, t)
+  const lastUpdatedRaw = vaccines.reduce((max, v) => (!max || v.date_given > max ? v.date_given : max), null)
+  const lastUpdatedLabel = lastUpdatedRaw ? formatDate(lastUpdatedRaw, language) : null
+  const petInfoResolved = {
+    ...petInfo,
+    ageLabel: petInfo.age ? t('perfil.ageValue', { age: petInfo.age }) : null,
+  }
+
   // Vista de detalle de una vacuna
   if (viewingVaccine) {
     const status = getStatus(viewingVaccine.next_due_date, t)
@@ -219,6 +247,59 @@ export default function Vacunas({ hideTitle = false }) {
 
   return (
     <div className="px-4 pb-3">
+      {petInfo.name && (
+        <div className="mb-3">
+          <div className="flex items-center gap-3 mb-3">
+            {petInfo.avatarUrl ? (
+              <img src={petInfo.avatarUrl} alt={petInfo.name} className="w-14 h-14 rounded-full object-cover border-2 border-ps-purple-light flex-shrink-0" />
+            ) : (
+              <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl flex-shrink-0" style={{ background: '#EDE9FE' }}>{petInfo.emoji || '🐾'}</div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-gray-900 text-base flex items-center gap-1">
+                {petInfo.name} <VerifiedBadge verified={petInfo.verified} size={14} />
+              </div>
+              <div className="text-xs text-gray-500 truncate">
+                {[petInfo.breed, petInfoResolved.ageLabel, petInfo.sex].filter(Boolean).join(' · ')}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl px-3 py-2.5 mb-2.5 flex items-center gap-2" style={{ background: overallStatus.bg }}>
+            <Syringe size={16} color={overallStatus.color} />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold" style={{ color: overallStatus.color }}>{overallStatus.label}</p>
+              {lastUpdatedLabel && (
+                <p className="text-[10px] mt-0.5" style={{ color: overallStatus.color, opacity: 0.75 }}>
+                  {t('vacunas.summaryLastUpdated', { date: lastUpdatedLabel })}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-2 mb-2.5">
+            <div className="flex-1 rounded-2xl border border-gray-100 py-2.5 text-center">
+              <p className="text-lg font-bold text-gray-900">{appliedCount}</p>
+              <p className="text-[10px] text-gray-400">{t('vacunas.statAppliedLabel')}</p>
+            </div>
+            <div className="flex-1 rounded-2xl border border-gray-100 py-2.5 text-center">
+              <p className="text-lg font-bold text-gray-900">{upcomingCount}</p>
+              <p className="text-[10px] text-gray-400">{t('vacunas.statUpcomingLabel')}</p>
+            </div>
+          </div>
+
+          {vaccines.length > 0 && (
+            <button
+              onClick={() => setShowTarjeta(true)}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full font-semibold text-white text-sm border-0 cursor-pointer"
+              style={{ background: '#7C3AED' }}
+            >
+              <CreditCard size={15} /> {t('vacunas.viewCard')}
+            </button>
+          )}
+        </div>
+      )}
+
       <div className={`flex items-center mb-2 ${hideTitle ? 'justify-end' : 'justify-between'}`}>
         {!hideTitle && (
           <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
@@ -399,6 +480,17 @@ export default function Vacunas({ hideTitle = false }) {
             )
           })}
         </div>
+      )}
+
+      {showTarjeta && (
+        <TarjetaVacunas
+          petInfo={petInfoResolved}
+          appliedCount={appliedCount}
+          upcomingCount={upcomingCount}
+          overallStatus={overallStatus}
+          lastUpdated={lastUpdatedLabel}
+          onClose={() => setShowTarjeta(false)}
+        />
       )}
     </div>
   )
