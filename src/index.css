@@ -43,12 +43,6 @@
    ya no tiene sentido -- se ve como un telefono dentro de otro telefono.
    Ahi la app debe ocupar toda la pantalla, sin bordes redondeados ni sombra. */
 @media (max-width: 480px) {
-  html, body {
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-    overscroll-behavior-y: none;
-  }
   body {
     background-color: #F8F7FF;
     display: block;
@@ -61,5 +55,12 @@
     max-height: none;
     border-radius: 0;
     box-shadow: none;
+    /* Evita que el scroll interno de una pantalla (ej. el fondo de Feed o
+       Hub) encadene hacia el documento y arrastre todo el phone-shell
+       (incluido el bottom nav) fuera de la vista al llegar al final del
+       contenido. A diferencia de bloquear el scroll del body por completo,
+       "contain" solo corta el encadenamiento -- no toca el pull-to-refresh
+       nativo del navegador/PWA, que sigue funcionando normalmente. */
+    overscroll-behavior: contain;
   }
 }

@@ -165,7 +165,7 @@ export default function Lugares({ initialCategory = 'all', initialPlaceId = null
   }
 
   useBackButton(view === 'browse', () => setView('home'))
-  useBackButton(!!selectedPlace, () => setSelectedPlace(null))
+  useBackButton(!!selectedPlace, () => { setSelectedPlace(null); setShowMap(false) })
   useBackButton(showAddPlace, () => setShowAddPlace(false))
   useBackButton(!!reportTarget, () => setReportTarget(null))
   useBackButton(showMap, () => setShowMap(false))
@@ -189,7 +189,7 @@ export default function Lugares({ initialCategory = 'all', initialPlaceId = null
     return (
       <LugarDetalle
         place={selectedPlace}
-        onBack={() => setSelectedPlace(null)}
+        onBack={() => { setSelectedPlace(null); setShowMap(false) }}
         saved={savedIds.has(selectedPlace.id)}
         onToggleSave={() => toggleSave(selectedPlace.id)}
         onReport={() => setReportTarget({ type: 'lugar', place: selectedPlace })}
@@ -603,19 +603,7 @@ export default function Lugares({ initialCategory = 'all', initialPlaceId = null
         <MapaLugares
           places={places.filter(p => p.lat && p.lng)}
           userLocation={userLocation}
-          onPlaceSelect={place => {
-            // No cambiar showMap y selectedPlace en el mismo batch: los dos
-            // usan useBackButton, y si uno se desactiva (showMap, dispara
-            // history.back()) justo cuando el otro se activa (selectedPlace,
-            // dispara pushState) en el mismo tick, el pushState puede
-            // ejecutarse antes de que el back() asincrono se resuelva y
-            // dejar el historial inconsistente, generando un popstate
-            // fantasma que revierte selectedPlace a null (te devuelve a la
-            // lista de Lugares en vez de mostrar la ficha). Se separan en
-            // dos commits distintos para evitar la carrera.
-            setSelectedPlace(place)
-            setTimeout(() => setShowMap(false), 0)
-          }}
+          onPlaceSelect={place => setSelectedPlace(place)}
           onClose={() => setShowMap(false)}
         />
       )}
