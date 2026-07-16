@@ -9,6 +9,7 @@ import VerifiedBadge from '../components/VerifiedBadge'
 import HuellasBadge from '../components/HuellasBadge'
 import BadgesModal from '../components/BadgesModal'
 import CreatePostModal from '../components/CreatePostModal'
+import { geocodeAddress } from '../googleMaps'
 import Configuracion from './Configuracion'
 
 function getVaccineStatus(list) {
@@ -168,6 +169,18 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
         esterilizado: data.esterilizado || false,
         interests: data.interests || [],
       })
+      // Auto-sanado: si el perfil tiene texto de ubicacion pero nunca se
+      // capturo lat/lng por GPS (no abrio el Hub o nego el permiso),
+      // geocodificamos el texto en segundo plano para que igual pueda
+      // recibir el recordatorio de "eventos cerca de ti".
+      if (data.location && (!data.lat || !data.lng)) {
+        geocodeAddress(data.location).then(geo => {
+          if (!geo) return
+          supabase.from('profiles').update({
+            lat: geo.lat, lng: geo.lng, location_updated_at: new Date().toISOString(),
+          }).eq('id', user.id).then(() => {})
+        })
+      }
     } else {
       setEditing(true)
     }

@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import InviteModal from '../components/InviteModal'
+import { geocodeAddress } from '../googleMaps'
 import { usePullToRefresh } from '../usePullToRefresh'
 import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
@@ -367,10 +368,20 @@ function CreateEventModal({ onClose, onCreate }) {
     setImageUploading(false)
   }
 
-  function submit() {
+  async function submit() {
     if (!form.title || !form.date || !form.location) return
+    // Si el usuario escribio la ubicacion a mano en vez de elegir una
+    // sugerencia del autocompletado, no quedaron lat/lng capturadas.
+    // Geocodificamos el texto como respaldo para que el evento igual
+    // pueda aparecer en el recordatorio de "eventos cerca de ti".
+    let { lat, lng } = form
+    if (!lat || !lng) {
+      const geo = await geocodeAddress(form.location)
+      if (geo) { lat = geo.lat; lng = geo.lng }
+    }
     onCreate({
       ...form,
+      lat, lng,
       emoji: types.find(ty => ty.id === form.type)?.emoji || '📅',
       bg: typeColors[form.type]?.bg || '#EDE9FE',
     })
@@ -500,6 +511,18 @@ export default function Eventos({ initialEventId, onConsumeInitialEvent }) {
 
     if (!error && data) {
       setEvents(data.map(e => ({ ...e, joined: joinedIds.has(e.id) })))
+      // Auto-sanado: eventos propios creados antes de tener autocompletado
+      // de ubicacion (o con GPS fallido) se geocodifican en segundo plano
+      // la proxima vez que su anfitrion abre esta pantalla, para que
+      // puedan entrar al recordatorio de "eventos cerca de ti".
+      data
+        .filter(e => e.user_id === user.id && e.location && (!e.lat || !e.lng))
+        .forEach(e => {
+          geocodeAddress(e.location).then(geo => {
+            if (!geo) return
+            supabase.from('events').update({ lat: geo.lat, lng: geo.lng }).eq('id', e.id).then(() => {})
+          })
+        })
     }
     setLoading(false)
   }
