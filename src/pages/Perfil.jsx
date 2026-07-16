@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft, CheckCircle2, ArrowRight, Trophy, ShieldAlert, Settings } from 'lucide-react'
+import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft, CheckCircle2, ArrowRight, Trophy, ShieldAlert, Settings, Newspaper, Plus } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -8,6 +8,7 @@ import Verificacion from '../components/Verificacion'
 import VerifiedBadge from '../components/VerifiedBadge'
 import HuellasBadge from '../components/HuellasBadge'
 import BadgesModal from '../components/BadgesModal'
+import CreatePostModal from '../components/CreatePostModal'
 import Configuracion from './Configuracion'
 import PerfilPublico from './PerfilPublico'
 
@@ -94,6 +95,7 @@ export default function Perfil({ onSignOut, onNavigate }) {
   const [showVacunasModal, setShowVacunasModal] = useState(false)
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [showBadgesModal, setShowBadgesModal] = useState(false)
+  const [showCreatePost, setShowCreatePost] = useState(false)
   const [vaccineStatus, setVaccineStatus] = useState('none')
   const [huellasPoints, setHuellasPoints] = useState(0)
   const [showSettings, setShowSettings] = useState(false)
@@ -417,6 +419,13 @@ export default function Perfil({ onSignOut, onNavigate }) {
           >
             <Settings size={20} />
           </button>
+          <button
+            onClick={() => onNavigate?.('feed')}
+            className="absolute top-3 right-12 z-10 border-0 bg-transparent cursor-pointer text-gray-400"
+            title={t('perfil.goToFeed')}
+          >
+            <Newspaper size={19} />
+          </button>
           <div className="relative flex-shrink-0 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
             {profile.avatar_url ? (
               <img src={profile.avatar_url} alt="avatar" className="w-20 h-20 rounded-full object-cover border-2 border-ps-purple-light" />
@@ -547,7 +556,7 @@ export default function Perfil({ onSignOut, onNavigate }) {
         <Verificacion onStatusChange={setIsVerified} />
 
         {/* Tabs Posts / Guardados */}
-        <div className="border-t border-gray-100 flex items-center justify-center">
+        <div className="border-t border-gray-100 flex items-center">
           <button
             onClick={() => setActiveTab('posts')}
             className="flex-1 flex items-center justify-center py-2.5 border-0 bg-transparent cursor-pointer border-b-2"
@@ -561,6 +570,14 @@ export default function Perfil({ onSignOut, onNavigate }) {
             style={{ borderBottomColor: activeTab === 'saved' ? '#7C3AED' : 'transparent' }}
           >
             <Bookmark size={16} color={activeTab === 'saved' ? '#7C3AED' : '#9CA3AF'} />
+          </button>
+          <button
+            onClick={() => setShowCreatePost(true)}
+            className="flex items-center justify-center py-2.5 px-4 border-0 border-b-2 bg-transparent cursor-pointer flex-shrink-0"
+            style={{ borderBottomColor: 'transparent' }}
+            title={t('perfil.newPost')}
+          >
+            <Plus size={18} className="text-ps-purple" />
           </button>
         </div>
 
@@ -672,6 +689,18 @@ export default function Perfil({ onSignOut, onNavigate }) {
       )}
       {viewingSavedPhoto !== null && (
         <PhotoViewer posts={savedPosts} startIndex={viewingSavedPhoto} onClose={() => setViewingSavedPhoto(null)} />
+      )}
+
+      {showCreatePost && (
+        <CreatePostModal
+          profile={profile}
+          onClose={() => setShowCreatePost(false)}
+          onCreate={post => {
+            setMyPosts(prev => [post, ...prev])
+            setStats(s => ({ ...s, posts: s.posts + 1 }))
+            setActiveTab('posts')
+          }}
+        />
       )}
 
       {showVacunasModal && (
