@@ -505,6 +505,15 @@ export const translations = {
       docsSave: 'Guardar documento',
       docsDeleteConfirm: '¿Eliminar este documento?',
     },
+    mediaEditor: {
+      title: 'Editar antes de publicar',
+      aspectOriginal: 'Original',
+      aspectSquare: 'Cuadrado',
+      aspectPortrait: 'Vertical',
+      aspectStory: 'Historia',
+      aspectLandscape: 'Horizontal',
+      videoNotice: 'Los videos se publican tal cual, sin edición',
+    },
     perdidos: {
       timeAgoMoment: 'hace un momento',
       timeAgoHours: 'hace {{h}}h',
@@ -1347,6 +1356,15 @@ export const translations = {
       docsEmpty: 'Upload lab results, x-rays, or other documents',
       docsSave: 'Save document',
       docsDeleteConfirm: 'Delete this document?',
+    },
+    mediaEditor: {
+      title: 'Edit before posting',
+      aspectOriginal: 'Original',
+      aspectSquare: 'Square',
+      aspectPortrait: 'Portrait',
+      aspectStory: 'Story',
+      aspectLandscape: 'Landscape',
+      videoNotice: 'Videos are posted as-is, without editing',
     },
     perdidos: {
       timeAgoMoment: 'just now',

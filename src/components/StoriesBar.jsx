@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import { notifyMessage } from '../notifications'
+import MediaEditor from './MediaEditor'
 
 function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, currentUserId }) {
   const { t, language } = useLanguage()
@@ -285,24 +286,27 @@ function CreateStoryModal({ profile, onClose, onCreate, initialFile = null, init
   const [mediaType, setMediaType] = useState(null) // 'image' | 'video'
   const [caption, setCaption] = useState(initialCaption)
   const [loading, setLoading] = useState(false)
+  const [editingFile, setEditingFile] = useState(null)
   const fileInputRef = useRef(null)
 
   useEffect(() => {
     if (!initialFile) return
-    const isVideo = initialFile.type.startsWith('video/')
-    setMediaFile(initialFile)
-    setMediaPreview(URL.createObjectURL(initialFile))
-    setMediaType(isVideo ? 'video' : 'image')
+    setEditingFile(initialFile)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function handleMedia(e) {
     const file = e.target.files?.[0]
     if (!file) return
+    setEditingFile(file)
+  }
+
+  function applyEditedMedia(file) {
     const isVideo = file.type.startsWith('video/')
     setMediaFile(file)
     setMediaPreview(URL.createObjectURL(file))
     setMediaType(isVideo ? 'video' : 'image')
+    setEditingFile(null)
   }
 
   function clearMedia() {
@@ -375,6 +379,15 @@ function CreateStoryModal({ profile, onClose, onCreate, initialFile = null, init
             </div>
           )}
           <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleMedia} />
+
+          {editingFile && (
+            <MediaEditor
+              file={editingFile}
+              forcedAspect={9 / 16}
+              onConfirm={applyEditedMedia}
+              onCancel={() => setEditingFile(null)}
+            />
+          )}
         </div>
         <div className="px-5 pb-2">
           <input

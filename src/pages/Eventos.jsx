@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import InviteModal from '../components/InviteModal'
+import MediaEditor from '../components/MediaEditor'
 import { geocodeAddress } from '../googleMaps'
 import { usePullToRefresh } from '../usePullToRefresh'
 import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
@@ -304,6 +305,7 @@ function CreateEventModal({ onClose, onCreate }) {
     lat: null, lng: null,
   })
   const [imageUploading, setImageUploading] = useState(false)
+  const [editingEventImageFile, setEditingEventImageFile] = useState(null)
   const locationInputRef = useRef(null)
   const autocompleteRef = useRef(null)
 
@@ -354,9 +356,13 @@ function CreateEventModal({ onClose, onCreate }) {
     document.head.appendChild(script)
   }, [])
 
-  async function handleImageUpload(e) {
+  function handleImageUpload(e) {
     const file = e.target.files[0]
     if (!file) return
+    setEditingEventImageFile(file)
+  }
+
+  async function uploadEventImage(file) {
     setImageUploading(true)
     const ext = file.name.split('.').pop()
     const path = `${user.id}/event-${Date.now()}.${ext}`
@@ -451,6 +457,14 @@ function CreateEventModal({ onClose, onCreate }) {
                 {imageUploading ? t('eventos.uploadingImage') : t('eventos.uploadImage')}
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={imageUploading} />
               </label>
+            )}
+
+            {editingEventImageFile && (
+              <MediaEditor
+                file={editingEventImageFile}
+                onConfirm={file => { setEditingEventImageFile(null); uploadEventImage(file) }}
+                onCancel={() => setEditingEventImageFile(null)}
+              />
             )}
           </div>
           <div>

@@ -5,6 +5,7 @@ import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import { usePullToRefresh } from '../usePullToRefresh'
 import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
+import MediaEditor from '../components/MediaEditor'
 
 const SPECIES = ['Perro', 'Gato', 'Conejo', 'Ave', 'Otro']
 
@@ -37,6 +38,7 @@ export default function Perdidos({ onNavigate }) {
   const [userLocation, setUserLocation] = useState(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [selected, setSelected] = useState(null)
+  const [editingPhotoFile, setEditingPhotoFile] = useState(null)
   const fileInputRef = useRef(null)
   const [form, setForm] = useState({
     pet_name: '', species: 'Perro', breed: '', description: '',
@@ -259,7 +261,15 @@ export default function Perdidos({ onNavigate }) {
                   {uploadingPhoto ? t('perdidos.uploading') : t('perdidos.uploadPhoto')}
                 </button>
               </div>
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadPhoto(e.target.files[0])} />
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && setEditingPhotoFile(e.target.files[0])} />
+
+              {editingPhotoFile && (
+                <MediaEditor
+                  file={editingPhotoFile}
+                  onConfirm={file => { setEditingPhotoFile(null); uploadPhoto(file) }}
+                  onCancel={() => setEditingPhotoFile(null)}
+                />
+              )}
             </div>
 
             <div>

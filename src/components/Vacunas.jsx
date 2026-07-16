@@ -5,6 +5,7 @@ import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import VerifiedBadge from './VerifiedBadge'
 import TarjetaVacunas from './TarjetaVacunas'
+import MediaEditor from './MediaEditor'
 
 const VACCINE_PRESETS = [
   { name: 'Rábica (Rabia)', intervalDays: 365 },
@@ -78,6 +79,7 @@ export default function Vacunas({ hideTitle = false, petInfo = {} }) {
   const [viewingVaccine, setViewingVaccine] = useState(null)
   const [uploadingReceipt, setUploadingReceipt] = useState(false)
   const [showTarjeta, setShowTarjeta] = useState(false)
+  const [editingReceiptFile, setEditingReceiptFile] = useState(null)
   const receiptInputRef = useRef(null)
   const [form, setForm] = useState({
     name: VACCINE_PRESETS[0].name,
@@ -409,9 +411,17 @@ export default function Vacunas({ hideTitle = false, petInfo = {} }) {
               >
                 {uploadingReceipt ? t('verificacion.uploading') : t('vacunas.uploadReceipt')}
               </button>
-              <input ref={receiptInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadReceipt(e.target.files[0])} />
+              <input ref={receiptInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && setEditingReceiptFile(e.target.files[0])} />
             </div>
           </div>
+
+          {editingReceiptFile && (
+            <MediaEditor
+              file={editingReceiptFile}
+              onConfirm={file => { setEditingReceiptFile(null); uploadReceipt(file) }}
+              onCancel={() => setEditingReceiptFile(null)}
+            />
+          )}
 
           <button
             onClick={saveVaccine}

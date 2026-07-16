@@ -3,6 +3,7 @@ import { AlertTriangle, HeartPulse, Pill, Scissors, FileText, TrendingUp, Paperc
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
+import MediaEditor from './MediaEditor'
 
 // Historial medico ampliado: alergias, condiciones cronicas, medicamentos,
 // cirugias, notas de consulta, peso y documentos (laboratorio/rayos x).
@@ -102,6 +103,7 @@ export default function HistorialMedico() {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploadingDoc, setUploadingDoc] = useState(false)
+  const [editingDocFile, setEditingDocFile] = useState(null)
   const docFileRef = useRef(null)
 
   const emptyRecordForm = { title: '', date: '', end_date: '', extra: '', notes: '' }
@@ -404,8 +406,23 @@ export default function HistorialMedico() {
               type="file"
               accept="image/*,application/pdf"
               className="hidden"
-              onChange={e => e.target.files?.[0] && uploadDocFile(e.target.files[0])}
+              onChange={e => {
+                const f = e.target.files?.[0]
+                if (!f) return
+                // el recorte/edicion solo aplica a imagenes -- un PDF de laboratorio
+                // se sube tal cual, no tiene sentido pasarlo por el editor visual.
+                if (f.type.startsWith('image/')) setEditingDocFile(f)
+                else uploadDocFile(f)
+              }}
             />
+
+            {editingDocFile && (
+              <MediaEditor
+                file={editingDocFile}
+                onConfirm={file => { setEditingDocFile(null); uploadDocFile(file) }}
+                onCancel={() => setEditingDocFile(null)}
+              />
+            )}
           </div>
           <button
             onClick={saveDocument}

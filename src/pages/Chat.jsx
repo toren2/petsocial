@@ -9,6 +9,7 @@ import VerifiedBadge from '../components/VerifiedBadge'
 import { useLanguage } from '../LanguageContext'
 import { usePullToRefresh } from '../usePullToRefresh'
 import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
+import MediaEditor from '../components/MediaEditor'
 
 function followLabel(following, follower, t) {
   if (following && follower) return { text: t('chat.followStatusFriends'), color: '#7C3AED' }
@@ -291,6 +292,7 @@ function Conversation({ match, onBack }) {
   const bottomRef = useRef(null)
   const fileInputRef = useRef(null)
   const docInputRef = useRef(null)
+  const [editingChatImageFile, setEditingChatImageFile] = useState(null)
   const mediaRecorderRef = useRef(null)
   const audioChunksRef = useRef([])
   const recordingIntervalRef = useRef(null)
@@ -822,8 +824,16 @@ function Conversation({ match, onBack }) {
             accept="image/*"
             ref={fileInputRef}
             className="hidden"
-            onChange={e => sendImage(e.target.files[0])}
+            onChange={e => e.target.files?.[0] && setEditingChatImageFile(e.target.files[0])}
           />
+
+          {editingChatImageFile && (
+            <MediaEditor
+              file={editingChatImageFile}
+              onConfirm={file => { setEditingChatImageFile(null); sendImage(file) }}
+              onCancel={() => setEditingChatImageFile(null)}
+            />
+          )}
           <input
             type="file"
             ref={docInputRef}

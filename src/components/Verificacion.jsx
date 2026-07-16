@@ -3,6 +3,7 @@ import { BadgeCheck, Camera, Clock, XCircle } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
+import MediaEditor from './MediaEditor'
 
 export default function Verificacion({ onStatusChange }) {
   const { user } = useAuth()
@@ -14,6 +15,7 @@ export default function Verificacion({ onStatusChange }) {
   const [note, setNote] = useState('')
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [editingFile, setEditingFile] = useState(null)
   const fileInputRef = useRef(null)
 
   useEffect(() => { fetchLatest() }, [])
@@ -108,8 +110,17 @@ export default function Verificacion({ onStatusChange }) {
             <button onClick={() => fileInputRef.current?.click()} className="text-xs font-semibold border-0 cursor-pointer px-3 py-1.5 rounded-full" style={{ background: '#EDE9FE', color: '#7C3AED' }}>
               {uploading ? t('verificacion.uploading') : t('verificacion.uploadPhoto')}
             </button>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadPhoto(e.target.files[0])} />
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && setEditingFile(e.target.files[0])} />
           </div>
+
+          {editingFile && (
+            <MediaEditor
+              file={editingFile}
+              forcedAspect={1}
+              onConfirm={file => { setEditingFile(null); uploadPhoto(file) }}
+              onCancel={() => setEditingFile(null)}
+            />
+          )}
           <textarea
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none bg-white resize-none"
             placeholder={t('verificacion.notePlaceholder')}

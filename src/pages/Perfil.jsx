@@ -5,6 +5,7 @@ import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import Vacunas from '../components/Vacunas'
 import HistorialMedico from '../components/HistorialMedico'
+import MediaEditor from '../components/MediaEditor'
 import Verificacion from '../components/Verificacion'
 import VerifiedBadge from '../components/VerifiedBadge'
 import HuellasBadge from '../components/HuellasBadge'
@@ -103,6 +104,8 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
   const bonusClaimedRef = useRef(false)
   const fileInputRef = useRef(null)
   const petPhotoRef = useRef(null)
+  const [editingAvatarFile, setEditingAvatarFile] = useState(null)
+  const [editingPetPhotoFile, setEditingPetPhotoFile] = useState(null)
   const [form, setForm] = useState({
     pet_name: '', breed: '', species: 'Perro', age: '',
     size: 'Mediano', sex: 'Macho', energy: 'Activo',
@@ -313,7 +316,7 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
             </div>
           </div>
           <p className="text-xs text-gray-400">{t('perfil.tapToUpload')}</p>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadPhoto(e.target.files[0])} />
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && setEditingAvatarFile(e.target.files[0])} />
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-gray-100">
@@ -459,7 +462,7 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
             <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center border-2 border-white" style={{ background: '#7C3AED' }}>
               {uploadingPhoto ? <span className="text-white text-xs">...</span> : <Camera size={13} color="white" />}
             </div>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadPhoto(e.target.files[0])} />
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && setEditingAvatarFile(e.target.files[0])} />
           </div>
           <div className="flex-1">
             <div className="font-bold text-gray-900 text-lg flex items-center gap-1">
@@ -672,7 +675,7 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
                 {uploadingPetPhoto ? t('perfil.uploading') : t('perfil.addPhoto')}
               </button>
             )}
-            <input ref={petPhotoRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadPetPhoto(e.target.files[0])} />
+            <input ref={petPhotoRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && setEditingPetPhotoFile(e.target.files[0])} />
           </div>
           {petPhotos.length === 0 ? (
             <div onClick={() => petPhotoRef.current?.click()} className="flex flex-col items-center justify-center gap-2 rounded-2xl cursor-pointer border-2 border-dashed border-gray-200 py-6">
@@ -748,6 +751,24 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
             />
           </div>
         </div>
+      )}
+
+      {editingAvatarFile && (
+        <MediaEditor
+          file={editingAvatarFile}
+          forcedAspect={1}
+          onConfirm={file => { setEditingAvatarFile(null); uploadPhoto(file) }}
+          onCancel={() => setEditingAvatarFile(null)}
+        />
+      )}
+
+      {editingPetPhotoFile && (
+        <MediaEditor
+          file={editingPetPhotoFile}
+          forcedAspect={1}
+          onConfirm={file => { setEditingPetPhotoFile(null); uploadPetPhoto(file) }}
+          onCancel={() => setEditingPetPhotoFile(null)}
+        />
       )}
 
       {showHistorialModal && (

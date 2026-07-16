@@ -3,6 +3,7 @@ import { X, Image, Send, Video } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
+import MediaEditor from './MediaEditor'
 
 export default function CreatePostModal({ profile, onClose, onCreate, initialFile = null, initialCaption = '' }) {
   const { user } = useAuth()
@@ -12,27 +13,29 @@ export default function CreatePostModal({ profile, onClose, onCreate, initialFil
   const [mediaPreview, setMediaPreview] = useState(null)
   const [mediaType, setMediaType] = useState(null) // 'image' | 'video'
   const [loading, setLoading] = useState(false)
+  const [editingFile, setEditingFile] = useState(null)
   const fileInputRef = useRef(null)
 
   // Si el archivo viene de "compartir" desde la galeria del telefono (Web
-  // Share Target), lo precargamos directo sin que el usuario tenga que
-  // volver a elegirlo.
+  // Share Target), lo mandamos igual al editor de recorte antes de dejarlo listo.
   useEffect(() => {
     if (!initialFile) return
-    const isVideo = initialFile.type.startsWith('video/')
-    setMediaFile(initialFile)
-    setMediaPreview(URL.createObjectURL(initialFile))
-    setMediaType(isVideo ? 'video' : 'image')
+    setEditingFile(initialFile)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function handleMedia(e) {
     const file = e.target.files?.[0]
     if (!file) return
+    setEditingFile(file)
+  }
+
+  function applyEditedMedia(file) {
     const isVideo = file.type.startsWith('video/')
     setMediaFile(file)
     setMediaPreview(URL.createObjectURL(file))
     setMediaType(isVideo ? 'video' : 'image')
+    setEditingFile(null)
   }
 
   function clearMedia() {
@@ -134,6 +137,14 @@ export default function CreatePostModal({ profile, onClose, onCreate, initialFil
             className="hidden"
             onChange={handleMedia}
           />
+
+          {editingFile && (
+            <MediaEditor
+              file={editingFile}
+              onConfirm={applyEditedMedia}
+              onCancel={() => setEditingFile(null)}
+            />
+          )}
 
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center overflow-hidden flex-shrink-0">
