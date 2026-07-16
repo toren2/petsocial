@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft, CheckCircle2, ArrowRight, Trophy, ShieldAlert, Settings, Newspaper, Plus } from 'lucide-react'
+import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft, CheckCircle2, Trophy, ShieldAlert, Settings, Newspaper, Plus } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -10,7 +10,6 @@ import HuellasBadge from '../components/HuellasBadge'
 import BadgesModal from '../components/BadgesModal'
 import CreatePostModal from '../components/CreatePostModal'
 import Configuracion from './Configuracion'
-import PerfilPublico from './PerfilPublico'
 
 function getVaccineStatus(list) {
   if (!list || list.length === 0) return 'none'
@@ -93,7 +92,6 @@ export default function Perfil({ onSignOut, onNavigate }) {
   const [showInfo, setShowInfo] = useState(false)
   const [isVerified, setIsVerified] = useState(false)
   const [showVacunasModal, setShowVacunasModal] = useState(false)
-  const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [showBadgesModal, setShowBadgesModal] = useState(false)
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [vaccineStatus, setVaccineStatus] = useState('none')
@@ -566,19 +564,19 @@ export default function Perfil({ onSignOut, onNavigate }) {
             <Grid3x3 size={16} color={activeTab === 'posts' ? '#7C3AED' : '#9CA3AF'} />
           </button>
           <button
-            onClick={() => setActiveTab('saved')}
-            className="flex-1 flex items-center justify-center py-2.5 border-0 bg-transparent cursor-pointer border-b-2"
-            style={{ borderBottomColor: activeTab === 'saved' ? '#7C3AED' : 'transparent' }}
-          >
-            <Bookmark size={16} color={activeTab === 'saved' ? '#7C3AED' : '#9CA3AF'} />
-          </button>
-          <button
             onClick={() => setShowCreatePost(true)}
             className="flex items-center justify-center border-0 cursor-pointer flex-shrink-0 rounded-full mx-3"
             style={{ width: 30, height: 30, background: '#7C3AED', boxShadow: '0 2px 8px rgba(124,58,237,0.4)' }}
             title={t('perfil.newPost')}
           >
             <Plus size={17} color="white" />
+          </button>
+          <button
+            onClick={() => setActiveTab('saved')}
+            className="flex-1 flex items-center justify-center py-2.5 border-0 bg-transparent cursor-pointer border-b-2"
+            style={{ borderBottomColor: activeTab === 'saved' ? '#7C3AED' : 'transparent' }}
+          >
+            <Bookmark size={16} color={activeTab === 'saved' ? '#7C3AED' : '#9CA3AF'} />
           </button>
         </div>
 
@@ -669,20 +667,6 @@ export default function Perfil({ onSignOut, onNavigate }) {
           )}
         </div>
 
-        <div className="px-4 pb-4">
-          <button
-            onClick={() => setShowPreviewModal(true)}
-            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border-0 cursor-pointer text-left"
-            style={{ background: 'linear-gradient(135deg, #7C3AED, #6D28D9)' }}
-          >
-            <Users size={18} color="white" className="flex-shrink-0" />
-            <span className="flex-1 min-w-0">
-              <span className="block text-sm font-semibold text-white">{t('perfil.viewAsOthers')}</span>
-              <span className="block text-xs text-white/70">{t('perfil.viewAsOthersSubtitle')}</span>
-            </span>
-            <ArrowRight size={16} color="white" className="flex-shrink-0" />
-          </button>
-        </div>
       </div>
 
       {viewingPhoto !== null && (
@@ -717,12 +701,6 @@ export default function Perfil({ onSignOut, onNavigate }) {
           <div className="flex-1 overflow-y-auto bg-white pt-3">
             <Vacunas hideTitle />
           </div>
-        </div>
-      )}
-
-      {showPreviewModal && (
-        <div className="absolute inset-0 bg-white z-50 flex flex-col">
-          <PerfilPublico userId={user.id} onBack={() => setShowPreviewModal(false)} />
         </div>
       )}
 
