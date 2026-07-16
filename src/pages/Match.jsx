@@ -6,6 +6,8 @@ import { notifyMatch } from '../notifications'
 import VerifiedBadge from '../components/VerifiedBadge'
 import { useLanguage } from '../LanguageContext'
 import { isAdult, isMinorUser } from '../age'
+import { usePullToRefresh } from '../usePullToRefresh'
+import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
 const tagColors = {
   'Muy activo':   'bg-green-100 text-green-800',
@@ -188,6 +190,8 @@ export default function Match({ onMatch }) {
   useEffect(() => {
     applyFilters()
   }, [filters, allCandidates])
+
+  const { containerRef: matchScrollRef, pullDistance, refreshing, threshold } = usePullToRefresh(fetchCandidates)
 
   async function fetchPetPhotos(profileIds) {
     if (!profileIds.length) return
@@ -378,7 +382,8 @@ export default function Match({ onMatch }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3 bg-ps-bg">
+      <div ref={matchScrollRef} className="flex-1 overflow-y-auto px-4 py-3 bg-ps-bg">
+        <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} threshold={threshold} />
         {pet ? (
           <div className="rounded-2xl overflow-hidden bg-white border border-gray-200" style={cardStyle}>
             <PhotoCarousel

@@ -10,6 +10,8 @@ import PinMap from '../components/PinMap'
 import ReportModal from '../components/ReportModal'
 import AddPlaceModal from '../components/AddPlaceModal'
 import { useBackButton } from '../useBackButton'
+import { usePullToRefresh } from '../usePullToRefresh'
+import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
 const NEARBY_RADIUS_KM = 10
 
@@ -170,6 +172,11 @@ export default function Lugares({ initialCategory = 'all', initialPlaceId = null
   useBackButton(!!reportTarget, () => setReportTarget(null))
   useBackButton(showMap, () => setShowMap(false))
 
+  async function refreshLugares() {
+    await Promise.all([fetchPlaces(), fetchPlacesWithPet(), fetchSaved()])
+  }
+  const { containerRef: lugaresScrollRef, pullDistance, refreshing, threshold } = usePullToRefresh(refreshLugares)
+
   function enterBrowse(cat) {
     setActiveCategory(cat || 'all')
     if (cat === 'saved') setActiveTab('todos')
@@ -249,7 +256,8 @@ export default function Lugares({ initialCategory = 'all', initialPlaceId = null
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto bg-ps-bg pb-24">
+          <div ref={lugaresScrollRef} className="flex-1 overflow-y-auto bg-ps-bg pb-24">
+            <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} threshold={threshold} />
             <div className="px-4 pt-4">
               <h3 className="text-sm font-bold text-gray-900 mb-2">{t('lugares.exploreNearby')}</h3>
               <div
@@ -428,7 +436,8 @@ export default function Lugares({ initialCategory = 'all', initialPlaceId = null
             </div>
 
             {/* Lista */}
-            <div className="flex-1 overflow-y-auto bg-ps-bg">
+            <div ref={lugaresScrollRef} className="flex-1 overflow-y-auto bg-ps-bg">
+              <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} threshold={threshold} />
 
               {/* Banner mapa */}
               {activeTab === 'cerca' && !showMap && (

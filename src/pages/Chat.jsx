@@ -7,6 +7,8 @@ import PerfilPublico from './PerfilPublico'
 import UserActionsMenu from '../components/UserActionsMenu'
 import VerifiedBadge from '../components/VerifiedBadge'
 import { useLanguage } from '../LanguageContext'
+import { usePullToRefresh } from '../usePullToRefresh'
+import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
 function followLabel(following, follower, t) {
   if (following && follower) return { text: t('chat.followStatusFriends'), color: '#7C3AED' }
@@ -122,12 +124,15 @@ function ConversationList({ onOpen }) {
     setDeletingId(null)
   }
 
+  const { containerRef: threadsScrollRef, pullDistance, refreshing, threshold } = usePullToRefresh(fetchThreads)
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden relative">
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
         <h2 className="text-xl font-bold text-gray-900">{t('chat.messages')}</h2>
       </div>
-      <div className="flex-1 overflow-y-auto bg-ps-bg">
+      <div ref={threadsScrollRef} className="flex-1 overflow-y-auto bg-ps-bg">
+        <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} threshold={threshold} />
         {loading ? (
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
             <span className="text-4xl">🐾</span>

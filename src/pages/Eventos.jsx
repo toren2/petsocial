@@ -4,6 +4,8 @@ import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import InviteModal from '../components/InviteModal'
+import { usePullToRefresh } from '../usePullToRefresh'
+import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
 function isPast(dateStr) {
   if (!dateStr) return false
@@ -487,6 +489,8 @@ export default function Eventos({ initialEventId, onConsumeInitialEvent }) {
     }
   }
 
+  const { containerRef: eventosScrollRef, pullDistance, refreshing, threshold } = usePullToRefresh(fetchEvents)
+
   const filtered = activeType === 'all' ? events : events.filter(e => e.type === activeType)
   const upcoming = filtered.filter(e => !isPast(e.date))
   const past = filtered.filter(e => isPast(e.date))
@@ -516,7 +520,8 @@ export default function Eventos({ initialEventId, onConsumeInitialEvent }) {
           </button>
         ))}
       </div>
-      <div className="flex-1 overflow-y-auto bg-ps-bg py-2">
+      <div ref={eventosScrollRef} className="flex-1 overflow-y-auto bg-ps-bg py-2">
+        <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} threshold={threshold} />
         {upcoming.length === 0 && past.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
             <span className="text-4xl">📅</span>

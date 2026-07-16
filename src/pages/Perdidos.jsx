@@ -3,6 +3,8 @@ import { AlertTriangle, Camera, MapPin, X, Plus, MessageCircle, CheckCircle, Clo
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
+import { usePullToRefresh } from '../usePullToRefresh'
+import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
 const SPECIES = ['Perro', 'Gato', 'Conejo', 'Ave', 'Otro']
 
@@ -154,6 +156,8 @@ export default function Perdidos({ onNavigate }) {
     })
   }
 
+  const { containerRef: perdidosScrollRef, pullDistance, refreshing, threshold } = usePullToRefresh(fetchReports)
+
   if (selected) {
     const isOwner = selected.user_id === user.id
     return (
@@ -235,7 +239,8 @@ export default function Perdidos({ onNavigate }) {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-ps-bg px-4 py-3">
+      <div ref={perdidosScrollRef} className="flex-1 overflow-y-auto bg-ps-bg px-4 py-3">
+        <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} threshold={threshold} />
         {showForm && (
           <div className="bg-white rounded-2xl p-4 mb-3 border border-gray-100 flex flex-col gap-3">
             <h3 className="text-sm font-bold text-gray-900">{t('perdidos.reportFormTitle')}</h3>

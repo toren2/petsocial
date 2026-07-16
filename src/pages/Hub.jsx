@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Bell, MapPin, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Utensils, ChevronRight, AlertTriangle, Flame, Trophy, Calendar } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
+import { usePullToRefresh } from '../usePullToRefresh'
+import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
 function getDistance(lat1, lng1, lat2, lng2) {
   const R = 6371
@@ -318,6 +320,20 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
     if (data) setMyEvents(data.map(a => a.events).filter(Boolean))
   }
 
+  async function refreshHub() {
+    await Promise.all([
+      fetchProfile(),
+      fetchVaccines(),
+      fetchLostPets(),
+      fetchUpcomingEvents(),
+      fetchMyEvents(),
+      fetchStreak(),
+      fetchProgress(),
+      fetchRecentPosts(),
+      userLocation ? fetchNearbyPlaces() : Promise.resolve(),
+    ])
+  }
+
   async function fetchNearbyPlaces() {
     const { data } = await supabase
       .from('places')
@@ -334,11 +350,12 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
   const dailyTip = getDailyTip(t, profile?.species)
   const tips = [lostPetTip, eventTip, vaccineTip, weatherTip, dailyTip].filter(Boolean)
 
-  const scrollRef = useRef(null)
+  const { containerRef, scrollRef, pullDistance, refreshing, threshold } = usePullToRefresh(refreshHub)
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto bg-ps-bg">
+      <div ref={containerRef} className="flex-1 overflow-y-auto bg-ps-bg">
+        <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} threshold={threshold} />
 
         <div
           className="px-5 pt-4 pb-4"
