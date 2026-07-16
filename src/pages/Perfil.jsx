@@ -73,7 +73,7 @@ function PhotoViewer({ posts, startIndex, onClose }) {
   )
 }
 
-export default function Perfil({ onSignOut, onNavigate }) {
+export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onConsumeInitialOpenVacunas }) {
   const { user } = useAuth()
   const { t } = useLanguage()
   const [profile, setProfile] = useState(null)
@@ -109,6 +109,16 @@ export default function Perfil({ onSignOut, onNavigate }) {
   })
 
   useEffect(() => { fetchProfile(); fetchStats(); fetchMyPosts(); fetchPetPhotos(); fetchSavedPosts(); fetchVaccinesStatus(); fetchHuellas() }, [])
+
+  // Al tocar una notificacion de recordatorio de vacuna, abrimos el modal
+  // de Vacunas automaticamente en vez de dejar al usuario en el perfil sin
+  // contexto de por que llego aqui.
+  useEffect(() => {
+    if (!initialOpenVacunas) return
+    setShowVacunasModal(true)
+    onConsumeInitialOpenVacunas && onConsumeInitialOpenVacunas()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialOpenVacunas])
 
   useEffect(() => {
     if (bonusClaimedRef.current) return

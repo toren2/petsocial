@@ -36,6 +36,7 @@ export default function App() {
   const [shareTargetFile, setShareTargetFile] = useState(null)
   const [shareTargetText, setShareTargetText] = useState('')
   const [pendingShare, setPendingShare] = useState(null)
+  const [pendingOpenVacunas, setPendingOpenVacunas] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -185,6 +186,7 @@ export default function App() {
     if (n.type === 'message' && n.data?.senderId) { openChatWith(n.data.senderId); return }
     if (n.type === 'event_invite' && n.data?.eventId) { openEvent(n.data.eventId); return }
     if (n.type === 'streak_reminder') { setScreen('lugares'); return }
+    if (n.type === 'vaccine_reminder') { setPendingOpenVacunas(true); setScreen('perfil'); return }
     if (n.type === 'like' && n.data?.postId) { setPendingPostId(n.data.postId); setPendingPostAction('view'); setScreen('feed'); return }
     if (n.type === 'comment' && n.data?.postId) { setPendingPostId(n.data.postId); setPendingPostAction('comments'); setScreen('feed'); return }
   }
@@ -199,7 +201,7 @@ export default function App() {
         {screen === 'eventos' && <Eventos initialEventId={pendingEventId} onConsumeInitialEvent={() => setPendingEventId(null)} />}
         {screen === 'perdidos' && <Perdidos onNavigate={(s) => setScreen(s)} />}
         {screen === 'lugares' && <Lugares initialCategory={initialCategory} initialPlaceId={pendingPlaceId} onConsumeInitialPlace={() => setPendingPlaceId(null)} onNavigate={setScreen} />}
-        {screen === 'perfil'  && <Perfil onSignOut={signOut} onNavigate={setScreen} />}
+        {screen === 'perfil'  && <Perfil onSignOut={signOut} onNavigate={setScreen} initialOpenVacunas={pendingOpenVacunas} onConsumeInitialOpenVacunas={() => setPendingOpenVacunas(false)} />}
         {screen === 'admin'   && <AdminModeracion onBack={() => setScreen('perfil')} />}
 
 
