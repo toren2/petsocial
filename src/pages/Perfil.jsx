@@ -421,10 +421,11 @@ export default function Perfil({ onSignOut, onNavigate }) {
           </button>
           <button
             onClick={() => onNavigate?.('feed')}
-            className="absolute top-3 right-12 z-10 border-0 bg-transparent cursor-pointer text-gray-400"
+            className="absolute top-2.5 right-14 z-10 w-8 h-8 rounded-full flex items-center justify-center border-0 cursor-pointer"
+            style={{ background: '#7C3AED', boxShadow: '0 2px 8px rgba(124,58,237,0.4)' }}
             title={t('perfil.goToFeed')}
           >
-            <Newspaper size={19} />
+            <Newspaper size={16} color="white" />
           </button>
           <div className="relative flex-shrink-0 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
             {profile.avatar_url ? (
@@ -573,11 +574,11 @@ export default function Perfil({ onSignOut, onNavigate }) {
           </button>
           <button
             onClick={() => setShowCreatePost(true)}
-            className="flex items-center justify-center py-2.5 px-4 border-0 border-b-2 bg-transparent cursor-pointer flex-shrink-0"
-            style={{ borderBottomColor: 'transparent' }}
+            className="flex items-center justify-center border-0 cursor-pointer flex-shrink-0 rounded-full mx-3"
+            style={{ width: 30, height: 30, background: '#7C3AED', boxShadow: '0 2px 8px rgba(124,58,237,0.4)' }}
             title={t('perfil.newPost')}
           >
-            <Plus size={18} className="text-ps-purple" />
+            <Plus size={17} color="white" />
           </button>
         </div>
 

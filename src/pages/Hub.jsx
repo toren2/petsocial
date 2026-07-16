@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Bell, MapPin, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Utensils, ChevronRight, AlertTriangle, Flame, Trophy, Calendar } from 'lucide-react'
+import { Bell, MapPin, Stethoscope, Scissors, Trees, ShoppingBag, Building2, Utensils, ChevronRight, AlertTriangle, Flame, Trophy, Calendar, Newspaper } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -388,6 +388,14 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => onNavigate('feed')}
+                className="w-8 h-8 rounded-full flex items-center justify-center border-0 cursor-pointer"
+                style={{ background: 'rgba(255,255,255,0.15)' }}
+                title={t('hub.goToFeed')}
+              >
+                <Newspaper size={16} color="white" />
+              </button>
               <button
                 onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
                 className="border-0 cursor-pointer rounded-full px-2.5 py-1 text-[11px] font-bold text-white"
