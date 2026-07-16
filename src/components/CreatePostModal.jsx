@@ -1,18 +1,30 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { X, Image, Send, Video } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 
-export default function CreatePostModal({ profile, onClose, onCreate }) {
+export default function CreatePostModal({ profile, onClose, onCreate, initialFile = null, initialCaption = '' }) {
   const { user } = useAuth()
   const { t } = useLanguage()
-  const [caption, setCaption] = useState('')
+  const [caption, setCaption] = useState(initialCaption)
   const [mediaFile, setMediaFile] = useState(null)
   const [mediaPreview, setMediaPreview] = useState(null)
   const [mediaType, setMediaType] = useState(null) // 'image' | 'video'
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef(null)
+
+  // Si el archivo viene de "compartir" desde la galeria del telefono (Web
+  // Share Target), lo precargamos directo sin que el usuario tenga que
+  // volver a elegirlo.
+  useEffect(() => {
+    if (!initialFile) return
+    const isVideo = initialFile.type.startsWith('video/')
+    setMediaFile(initialFile)
+    setMediaPreview(URL.createObjectURL(initialFile))
+    setMediaType(isVideo ? 'video' : 'image')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function handleMedia(e) {
     const file = e.target.files?.[0]

@@ -210,15 +210,24 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
   )
 }
 
-function CreateStoryModal({ profile, onClose, onCreate }) {
+function CreateStoryModal({ profile, onClose, onCreate, initialFile = null, initialCaption = '' }) {
   const { user } = useAuth()
   const { t } = useLanguage()
   const [mediaFile, setMediaFile] = useState(null)
   const [mediaPreview, setMediaPreview] = useState(null)
   const [mediaType, setMediaType] = useState(null) // 'image' | 'video'
-  const [caption, setCaption] = useState('')
+  const [caption, setCaption] = useState(initialCaption)
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    if (!initialFile) return
+    const isVideo = initialFile.type.startsWith('video/')
+    setMediaFile(initialFile)
+    setMediaPreview(URL.createObjectURL(initialFile))
+    setMediaType(isVideo ? 'video' : 'image')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function handleMedia(e) {
     const file = e.target.files?.[0]
@@ -324,7 +333,7 @@ function CreateStoryModal({ profile, onClose, onCreate }) {
   )
 }
 
-export default function StoriesBar({ profile }) {
+export default function StoriesBar({ profile, initialShareFile = null, initialShareCaption = '', onConsumeInitialShareFile }) {
   const { user } = useAuth()
   const { t } = useLanguage()
   const [stories, setStories] = useState([])
@@ -332,6 +341,13 @@ export default function StoriesBar({ profile }) {
   const [showCreate, setShowCreate] = useState(false)
 
   useEffect(() => { fetchStories() }, [])
+
+  // Si llega un archivo compartido desde fuera de la app (galeria del
+  // telefono) con destino "historia", abrimos el modal de crear historia
+  // ya con el archivo cargado.
+  useEffect(() => {
+    if (initialShareFile) setShowCreate(true)
+  }, [initialShareFile])
 
   async function fetchStories() {
     const { data } = await supabase
@@ -442,8 +458,10 @@ export default function StoriesBar({ profile }) {
       {showCreate && (
         <CreateStoryModal
           profile={profile}
-          onClose={() => setShowCreate(false)}
-          onCreate={() => { fetchStories(); setShowCreate(false) }}
+          initialFile={initialShareFile}
+          initialCaption={initialShareCaption}
+          onClose={() => { setShowCreate(false); onConsumeInitialShareFile && onConsumeInitialShareFile() }}
+          onCreate={() => { fetchStories(); setShowCreate(false); onConsumeInitialShareFile && onConsumeInitialShareFile() }}
         />
       )}
     </>

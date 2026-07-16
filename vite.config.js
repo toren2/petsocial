@@ -24,6 +24,18 @@ export default defineConfig({
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
+        share_target: {
+          action: '/share-target',
+          method: 'POST',
+          enctype: 'multipart/form-data',
+          params: {
+            title: 'title',
+            text: 'text',
+            files: [
+              { name: 'media', accept: ['image/*', 'video/*'] },
+            ],
+          },
+        },
        icons: [
   {
     src: 'web-app-manifest-192x192.png',

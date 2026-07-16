@@ -646,6 +646,12 @@ export const translations = {
       publishing: 'Publicando...',
       publish: 'Publicar',
     },
+    shareTarget: {
+      title: 'Compartir en Snoutt',
+      subtitle: '¿A dónde quieres publicarlo?',
+      toFeed: 'Publicar en el Feed',
+      toStory: 'Agregar a mi Historia',
+    },
     stories: {
       deleteStoryConfirm: '¿Eliminar esta historia?',
       sharing: 'Compartiendo...',
@@ -1374,6 +1380,12 @@ export const translations = {
       captionPlaceholder: 'What is your pet up to? 🐾',
       publishing: 'Posting...',
       publish: 'Post',
+    },
+    shareTarget: {
+      title: 'Share to Snoutt',
+      subtitle: 'Where do you want to post it?',
+      toFeed: 'Post to Feed',
+      toStory: 'Add to my Story',
     },
     stories: {
       deleteStoryConfirm: 'Delete this story?',

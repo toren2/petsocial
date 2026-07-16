@@ -291,7 +291,7 @@ function Post({ post, currentUserId, myPetName, onViewProfile, onDelete, autoOpe
   )
 }
 
-export default function Feed({ onOpenChat, unreadCount, onOpenNotifications, initialPostId = null, initialPostAction = null, onConsumeInitialPost }) {
+export default function Feed({ onOpenChat, unreadCount, onOpenNotifications, initialPostId = null, initialPostAction = null, onConsumeInitialPost, pendingShare = null, onConsumePendingShare }) {
   const { user } = useAuth()
   const { t } = useLanguage()
   const [posts, setPosts] = useState([])
@@ -302,12 +302,32 @@ export default function Feed({ onOpenChat, unreadCount, onOpenNotifications, ini
   const [viewingProfile, setViewingProfile] = useState(null)
   const [feedTab, setFeedTab] = useState('all')
   const [followingIds, setFollowingIds] = useState([])
+  const [sharedPostFile, setSharedPostFile] = useState(null)
+  const [sharedStoryFile, setSharedStoryFile] = useState(null)
+  const [sharedCaption, setSharedCaption] = useState('')
 
   useEffect(() => {
     fetchPosts()
     fetchProfile()
     fetchFollowing()
   }, [])
+
+  // Un archivo compartido desde fuera de la app (galeria del telefono via
+  // Web Share Target) llega aqui con el destino que eligio el usuario en
+  // App.jsx: "feed" abre directo el modal de nuevo post, "story" se lo
+  // pasamos a StoriesBar para que abra su propio modal.
+  useEffect(() => {
+    if (!pendingShare) return
+    setSharedCaption(pendingShare.text || '')
+    if (pendingShare.target === 'feed') {
+      setSharedPostFile(pendingShare.file)
+      setShowCreate(true)
+    } else if (pendingShare.target === 'story') {
+      setSharedStoryFile(pendingShare.file)
+    }
+    onConsumePendingShare && onConsumePendingShare()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingShare])
 
   useEffect(() => {
     if (!initialPostId || posts.length === 0) return
@@ -422,7 +442,12 @@ export default function Feed({ onOpenChat, unreadCount, onOpenNotifications, ini
 
       <div ref={feedScrollRef} className="flex-1 overflow-y-auto bg-ps-bg">
         <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} threshold={threshold} />
-        <StoriesBar profile={profile} />
+        <StoriesBar
+          profile={profile}
+          initialShareFile={sharedStoryFile}
+          initialShareCaption={sharedCaption}
+          onConsumeInitialShareFile={() => setSharedStoryFile(null)}
+        />
         <div className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center overflow-hidden flex-shrink-0">
             {profile?.avatar_url ? (
@@ -487,7 +512,13 @@ export default function Feed({ onOpenChat, unreadCount, onOpenNotifications, ini
       )}
 
       {showCreate && (
-        <CreatePostModal profile={profile} onClose={() => setShowCreate(false)} onCreate={handleNewPost} />
+        <CreatePostModal
+          profile={profile}
+          initialFile={sharedPostFile}
+          initialCaption={sharedPostFile ? sharedCaption : ''}
+          onClose={() => { setShowCreate(false); setSharedPostFile(null) }}
+          onCreate={post => { handleNewPost(post); setSharedPostFile(null) }}
+        />
       )}
     </div>
   )

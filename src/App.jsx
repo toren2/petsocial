@@ -17,6 +17,7 @@ import Notifications from './components/Notifications'
 import Hub from './pages/Hub'
 import AdminModeracion from './pages/AdminModeracion'
 import { useBackButton } from './useBackButton'
+import ShareTargetPicker from './components/ShareTargetPicker'
 
 
 export default function App() {
@@ -32,6 +33,9 @@ export default function App() {
   const [pendingPostAction, setPendingPostAction] = useState(null)
   const [showNotifications, setShowNotifications] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [shareTargetFile, setShareTargetFile] = useState(null)
+  const [shareTargetText, setShareTargetText] = useState('')
+  const [pendingShare, setPendingShare] = useState(null)
 
   useEffect(() => {
     if (!user) return
@@ -92,6 +96,37 @@ export default function App() {
       postId: params.get('postId') || undefined,
     })
     window.history.replaceState({}, '', window.location.pathname)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
+
+  // Cuando el usuario comparte una foto/video desde fuera de la app (menu
+  // nativo de "Compartir" del telefono) el service worker intercepta el
+  // POST del Web Share Target, guarda el archivo en el Cache API y
+  // redirige aqui con ?share-target=1. Lo recogemos y mostramos el
+  // selector de "Feed o Historia".
+  useEffect(() => {
+    if (!user) return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('share-target') !== '1') return
+    window.history.replaceState({}, '', window.location.pathname)
+    ;(async () => {
+      try {
+        const cache = await caches.open('share-target-v1')
+        const fileRes = await cache.match('/shared-file')
+        const metaRes = await cache.match('/shared-file-meta')
+        if (fileRes && metaRes) {
+          const blob = await fileRes.blob()
+          const meta = await metaRes.json()
+          const file = new File([blob], meta.name || 'compartido', { type: meta.type || blob.type })
+          setShareTargetFile(file)
+          setShareTargetText(meta.text || '')
+          await cache.delete('/shared-file')
+          await cache.delete('/shared-file-meta')
+        }
+      } catch (e) {
+        console.log('share target error', e)
+      }
+    })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 
@@ -158,7 +193,7 @@ export default function App() {
     <div className="phone-shell">
       <div className="flex flex-col flex-1 overflow-hidden relative">
         {screen === 'hub'     && <Hub onNavigate={(s, cat, placeId, postId) => { if (cat) setInitialCategory(cat); if (placeId) setPendingPlaceId(placeId); if (postId) { setPendingPostId(postId); setPendingPostAction('view') }; setScreen(s) }} unreadCount={unreadCount} onOpenNotifications={openNotifications} />}
-        {screen === 'feed'    && <Feed onOpenChat={openChatWith} unreadCount={unreadCount} onOpenNotifications={openNotifications} initialPostId={pendingPostId} initialPostAction={pendingPostAction} onConsumeInitialPost={() => { setPendingPostId(null); setPendingPostAction(null) }} />}
+        {screen === 'feed'    && <Feed onOpenChat={openChatWith} unreadCount={unreadCount} onOpenNotifications={openNotifications} initialPostId={pendingPostId} initialPostAction={pendingPostAction} onConsumeInitialPost={() => { setPendingPostId(null); setPendingPostAction(null) }} pendingShare={pendingShare} onConsumePendingShare={() => setPendingShare(null)} />}
         {screen === 'match'   && <Match onMatch={handleMatch} />}
         {screen === 'chat'    && <Chat initialUserId={pendingChatUserId} onConsumeInitialUser={() => setPendingChatUserId(null)} />}
         {screen === 'eventos' && <Eventos initialEventId={pendingEventId} onConsumeInitialEvent={() => setPendingEventId(null)} />}
@@ -180,6 +215,23 @@ export default function App() {
           <Notifications
             onClose={() => setShowNotifications(false)}
             onNavigate={handleNotificationNavigate}
+          />
+        )}
+
+        {shareTargetFile && (
+          <ShareTargetPicker
+            file={shareTargetFile}
+            onPickFeed={() => {
+              setPendingShare({ file: shareTargetFile, text: shareTargetText, target: 'feed' })
+              setScreen('feed')
+              setShareTargetFile(null)
+            }}
+            onPickStory={() => {
+              setPendingShare({ file: shareTargetFile, text: shareTargetText, target: 'story' })
+              setScreen('feed')
+              setShareTargetFile(null)
+            }}
+            onClose={() => setShareTargetFile(null)}
           />
         )}
       </div>
