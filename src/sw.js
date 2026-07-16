@@ -23,12 +23,27 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const targetUrl = self.registration.scope
+  const data = event.notification.data || {}
+
+  // Codificamos el tipo y los ids relevantes en la URL para el caso en que
+  // no haya ninguna ventana abierta (app cerrada del todo); si ya hay una
+  // ventana, le mandamos los datos directo por postMessage.
+  const params = new URLSearchParams()
+  if (data.type) params.set('ntype', data.type)
+  if (data.matchUserId) params.set('matchUserId', data.matchUserId)
+  if (data.senderId) params.set('senderId', data.senderId)
+  if (data.eventId) params.set('eventId', data.eventId)
+  if (data.postId) params.set('postId', data.postId)
+  const query = params.toString()
+  const targetUrl = self.registration.scope + (query ? '?' + query : '')
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if ('focus' in client) return client.focus()
+        if ('focus' in client) {
+          client.postMessage({ source: 'snoutt-notification-click', data })
+          return client.focus()
+        }
       }
       if (self.clients.openWindow) return self.clients.openWindow(targetUrl)
     })

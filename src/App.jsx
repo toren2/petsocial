@@ -55,6 +55,46 @@ export default function App() {
   useBackButton(!!matchedPet, () => setMatchedPet(null))
   useBackButton(showNotifications, () => setShowNotifications(false))
 
+  // Cuando se toca una notificacion push del sistema (fuera de la app), el
+  // service worker manda los datos por postMessage (si ya habia una ventana
+  // abierta) o los codifica en la URL con la que abre una ventana nueva (si
+  // la app estaba completamente cerrada). Ambos casos terminan navegando
+  // exactamente a lo mismo que tocar la notificacion dentro de la app.
+  // handleNotificationNavigate esta declarada mas abajo con `function`, asi
+  // que esta disponible aqui por hoisting sin importar el orden en el codigo.
+  function navigateFromPushData(data) {
+    if (!data || !data.type) return
+    handleNotificationNavigate({ type: data.type, data })
+  }
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    function onMessage(event) {
+      if (event.data && event.data.source === 'snoutt-notification-click') {
+        navigateFromPushData(event.data.data)
+      }
+    }
+    navigator.serviceWorker.addEventListener('message', onMessage)
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (!user) return
+    const params = new URLSearchParams(window.location.search)
+    const ntype = params.get('ntype')
+    if (!ntype) return
+    navigateFromPushData({
+      type: ntype,
+      matchUserId: params.get('matchUserId') || undefined,
+      senderId: params.get('senderId') || undefined,
+      eventId: params.get('eventId') || undefined,
+      postId: params.get('postId') || undefined,
+    })
+    window.history.replaceState({}, '', window.location.pathname)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
+
   async function fetchUnreadCount() {
     const { count } = await supabase
       .from('notifications')

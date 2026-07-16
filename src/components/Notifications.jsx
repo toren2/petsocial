@@ -115,7 +115,7 @@ export default function Notifications({ onClose, onNavigate }) {
               key={n.id}
               onClick={() => {
                 markRead(n.id)
-                if (onNavigate && (n.type === 'match' || n.type === 'message' || n.type === 'event_invite' || n.type === 'streak_reminder')) onNavigate(n)
+                if (onNavigate && (n.type === 'match' || n.type === 'message' || n.type === 'event_invite' || n.type === 'streak_reminder' || n.type === 'like' || n.type === 'comment')) onNavigate(n)
               }}
               className="flex items-start gap-3 px-4 py-3.5 border-b border-gray-100 cursor-pointer"
               style={{ background: n.read ? 'white' : '#F5F3FF' }}
