@@ -18,6 +18,7 @@ import Hub from './pages/Hub'
 import AdminModeracion from './pages/AdminModeracion'
 import { useBackButton } from './useBackButton'
 import ShareTargetPicker from './components/ShareTargetPicker'
+import OnboardingTour from './components/OnboardingTour'
 
 
 export default function App() {
@@ -37,6 +38,22 @@ export default function App() {
   const [shareTargetText, setShareTargetText] = useState('')
   const [pendingShare, setPendingShare] = useState(null)
   const [pendingOpenVacunas, setPendingOpenVacunas] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+
+  // Tour de bienvenida: se muestra una sola vez por usuario, justo despues
+  // del primer login/registro exitoso. Se marca como visto en localStorage
+  // (scoped por user.id) para que no vuelva a aparecer en sesiones futuras.
+  useEffect(() => {
+    if (!user) return
+    const seen = localStorage.getItem(`onboarding_seen_${user.id}`)
+    if (!seen) setShowOnboarding(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
+
+  function finishOnboarding() {
+    if (user) localStorage.setItem(`onboarding_seen_${user.id}`, '1')
+    setShowOnboarding(false)
+  }
 
   useEffect(() => {
     if (!user) return
@@ -170,6 +187,14 @@ export default function App() {
     return (
       <div className="phone-shell">
         <Auth />
+      </div>
+    )
+  }
+
+  if (showOnboarding) {
+    return (
+      <div className="phone-shell">
+        <OnboardingTour onFinish={finishOnboarding} />
       </div>
     )
   }
