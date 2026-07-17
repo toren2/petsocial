@@ -3,6 +3,7 @@ import { ArrowLeft, MapPin, Clock, Star, Stethoscope, Scissors, Trees, ShoppingB
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
+import PlaceMiniMap from '../components/PlaceMiniMap'
 
 const catIcons  = { vet: Stethoscope, groom: Scissors, park: Trees, shop: ShoppingBag, hotel: Building2, restaurant: Utensils, emergency24h: AlertTriangle }
 const catColors = {
@@ -279,6 +280,17 @@ export default function LugarDetalle({ place, onBack, saved, onToggleSave, onRep
 )}
             </div>
           </div>
+
+          {place.lat && place.lng && (
+            <div
+              onClick={() => window.open(mapsUrl, '_blank')}
+              className="relative overflow-hidden rounded-xl mt-3 cursor-pointer"
+              style={{ height: 120 }}
+            >
+              <PlaceMiniMap lat={parseFloat(place.lat)} lng={parseFloat(place.lng)} category={place.category} />
+              <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)' }} />
+            </div>
+          )}
         </div>
 
         {currentPet?.profile && (
