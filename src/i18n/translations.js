@@ -321,6 +321,8 @@ export const translations = {
       deletePostConfirm: '¿Eliminar este post?',
       maxPhotosAlert: 'Máximo 5 fotos permitidas',
       petPhotoErrorAlert: 'No se pudo subir la foto. Intenta de nuevo.',
+      myPostsTitle: 'Mis publicaciones',
+      savedPostsTitle: 'Guardados',
       sterilized: 'Esterilizado',
       vaccinesUpToDate: 'Vacunas al día',
       vaccinesOverdue: 'Vacunas pendientes',
@@ -358,6 +360,8 @@ export const translations = {
       language: 'Idioma',
       languageEs: 'Español',
       languageEn: 'English',
+      helpFeedback: 'Ayuda y comentarios',
+      helpFeedbackDesc: 'Reporta un bug o cuéntanos qué podemos mejorar',
     },
     pushPrompt: {
       title: 'Activa las notificaciones',
@@ -669,9 +673,9 @@ export const translations = {
       send: 'Enviar reporte',
     },
     reportProblem: {
-      title: 'Reportar un problema',
-      detailsLabel: '¿Qué pasó?',
-      detailsPlaceholder: 'Cuéntanos el problema que encontraste...',
+      title: 'Ayuda y comentarios',
+      detailsLabel: '¿Qué pasó o qué podemos mejorar?',
+      detailsPlaceholder: 'Cuéntanos el bug, problema o sugerencia que tengas...',
     },
     addPlace: {
       title: 'Agregar lugar',
@@ -1186,6 +1190,8 @@ export const translations = {
       deletePostConfirm: 'Delete this post?',
       maxPhotosAlert: 'Maximum 5 photos allowed',
       petPhotoErrorAlert: 'Could not upload the photo. Please try again.',
+      myPostsTitle: 'My posts',
+      savedPostsTitle: 'Saved',
       sterilized: 'Sterilized',
       vaccinesUpToDate: 'Vaccines up to date',
       vaccinesOverdue: 'Vaccines pending',
@@ -1223,6 +1229,8 @@ export const translations = {
       language: 'Language',
       languageEs: 'Español',
       languageEn: 'English',
+      helpFeedback: 'Help & feedback',
+      helpFeedbackDesc: 'Report a bug or tell us what we can improve',
     },
     pushPrompt: {
       title: 'Turn on notifications',
@@ -1534,9 +1542,9 @@ export const translations = {
       send: 'Send report',
     },
     reportProblem: {
-      title: 'Report a problem',
-      detailsLabel: 'What happened?',
-      detailsPlaceholder: 'Tell us about the problem you found...',
+      title: 'Help & feedback',
+      detailsLabel: 'What happened, or what can we improve?',
+      detailsPlaceholder: 'Tell us about the bug, problem, or suggestion you have...',
     },
     addPlace: {
       title: 'Add a place',

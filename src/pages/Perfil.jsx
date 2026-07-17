@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronLeft, ChevronRight, Heart, Syringe, ArrowLeft, CheckCircle2, Trophy, ShieldAlert, Settings, Newspaper, Plus, ClipboardList } from 'lucide-react'
+import { Camera, User, Calendar, Maximize2, Users, Zap, MapPin, Grid3x3, Bookmark, Save, X, ChevronRight, Syringe, ArrowLeft, CheckCircle2, Trophy, ShieldAlert, Settings, Newspaper, Plus, ClipboardList } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
@@ -14,6 +14,8 @@ import VerifiedBadge from '../components/VerifiedBadge'
 import HuellasBadge from '../components/HuellasBadge'
 import BadgesModal from '../components/BadgesModal'
 import CreatePostModal from '../components/CreatePostModal'
+import Post from '../components/PostCard'
+import PerfilPublico from './PerfilPublico'
 import { geocodeAddress } from '../googleMaps'
 import Configuracion from './Configuracion'
 
@@ -52,29 +54,41 @@ const ENERGIES = ['Tranquilo', 'Activo', 'Hiperactivo']
 const EMOJIS   = ['🐕', '🐩', '🦮', '🐕‍🦺', '🦊', '🐈', '🐇', '🦜']
 const ADMIN_EMAIL = 'josiplopez23@gmail.com'
 
-function PhotoViewer({ posts, startIndex, onClose }) {
-  const { t } = useLanguage()
-  const [index, setIndex] = useState(startIndex)
-  const post = posts[index]
-  if (!post) return null
+// Reemplaza la antigua galeria tipo "historia" (una foto a la vez, sin
+// interaccion real) por una vista desplazable de posts completos -- misma
+// tarjeta que en el Feed, con likes/comentarios/guardar -- para que "mis
+// publicaciones" y "guardados" se vean y se sientan igual que el Feed.
+function PostFeedOverlay({ posts, startIndex, onClose, currentUserId, myPetName, onViewProfile, onDelete, title }) {
+  useEffect(() => {
+    const targetId = posts[startIndex]?.id
+    if (targetId == null) return
+    const raf = requestAnimationFrame(() => {
+      const el = document.getElementById(`post-${targetId}`)
+      if (el) el.scrollIntoView({ block: 'start' })
+    })
+    return () => cancelAnimationFrame(raf)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
-    <div className="absolute inset-0 bg-black z-50 flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0">
-        <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-white"><X size={24} /></button>
-        <span className="text-white text-sm font-medium">{index + 1} / {posts.length}</span>
-        <div style={{ width: 24 }} />
+    <div className="absolute inset-0 bg-white z-50 flex flex-col">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
+        <button onClick={onClose} className="border-0 bg-transparent cursor-pointer text-gray-500"><X size={22} /></button>
+        <h3 className="font-bold text-gray-900 text-base">{title}</h3>
+        <div style={{ width: 22 }} />
       </div>
-      <div className="flex-1 relative flex items-center justify-center">
-        {post.image_url ? <img src={post.image_url} alt="post" className="w-full h-full object-contain" /> : <div className="text-8xl">{post.pet_emoji || '🐕'}</div>}
-        {index > 0 && <button onClick={() => setIndex(i => i - 1)} className="absolute left-3 border-0 bg-black/40 rounded-full p-2 cursor-pointer text-white"><ChevronLeft size={22} /></button>}
-        {index < posts.length - 1 && <button onClick={() => setIndex(i => i + 1)} className="absolute right-3 border-0 bg-black/40 rounded-full p-2 cursor-pointer text-white"><ChevronRight size={22} /></button>}
+      <div className="flex-1 overflow-y-auto">
+        {posts.map(p => (
+          <Post
+            key={p.id}
+            post={p}
+            currentUserId={currentUserId}
+            myPetName={myPetName}
+            onViewProfile={onViewProfile}
+            onDelete={onDelete}
+          />
+        ))}
       </div>
-      {post.caption && (
-        <div className="px-4 py-3 bg-black/60 flex-shrink-0">
-          <p className="text-white text-sm leading-relaxed">{post.caption}</p>
-          <div className="flex items-center gap-1 mt-2 text-white/70 text-xs"><Heart size={13} /><span>{post.likes} {t('perfil.likes')}</span></div>
-        </div>
-      )}
     </div>
   )
 }
@@ -95,6 +109,7 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
   const [petPhotos, setPetPhotos] = useState([])
   const [viewingPhoto, setViewingPhoto] = useState(null)
   const [viewingSavedPhoto, setViewingSavedPhoto] = useState(null)
+  const [viewingProfile, setViewingProfile] = useState(null)
   const [showInfo, setShowInfo] = useState(false)
   const [isVerified, setIsVerified] = useState(false)
   const [showVacunasModal, setShowVacunasModal] = useState(false)
@@ -215,9 +230,27 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
     setStats({ posts: posts || 0, matches: matches || 0, reviews: reviews || 0 })
   }
 
+  // Igual que en Feed.jsx: agrega si el usuario actual le dio like/guardo
+  // cada post y el conteo real de likes -- necesario para que la tarjeta
+  // completa (PostCard) funcione igual aqui que en el Feed.
+  async function enrichPosts(rows) {
+    if (!rows || rows.length === 0) return []
+    const ids = rows.map(p => p.id)
+    const [{ data: myLikes }, { data: allLikes }, { data: mySaves }] = await Promise.all([
+      supabase.from('post_likes').select('post_id').eq('user_id', user.id).in('post_id', ids),
+      supabase.from('post_likes').select('post_id').in('post_id', ids),
+      supabase.from('saved_posts').select('post_id').eq('user_id', user.id).in('post_id', ids),
+    ])
+    const likedIds = myLikes?.map(l => l.post_id) || []
+    const savedIds = mySaves?.map(s => s.post_id) || []
+    const countMap = {}
+    allLikes?.forEach(l => { countMap[l.post_id] = (countMap[l.post_id] || 0) + 1 })
+    return rows.map(p => ({ ...p, liked: likedIds.includes(p.id), likes: countMap[p.id] || 0, saved: savedIds.includes(p.id) }))
+  }
+
   async function fetchMyPosts() {
     const { data } = await supabase.from('posts').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
-    if (data) setMyPosts(data)
+    if (data) setMyPosts(await enrichPosts(data))
   }
 
   async function fetchSavedPosts() {
@@ -227,7 +260,7 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
     const { data: posts } = await supabase.from('posts').select('*').in('id', ids)
     if (posts) {
       const ordered = ids.map(id => posts.find(p => p.id === id)).filter(Boolean)
-      setSavedPosts(ordered)
+      setSavedPosts(await enrichPosts(ordered))
     }
   }
 
@@ -245,7 +278,8 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
       if (path) await supabase.storage.from('posts').remove([path])
     }
     setMyPosts(prev => prev.filter(p => p.id !== post.id))
-    setStats(s => ({ ...s, posts: s.posts - 1 }))
+    setSavedPosts(prev => prev.filter(p => p.id !== post.id))
+    setStats(s => ({ ...s, posts: Math.max(0, s.posts - 1) }))
   }
 
   async function unsavePost(postId) {
@@ -750,10 +784,37 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
       </div>
 
       {viewingPhoto !== null && (
-        <PhotoViewer posts={myPosts} startIndex={viewingPhoto} onClose={() => setViewingPhoto(null)} />
+        <PostFeedOverlay
+          posts={myPosts}
+          startIndex={viewingPhoto}
+          onClose={() => setViewingPhoto(null)}
+          currentUserId={user.id}
+          myPetName={profile?.pet_name}
+          onViewProfile={id => { setViewingPhoto(null); if (id !== user.id) setViewingProfile(id) }}
+          onDelete={(id, imageUrl) => deletePost({ id, image_url: imageUrl })}
+          title={t('perfil.myPostsTitle')}
+        />
       )}
       {viewingSavedPhoto !== null && (
-        <PhotoViewer posts={savedPosts} startIndex={viewingSavedPhoto} onClose={() => setViewingSavedPhoto(null)} />
+        <PostFeedOverlay
+          posts={savedPosts}
+          startIndex={viewingSavedPhoto}
+          onClose={() => setViewingSavedPhoto(null)}
+          currentUserId={user.id}
+          myPetName={profile?.pet_name}
+          onViewProfile={id => { setViewingSavedPhoto(null); if (id !== user.id) setViewingProfile(id) }}
+          onDelete={(id, imageUrl) => deletePost({ id, image_url: imageUrl })}
+          title={t('perfil.savedPostsTitle')}
+        />
+      )}
+      {viewingProfile && (
+        <div className="absolute inset-0 z-[60] bg-ps-bg flex flex-col">
+          <PerfilPublico
+            key={viewingProfile}
+            userId={viewingProfile}
+            onBack={() => setViewingProfile(null)}
+          />
+        </div>
       )}
 
       {showCreatePost && (

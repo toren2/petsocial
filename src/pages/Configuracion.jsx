@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { ArrowLeft, Globe, AlertTriangle, Trash2, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Globe, AlertTriangle, Trash2, ChevronRight, HelpCircle } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useLanguage } from '../LanguageContext'
 import PushToggle from '../components/PushToggle'
+import ReportModal from '../components/ReportModal'
 
 export default function Configuracion({ onBack, onSignOut }) {
   const { t, language, setLanguage } = useLanguage()
@@ -10,6 +11,7 @@ export default function Configuracion({ onBack, onSignOut }) {
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('')
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [deleteAccountError, setDeleteAccountError] = useState('')
+  const [showHelpFeedback, setShowHelpFeedback] = useState(false)
 
   async function handleDeleteAccount() {
     setDeletingAccount(true)
@@ -48,6 +50,16 @@ export default function Configuracion({ onBack, onSignOut }) {
           </button>
 
           <PushToggle />
+
+          <button
+            onClick={() => setShowHelpFeedback(true)}
+            className="w-full flex items-center justify-between px-4 py-2.5 border-0 bg-transparent cursor-pointer text-left"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <HelpCircle size={15} className="text-ps-purple" /> {t('settings.helpFeedback')}
+            </span>
+            <ChevronRight size={14} className="text-gray-300" />
+          </button>
         </div>
 
         <div className="mt-8 px-4">
@@ -101,6 +113,10 @@ export default function Configuracion({ onBack, onSignOut }) {
             </div>
           </div>
         </div>
+      )}
+
+      {showHelpFeedback && (
+        <ReportModal type="problema" onClose={() => setShowHelpFeedback(false)} />
       )}
     </div>
   )
