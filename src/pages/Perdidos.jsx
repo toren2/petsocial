@@ -30,7 +30,7 @@ function timeAgo(dateStr, t) {
 }
 
 export default function Perdidos({ onNavigate }) {
-  const { user } = useAuth()
+  const { user, pets } = useAuth()
   const { t } = useLanguage()
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(true)
@@ -89,6 +89,21 @@ export default function Perdidos({ onNavigate }) {
   }
 
   function handle(k, v) { setForm(f => ({ ...f, [k]: v })) }
+
+  // Fase 2 de mascotas multiples: si el dueno ya tiene sus mascotas
+  // cargadas en la app, dejamos prellenar el reporte con un tap en vez de
+  // volver a escribir nombre/especie/raza/foto a mano. El reporte sigue
+  // siendo su propia fila independiente (no se guarda pet_id) -- esto es
+  // solo una ayuda de formulario.
+  function fillFromPet(pet) {
+    setForm(f => ({
+      ...f,
+      pet_name: pet.pet_name || f.pet_name,
+      species: pet.species || f.species,
+      breed: pet.breed || '',
+      photo_url: pet.avatar_url || f.photo_url,
+    }))
+  }
 
   async function saveReport() {
     if (!form.pet_name.trim()) return
@@ -247,6 +262,30 @@ export default function Perdidos({ onNavigate }) {
         {showForm && (
           <div className="bg-white rounded-2xl p-4 mb-3 border border-gray-100 flex flex-col gap-3">
             <h3 className="text-sm font-bold text-gray-900">{t('perdidos.reportFormTitle')}</h3>
+
+            {pets && pets.length > 0 && (
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('perdidos.fillFromPet')}</label>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {pets.map(pet => (
+                    <button
+                      key={pet.id}
+                      onClick={() => fillFromPet(pet)}
+                      className="flex items-center gap-1.5 flex-shrink-0 border border-gray-200 rounded-full pl-1 pr-3 py-1 cursor-pointer bg-white"
+                    >
+                      <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0" style={{ background: '#FEE2E2' }}>
+                        {pet.avatar_url ? (
+                          <img src={pet.avatar_url} alt={pet.pet_name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xs">{pet.emoji || '🐾'}</span>
+                        )}
+                      </div>
+                      <span className="text-xs font-medium text-gray-700">{pet.pet_name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center gap-3">
               <div

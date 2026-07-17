@@ -7,8 +7,13 @@ import MediaEditor from './MediaEditor'
 import MediaSourceSheet from './MediaSourceSheet'
 
 export default function CreatePostModal({ profile, onClose, onCreate, initialFile = null, initialCaption = '' }) {
-  const { user } = useAuth()
+  const { user, activePet } = useAuth()
   const { t } = useLanguage()
+  // Fase 2 de mascotas multiples: se publica "como" la mascota activa (la
+  // que este seleccionada en el switcher), no siempre la mascota principal
+  // de `profiles`. Si por alguna razon activePet no cargo aun, cae de
+  // vuelta a `profile` (comportamiento de antes) para no bloquear publicar.
+  const poster = activePet || profile
   const [caption, setCaption] = useState(initialCaption)
   const [mediaFile, setMediaFile] = useState(null)
   const [mediaPreview, setMediaPreview] = useState(null)
@@ -65,10 +70,11 @@ export default function CreatePostModal({ profile, onClose, onCreate, initialFil
       .from('posts')
       .insert([{
         user_id: user.id,
-        pet_name: profile?.pet_name || 'Mi mascota',
-        pet_emoji: profile?.emoji || '🐕',
-        pet_breed: profile?.breed || '',
-        avatar_url: profile?.avatar_url || null,
+        pet_id: activePet?.id || null,
+        pet_name: poster?.pet_name || 'Mi mascota',
+        pet_emoji: poster?.emoji || '🐕',
+        pet_breed: poster?.breed || '',
+        avatar_url: poster?.avatar_url || null,
         image_url,
         video_url,
         caption: caption.trim(),
@@ -143,15 +149,15 @@ export default function CreatePostModal({ profile, onClose, onCreate, initialFil
 
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-ps-purple-light flex items-center justify-center overflow-hidden flex-shrink-0">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+              {poster?.avatar_url ? (
+                <img src={poster.avatar_url} alt="avatar" className="w-full h-full object-cover" />
               ) : (
-                <span className="text-xl">{profile?.emoji || '🐕'}</span>
+                <span className="text-xl">{poster?.emoji || '🐕'}</span>
               )}
             </div>
             <div>
-              <div className="font-semibold text-sm text-gray-900">{profile?.pet_name || 'Mi mascota'}</div>
-              <div className="text-xs text-gray-400">{profile?.breed}</div>
+              <div className="font-semibold text-sm text-gray-900">{poster?.pet_name || 'Mi mascota'}</div>
+              <div className="text-xs text-gray-400">{poster?.breed}</div>
             </div>
           </div>
 

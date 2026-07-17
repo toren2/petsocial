@@ -280,7 +280,7 @@ function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, cu
 }
 
 function CreateStoryModal({ profile, onClose, onCreate, initialFile = null, initialCaption = '' }) {
-  const { user } = useAuth()
+  const { user, activePet } = useAuth()
   const { t } = useLanguage()
   const [mediaFile, setMediaFile] = useState(null)
   const [mediaPreview, setMediaPreview] = useState(null)
@@ -321,6 +321,7 @@ function CreateStoryModal({ profile, onClose, onCreate, initialFile = null, init
       const { data } = supabase.storage.from(bucket).getPublicUrl(path)
       const insertData = {
         user_id: user.id,
+        pet_id: activePet?.id || null,
         caption: caption.trim(),
         ...(mediaType === 'video' ? { video_url: data.publicUrl, image_url: null } : { image_url: data.publicUrl }),
       }
