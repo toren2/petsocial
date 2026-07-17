@@ -213,7 +213,8 @@
     flex-shrink: 0;
   }
   .phone-header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .phone-logo { font-size: 11px; font-weight: 800; letter-spacing: 0.2px; }
+  .phone-logo { height: 13px; width: 33px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .phone-logo img { height: 36px; width: auto; max-width: none; filter: brightness(0) invert(1); }
   .phone-header-icons { display: flex; gap: 5px; align-items: center; }
   .phone-pill {
     background: rgba(255,255,255,0.22);
@@ -507,7 +508,7 @@
           <div class="phone-screen">
             <div class="phone-header">
               <div class="phone-header-top">
-                <div class="phone-logo">🐾 Snoutt</div>
+                <div class="phone-logo"><img src="/snoutt-logo.png" alt="Snoutt"></div>
                 <div class="phone-header-icons">
                   <div class="phone-pill">EN</div>
                   <div class="phone-pill">
