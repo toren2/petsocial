@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { BadgeCheck, Camera, Clock, XCircle } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import MediaEditor from './MediaEditor'
+import MediaSourceSheet from './MediaSourceSheet'
 
 export default function Verificacion({ onStatusChange }) {
   const { user } = useAuth()
@@ -16,7 +17,7 @@ export default function Verificacion({ onStatusChange }) {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editingFile, setEditingFile] = useState(null)
-  const fileInputRef = useRef(null)
+  const [showSourceSheet, setShowSourceSheet] = useState(false)
 
   useEffect(() => { fetchLatest() }, [])
 
@@ -103,14 +104,18 @@ export default function Verificacion({ onStatusChange }) {
             <div
               className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden"
               style={{ background: '#EFF6FF' }}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => setShowSourceSheet(true)}
             >
               {photoUrl ? <img src={photoUrl} alt="foto" className="w-full h-full object-cover" /> : <Camera size={20} color="#3B82F6" />}
             </div>
-            <button onClick={() => fileInputRef.current?.click()} className="text-xs font-semibold border-0 cursor-pointer px-3 py-1.5 rounded-full" style={{ background: '#EDE9FE', color: '#7C3AED' }}>
+            <button onClick={() => setShowSourceSheet(true)} className="text-xs font-semibold border-0 cursor-pointer px-3 py-1.5 rounded-full" style={{ background: '#EDE9FE', color: '#7C3AED' }}>
               {uploading ? t('verificacion.uploading') : t('verificacion.uploadPhoto')}
             </button>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && setEditingFile(e.target.files[0])} />
+            <MediaSourceSheet
+              open={showSourceSheet}
+              onClose={() => setShowSourceSheet(false)}
+              onSelect={file => setEditingFile(file)}
+            />
           </div>
 
           {editingFile && (

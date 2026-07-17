@@ -8,6 +8,7 @@ import HistorialMedico from '../components/HistorialMedico'
 import PetSwitcher from '../components/PetSwitcher'
 import AgregarMascotaModal from '../components/AgregarMascotaModal'
 import MediaEditor from '../components/MediaEditor'
+import MediaSourceSheet from '../components/MediaSourceSheet'
 import Verificacion from '../components/Verificacion'
 import VerifiedBadge from '../components/VerifiedBadge'
 import HuellasBadge from '../components/HuellasBadge'
@@ -104,8 +105,8 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
   const [huellasPoints, setHuellasPoints] = useState(0)
   const [showSettings, setShowSettings] = useState(false)
   const bonusClaimedRef = useRef(false)
-  const fileInputRef = useRef(null)
-  const petPhotoRef = useRef(null)
+  const [showAvatarSheet, setShowAvatarSheet] = useState(false)
+  const [showPetPhotoSheet, setShowPetPhotoSheet] = useState(false)
   const [editingAvatarFile, setEditingAvatarFile] = useState(null)
   const [editingPetPhotoFile, setEditingPetPhotoFile] = useState(null)
   const [showAddPet, setShowAddPet] = useState(false)
@@ -324,14 +325,18 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
       <div className="flex-1 overflow-y-auto bg-ps-bg px-4 py-4 flex flex-col gap-4">
         <div className="bg-white rounded-2xl p-4 border border-gray-100 flex flex-col items-center gap-3">
           <h3 className="text-sm font-semibold text-gray-900 self-start">{t('perfil.profilePhoto')}</h3>
-          <div className="relative cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+          <div className="relative cursor-pointer" onClick={() => setShowAvatarSheet(true)}>
             {form.avatar_url ? <img src={form.avatar_url} alt="avatar" className="w-24 h-24 rounded-full object-cover border-4 border-ps-purple-light" /> : <div className="w-24 h-24 rounded-full bg-ps-purple-light flex items-center justify-center text-5xl border-4 border-ps-purple-light">{form.emoji}</div>}
             <div className="absolute bottom-0 right-0 w-8 h-8 bg-ps-purple rounded-full flex items-center justify-center border-2 border-white">
               {uploadingPhoto ? <span className="text-white text-xs">...</span> : <Camera size={14} color="white" />}
             </div>
           </div>
           <p className="text-xs text-gray-400">{t('perfil.tapToUpload')}</p>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && setEditingAvatarFile(e.target.files[0])} />
+          <MediaSourceSheet
+            open={showAvatarSheet}
+            onClose={() => setShowAvatarSheet(false)}
+            onSelect={file => setEditingAvatarFile(file)}
+          />
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-gray-100">
@@ -468,7 +473,7 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
           >
             <Newspaper size={16} color="white" />
           </button>
-          <div className="relative flex-shrink-0 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+          <div className="relative flex-shrink-0 cursor-pointer" onClick={() => setShowAvatarSheet(true)}>
             {profile.avatar_url ? (
               <img src={profile.avatar_url} alt="avatar" className="w-20 h-20 rounded-full object-cover border-2 border-ps-purple-light" />
             ) : (
@@ -477,7 +482,11 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
             <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center border-2 border-white" style={{ background: '#7C3AED' }}>
               {uploadingPhoto ? <span className="text-white text-xs">...</span> : <Camera size={13} color="white" />}
             </div>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && setEditingAvatarFile(e.target.files[0])} />
+            <MediaSourceSheet
+              open={showAvatarSheet}
+              onClose={() => setShowAvatarSheet(false)}
+              onSelect={file => setEditingAvatarFile(file)}
+            />
           </div>
           <div className="flex-1">
             <div className="font-bold text-gray-900 text-lg flex items-center gap-1">
@@ -691,17 +700,21 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
             <h3 className="text-sm font-semibold text-gray-900">{t('perfil.matchPhotos', { count: petPhotos.length })}</h3>
             {petPhotos.length < 5 && (
               <button
-                onClick={() => petPhotoRef.current?.click()}
+                onClick={() => setShowPetPhotoSheet(true)}
                 className="text-xs font-semibold border-0 cursor-pointer px-3 py-1.5 rounded-full"
                 style={{ background: '#EDE9FE', color: '#7C3AED' }}
               >
                 {uploadingPetPhoto ? t('perfil.uploading') : t('perfil.addPhoto')}
               </button>
             )}
-            <input ref={petPhotoRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && setEditingPetPhotoFile(e.target.files[0])} />
+            <MediaSourceSheet
+              open={showPetPhotoSheet}
+              onClose={() => setShowPetPhotoSheet(false)}
+              onSelect={file => setEditingPetPhotoFile(file)}
+            />
           </div>
           {petPhotos.length === 0 ? (
-            <div onClick={() => petPhotoRef.current?.click()} className="flex flex-col items-center justify-center gap-2 rounded-2xl cursor-pointer border-2 border-dashed border-gray-200 py-6">
+            <div onClick={() => setShowPetPhotoSheet(true)} className="flex flex-col items-center justify-center gap-2 rounded-2xl cursor-pointer border-2 border-dashed border-gray-200 py-6">
               <span className="text-3xl">📸</span>
               <p className="text-xs text-gray-400 text-center">{t('perfil.addUpToPhotos')}</p>
             </div>
@@ -720,7 +733,7 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
                 </div>
               ))}
               {petPhotos.length < 5 && (
-                <div onClick={() => petPhotoRef.current?.click()} className="flex-shrink-0 flex items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 cursor-pointer" style={{ width: 100, height: 100 }}>
+                <div onClick={() => setShowPetPhotoSheet(true)} className="flex-shrink-0 flex items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 cursor-pointer" style={{ width: 100, height: 100 }}>
                   <span className="text-2xl text-gray-300">+</span>
                 </div>
               )}

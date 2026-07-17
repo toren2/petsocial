@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Syringe, Plus, X, Calendar, ChevronLeft, Camera, CreditCard } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
@@ -6,6 +6,7 @@ import { useLanguage } from '../LanguageContext'
 import VerifiedBadge from './VerifiedBadge'
 import TarjetaVacunas from './TarjetaVacunas'
 import MediaEditor from './MediaEditor'
+import MediaSourceSheet from './MediaSourceSheet'
 import PetSwitcher from './PetSwitcher'
 import AgregarMascotaModal from './AgregarMascotaModal'
 
@@ -83,7 +84,7 @@ export default function Vacunas({ hideTitle = false, petInfo = {} }) {
   const [showTarjeta, setShowTarjeta] = useState(false)
   const [editingReceiptFile, setEditingReceiptFile] = useState(null)
   const [showAddPet, setShowAddPet] = useState(false)
-  const receiptInputRef = useRef(null)
+  const [showReceiptSheet, setShowReceiptSheet] = useState(false)
   const [form, setForm] = useState({
     name: VACCINE_PRESETS[0].name,
     customName: '',
@@ -418,18 +419,22 @@ export default function Vacunas({ hideTitle = false, petInfo = {} }) {
               <div
                 className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden"
                 style={{ background: '#EFF6FF' }}
-                onClick={() => receiptInputRef.current?.click()}
+                onClick={() => setShowReceiptSheet(true)}
               >
                 {form.receipt_url ? <img src={form.receipt_url} alt="comprobante" className="w-full h-full object-cover" /> : <Camera size={18} color="#3B82F6" />}
               </div>
               <button
-                onClick={() => receiptInputRef.current?.click()}
+                onClick={() => setShowReceiptSheet(true)}
                 className="text-xs font-semibold border-0 cursor-pointer px-3 py-1.5 rounded-full"
                 style={{ background: '#EDE9FE', color: '#7C3AED' }}
               >
                 {uploadingReceipt ? t('verificacion.uploading') : t('vacunas.uploadReceipt')}
               </button>
-              <input ref={receiptInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && setEditingReceiptFile(e.target.files[0])} />
+              <MediaSourceSheet
+                open={showReceiptSheet}
+                onClose={() => setShowReceiptSheet(false)}
+                onSelect={file => setEditingReceiptFile(file)}
+              />
             </div>
           </div>
 

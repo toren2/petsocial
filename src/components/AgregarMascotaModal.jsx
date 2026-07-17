@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import { X, Camera } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import MediaEditor from './MediaEditor'
+import MediaSourceSheet from './MediaSourceSheet'
 
 const SPECIES  = ['Perro', 'Gato', 'Conejo', 'Ave', 'Otro']
 const SIZES    = ['Pequeño', 'Mediano', 'Grande']
@@ -22,7 +23,7 @@ export default function AgregarMascotaModal({ onClose, onCreated }) {
   const [saving, setSaving] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [editingPhotoFile, setEditingPhotoFile] = useState(null)
-  const fileInputRef = useRef(null)
+  const [showPhotoSheet, setShowPhotoSheet] = useState(false)
   const [form, setForm] = useState({
     pet_name: '', breed: '', species: 'Perro', age: '',
     size: 'Mediano', sex: 'Macho', energy: 'Activo',
@@ -79,7 +80,7 @@ export default function AgregarMascotaModal({ onClose, onCreated }) {
           <div
             className="w-20 h-20 rounded-full flex items-center justify-center overflow-hidden cursor-pointer flex-shrink-0"
             style={{ background: '#EDE9FE' }}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => setShowPhotoSheet(true)}
           >
             {form.avatar_url ? (
               <img src={form.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -88,18 +89,16 @@ export default function AgregarMascotaModal({ onClose, onCreated }) {
             )}
           </div>
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => setShowPhotoSheet(true)}
             className="text-xs font-semibold border-0 cursor-pointer bg-transparent"
             style={{ color: '#7C3AED' }}
           >
             {uploadingPhoto ? t('verificacion.uploading') : t('perfil.tapToUpload')}
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={e => e.target.files?.[0] && setEditingPhotoFile(e.target.files[0])}
+          <MediaSourceSheet
+            open={showPhotoSheet}
+            onClose={() => setShowPhotoSheet(false)}
+            onSelect={file => setEditingPhotoFile(file)}
           />
         </div>
 

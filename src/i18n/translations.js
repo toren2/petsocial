@@ -514,6 +514,11 @@ export const translations = {
       aspectLandscape: 'Horizontal',
       videoNotice: 'Los videos se publican tal cual, sin edición',
     },
+    mediaSource: {
+      takePhoto: 'Tomar foto',
+      recordVideo: 'Grabar video',
+      chooseGallery: 'Elegir de galería',
+    },
     mascotas: {
       addPet: '+ Agregar mascota',
       addPetTitle: 'Agregar mascota',
@@ -1370,6 +1375,11 @@ export const translations = {
       aspectStory: 'Story',
       aspectLandscape: 'Landscape',
       videoNotice: 'Videos are posted as-is, without editing',
+    },
+    mediaSource: {
+      takePhoto: 'Take photo',
+      recordVideo: 'Record video',
+      chooseGallery: 'Choose from gallery',
     },
     mascotas: {
       addPet: '+ Add pet',

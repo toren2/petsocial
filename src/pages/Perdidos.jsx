@@ -6,6 +6,7 @@ import { useLanguage } from '../LanguageContext'
 import { usePullToRefresh } from '../usePullToRefresh'
 import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 import MediaEditor from '../components/MediaEditor'
+import MediaSourceSheet from '../components/MediaSourceSheet'
 
 const SPECIES = ['Perro', 'Gato', 'Conejo', 'Ave', 'Otro']
 
@@ -39,7 +40,7 @@ export default function Perdidos({ onNavigate }) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [selected, setSelected] = useState(null)
   const [editingPhotoFile, setEditingPhotoFile] = useState(null)
-  const fileInputRef = useRef(null)
+  const [showPhotoSheet, setShowPhotoSheet] = useState(false)
   const [form, setForm] = useState({
     pet_name: '', species: 'Perro', breed: '', description: '',
     photo_url: '', last_seen_lat: null, last_seen_lng: null, last_seen_address: '',
@@ -251,17 +252,21 @@ export default function Perdidos({ onNavigate }) {
               <div
                 className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden"
                 style={{ background: '#FEE2E2' }}
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => setShowPhotoSheet(true)}
               >
                 {form.photo_url ? <img src={form.photo_url} alt="foto" className="w-full h-full object-cover" /> : <Camera size={20} color="#DC2626" />}
               </div>
               <div className="flex-1">
                 <p className="text-xs font-medium text-gray-500 mb-1">{t('perdidos.photoOptional')}</p>
-                <button onClick={() => fileInputRef.current?.click()} className="text-xs font-semibold border-0 cursor-pointer px-3 py-1.5 rounded-full" style={{ background: '#EDE9FE', color: '#7C3AED' }}>
+                <button onClick={() => setShowPhotoSheet(true)} className="text-xs font-semibold border-0 cursor-pointer px-3 py-1.5 rounded-full" style={{ background: '#EDE9FE', color: '#7C3AED' }}>
                   {uploadingPhoto ? t('perdidos.uploading') : t('perdidos.uploadPhoto')}
                 </button>
               </div>
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && setEditingPhotoFile(e.target.files[0])} />
+              <MediaSourceSheet
+                open={showPhotoSheet}
+                onClose={() => setShowPhotoSheet(false)}
+                onSelect={file => setEditingPhotoFile(file)}
+              />
 
               {editingPhotoFile && (
                 <MediaEditor

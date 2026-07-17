@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X, Image, Send, Video } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import MediaEditor from './MediaEditor'
+import MediaSourceSheet from './MediaSourceSheet'
 
 export default function CreatePostModal({ profile, onClose, onCreate, initialFile = null, initialCaption = '' }) {
   const { user } = useAuth()
@@ -14,7 +15,7 @@ export default function CreatePostModal({ profile, onClose, onCreate, initialFil
   const [mediaType, setMediaType] = useState(null) // 'image' | 'video'
   const [loading, setLoading] = useState(false)
   const [editingFile, setEditingFile] = useState(null)
-  const fileInputRef = useRef(null)
+  const [sourceSheetMode, setSourceSheetMode] = useState(null) // 'photo' | 'video' | null
 
   // Si el archivo viene de "compartir" desde la galeria del telefono (Web
   // Share Target), lo mandamos igual al editor de recorte antes de dejarlo listo.
@@ -23,12 +24,6 @@ export default function CreatePostModal({ profile, onClose, onCreate, initialFil
     setEditingFile(initialFile)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  function handleMedia(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setEditingFile(file)
-  }
 
   function applyEditedMedia(file) {
     const isVideo = file.type.startsWith('video/')
@@ -114,14 +109,14 @@ export default function CreatePostModal({ profile, onClose, onCreate, initialFil
           ) : (
             <div className="flex gap-3">
               <button
-                onClick={() => { fileInputRef.current.accept = 'image/*'; fileInputRef.current?.click() }}
+                onClick={() => setSourceSheetMode('photo')}
                 className="flex-1 border-2 border-dashed border-gray-200 rounded-2xl py-8 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
               >
                 <Image size={28} className="text-gray-300" />
                 <span className="text-xs text-gray-400">{t('createPost.photo')}</span>
               </button>
               <button
-                onClick={() => { fileInputRef.current.accept = 'video/*'; fileInputRef.current?.click() }}
+                onClick={() => setSourceSheetMode('video')}
                 className="flex-1 border-2 border-dashed border-gray-200 rounded-2xl py-8 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
               >
                 <Video size={28} className="text-gray-300" />
@@ -130,12 +125,12 @@ export default function CreatePostModal({ profile, onClose, onCreate, initialFil
             </div>
           )}
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,video/*"
-            className="hidden"
-            onChange={handleMedia}
+          <MediaSourceSheet
+            open={!!sourceSheetMode}
+            mode={sourceSheetMode || 'photo'}
+            accept={sourceSheetMode === 'video' ? 'video/*' : 'image/*'}
+            onClose={() => setSourceSheetMode(null)}
+            onSelect={file => setEditingFile(file)}
           />
 
           {editingFile && (

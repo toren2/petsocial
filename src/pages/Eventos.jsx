@@ -5,6 +5,7 @@ import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import InviteModal from '../components/InviteModal'
 import MediaEditor from '../components/MediaEditor'
+import MediaSourceSheet from '../components/MediaSourceSheet'
 import { geocodeAddress } from '../googleMaps'
 import { usePullToRefresh } from '../usePullToRefresh'
 import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
@@ -306,6 +307,7 @@ function CreateEventModal({ onClose, onCreate }) {
   })
   const [imageUploading, setImageUploading] = useState(false)
   const [editingEventImageFile, setEditingEventImageFile] = useState(null)
+  const [showEventImageSheet, setShowEventImageSheet] = useState(false)
   const locationInputRef = useRef(null)
   const autocompleteRef = useRef(null)
 
@@ -356,11 +358,6 @@ function CreateEventModal({ onClose, onCreate }) {
     document.head.appendChild(script)
   }, [])
 
-  function handleImageUpload(e) {
-    const file = e.target.files[0]
-    if (!file) return
-    setEditingEventImageFile(file)
-  }
 
   async function uploadEventImage(file) {
     setImageUploading(true)
@@ -452,12 +449,20 @@ function CreateEventModal({ onClose, onCreate }) {
                 </button>
               </div>
             ) : (
-              <label className="flex items-center justify-center gap-2 border border-dashed border-gray-300 rounded-xl py-4 cursor-pointer text-xs text-gray-400">
+              <div
+                onClick={() => !imageUploading && setShowEventImageSheet(true)}
+                className="flex items-center justify-center gap-2 border border-dashed border-gray-300 rounded-xl py-4 cursor-pointer text-xs text-gray-400"
+              >
                 <ImageIcon size={16} />
                 {imageUploading ? t('eventos.uploadingImage') : t('eventos.uploadImage')}
-                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={imageUploading} />
-              </label>
+              </div>
             )}
+
+            <MediaSourceSheet
+              open={showEventImageSheet}
+              onClose={() => setShowEventImageSheet(false)}
+              onSelect={file => setEditingEventImageFile(file)}
+            />
 
             {editingEventImageFile && (
               <MediaEditor

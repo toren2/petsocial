@@ -10,6 +10,7 @@ import { useLanguage } from '../LanguageContext'
 import { usePullToRefresh } from '../usePullToRefresh'
 import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 import MediaEditor from '../components/MediaEditor'
+import MediaSourceSheet from '../components/MediaSourceSheet'
 
 function followLabel(following, follower, t) {
   if (following && follower) return { text: t('chat.followStatusFriends'), color: '#7C3AED' }
@@ -290,8 +291,8 @@ function Conversation({ match, onBack }) {
   const [recordingSeconds, setRecordingSeconds] = useState(0)
   const [micError, setMicError] = useState(false)
   const bottomRef = useRef(null)
-  const fileInputRef = useRef(null)
   const docInputRef = useRef(null)
+  const [showImageSourceSheet, setShowImageSourceSheet] = useState(false)
   const [editingChatImageFile, setEditingChatImageFile] = useState(null)
   const mediaRecorderRef = useRef(null)
   const audioChunksRef = useRef([])
@@ -819,12 +820,10 @@ function Conversation({ match, onBack }) {
         </div>
       ) : (
         <div className="flex items-center gap-2 px-4 py-2.5 bg-white border-t border-gray-100 flex-shrink-0">
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            className="hidden"
-            onChange={e => e.target.files?.[0] && setEditingChatImageFile(e.target.files[0])}
+          <MediaSourceSheet
+            open={showImageSourceSheet}
+            onClose={() => setShowImageSourceSheet(false)}
+            onSelect={file => setEditingChatImageFile(file)}
           />
 
           {editingChatImageFile && (
@@ -841,7 +840,7 @@ function Conversation({ match, onBack }) {
             onChange={e => sendFile(e.target.files[0])}
           />
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => setShowImageSourceSheet(true)}
             className="border-0 bg-transparent cursor-pointer text-gray-400 flex-shrink-0"
           >
             <Image size={20} />

@@ -5,6 +5,7 @@ import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import { notifyMessage } from '../notifications'
 import MediaEditor from './MediaEditor'
+import MediaSourceSheet from './MediaSourceSheet'
 
 function StoryViewer({ stories, startIndex, onClose, onDelete, onShareAsPost, currentUserId }) {
   const { t, language } = useLanguage()
@@ -287,19 +288,13 @@ function CreateStoryModal({ profile, onClose, onCreate, initialFile = null, init
   const [caption, setCaption] = useState(initialCaption)
   const [loading, setLoading] = useState(false)
   const [editingFile, setEditingFile] = useState(null)
-  const fileInputRef = useRef(null)
+  const [sourceSheetMode, setSourceSheetMode] = useState(null) // 'photo' | 'video' | null
 
   useEffect(() => {
     if (!initialFile) return
     setEditingFile(initialFile)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  function handleMedia(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setEditingFile(file)
-  }
 
   function applyEditedMedia(file) {
     const isVideo = file.type.startsWith('video/')
@@ -363,14 +358,14 @@ function CreateStoryModal({ profile, onClose, onCreate, initialFile = null, init
           ) : (
             <div className="flex gap-3">
               <button
-                onClick={() => { fileInputRef.current.accept = 'image/*'; fileInputRef.current?.click() }}
+                onClick={() => setSourceSheetMode('photo')}
                 className="flex-1 border-2 border-dashed border-gray-200 rounded-2xl py-8 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
               >
                 <Camera size={28} className="text-gray-300" />
                 <span className="text-xs text-gray-400">{t('createPost.photo')}</span>
               </button>
               <button
-                onClick={() => { fileInputRef.current.accept = 'video/*'; fileInputRef.current?.click() }}
+                onClick={() => setSourceSheetMode('video')}
                 className="flex-1 border-2 border-dashed border-gray-200 rounded-2xl py-8 flex flex-col items-center gap-2 bg-ps-bg cursor-pointer"
               >
                 <Video size={28} className="text-gray-300" />
@@ -378,7 +373,13 @@ function CreateStoryModal({ profile, onClose, onCreate, initialFile = null, init
               </button>
             </div>
           )}
-          <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleMedia} />
+          <MediaSourceSheet
+            open={!!sourceSheetMode}
+            mode={sourceSheetMode || 'photo'}
+            accept={sourceSheetMode === 'video' ? 'video/*' : 'image/*'}
+            onClose={() => setSourceSheetMode(null)}
+            onSelect={file => setEditingFile(file)}
+          />
 
           {editingFile && (
             <MediaEditor

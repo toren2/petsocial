@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { AlertTriangle, HeartPulse, Pill, Scissors, FileText, TrendingUp, Paperclip, X, Plus, Calendar, ExternalLink } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 import MediaEditor from './MediaEditor'
+import MediaSourceSheet from './MediaSourceSheet'
 import PetSwitcher from './PetSwitcher'
 import AgregarMascotaModal from './AgregarMascotaModal'
 
@@ -107,7 +108,7 @@ export default function HistorialMedico() {
   const [uploadingDoc, setUploadingDoc] = useState(false)
   const [editingDocFile, setEditingDocFile] = useState(null)
   const [showAddPet, setShowAddPet] = useState(false)
-  const docFileRef = useRef(null)
+  const [showDocSourceSheet, setShowDocSourceSheet] = useState(false)
 
   const emptyRecordForm = { title: '', date: '', end_date: '', extra: '', notes: '' }
   const [recordForm, setRecordForm] = useState(emptyRecordForm)
@@ -413,23 +414,21 @@ export default function HistorialMedico() {
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => docFileRef.current?.click()}
+              onClick={() => setShowDocSourceSheet(true)}
               className="text-xs font-semibold border-0 cursor-pointer px-3 py-1.5 rounded-full flex items-center gap-1"
               style={{ background: '#EDE9FE', color: '#7C3AED' }}
             >
               <Paperclip size={12} /> {uploadingDoc ? t('historial.docsUploading') : t('historial.docsUpload')}
             </button>
             {docForm.file_url && <span className="text-xs text-green-600">✓</span>}
-            <input
-              ref={docFileRef}
-              type="file"
+            <MediaSourceSheet
+              open={showDocSourceSheet}
               accept="image/*,application/pdf"
-              className="hidden"
-              onChange={e => {
-                const f = e.target.files?.[0]
-                if (!f) return
+              onClose={() => setShowDocSourceSheet(false)}
+              onSelect={f => {
                 // el recorte/edicion solo aplica a imagenes -- un PDF de laboratorio
                 // se sube tal cual, no tiene sentido pasarlo por el editor visual.
+                // (la opcion de camara siempre entrega una imagen)
                 if (f.type.startsWith('image/')) setEditingDocFile(f)
                 else uploadDocFile(f)
               }}
