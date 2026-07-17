@@ -62,8 +62,31 @@ export default function MediaEditor({ file, forcedAspect = null, outputMaxSize =
     if (!file) return
     const url = URL.createObjectURL(file)
     setPreviewUrl(url)
-    setIsVideo(file.type.startsWith('video/'))
-    return () => URL.revokeObjectURL(url)
+    const video = file.type.startsWith('video/')
+    setIsVideo(video)
+    setNaturalSize(null)
+
+    // Medimos el tamano natural con una imagen "fuera del DOM" en vez de
+    // depender solo del onLoad del <img> visible: en algunos navegadores
+    // moviles (sobre todo dentro de la PWA instalada) el <img> puede
+    // terminar de cargar el blob: URL antes de que React llegue a
+    // adjuntar el listener de onLoad, y esa carrera deja naturalSize en
+    // null para siempre -- lo que a su vez deja la imagen sin centrar
+    // (mal posicionada fuera del recuadro visible, viendose todo negro).
+    // Asignar el handler antes de fijar `src` evita esa carrera.
+    let cancelled = false
+    if (!video) {
+      const probe = new Image()
+      probe.onload = () => {
+        if (!cancelled) setNaturalSize({ w: probe.naturalWidth, h: probe.naturalHeight })
+      }
+      probe.src = url
+    }
+
+    return () => {
+      cancelled = true
+      URL.revokeObjectURL(url)
+    }
   }, [file])
 
   const frame = useMemo(
