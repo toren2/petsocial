@@ -178,6 +178,28 @@
     margin: 14px 0 0;
     animation: fadeUp 0.6s ease 0.24s both;
   }
+  .store-badges {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 18px;
+    animation: fadeUp 0.6s ease 0.28s both;
+  }
+  .store-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: white;
+    opacity: 0.9;
+  }
+  .store-badge svg { width: 15px; height: 15px; flex-shrink: 0; }
 
   /* Mockup ilustrativo del telefono: recrea la pantalla principal (Hub)
      de la app tal cual se ve hoy -- saludo, buscador, racha, tips del
@@ -292,6 +314,7 @@
     .hero-text { text-align: left; }
     .hero h1, .hero .subtitle { margin-left: 0; margin-right: 0; }
     .hero-phone { flex-shrink: 0; }
+    .store-badges { justify-content: flex-start; }
   }
 
   .wave-divider {
@@ -501,6 +524,17 @@
 
         <a class="app-cta" href="https://app.snoutt.app" target="_blank" rel="noopener noreferrer" data-i18n="ctaButton">🐾 Abrir Snoutt</a>
         <p class="app-cta-note" data-i18n="ctaNote"></p>
+
+        <div class="store-badges">
+          <span class="store-badge">
+            <svg viewBox="0 0 384 512" fill="currentColor"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c26.3-31.5 23.9-60.1 23.1-70.4-23.1 1.3-49.9 15.6-65.5 33.3-17.3 19.5-27.5 43.7-25.4 71.9 27.7 2.1 53-13.4 67.8-34.8z"/></svg>
+            <span data-i18n="storeApple"></span>
+          </span>
+          <span class="store-badge">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 3.6c0-.6.66-1 1.2-.7l13 8.4c.5.3.5 1 0 1.4l-13 8.4c-.54.3-1.2-.1-1.2-.7V3.6z"/></svg>
+            <span data-i18n="storeGoogle"></span>
+          </span>
+        </div>
       </div>
 
       <div class="hero-phone">
@@ -648,6 +682,8 @@
       subtitle: 'Match, lugares pet-friendly, eventos y una comunidad que entiende a tu mejor amigo. Ábrela ahora mismo desde tu navegador.',
       ctaButton: '🐾 Abrir Snoutt',
       ctaNote: 'Se abre directo en tu navegador, no necesitas descargar nada de una tienda de apps.',
+      storeApple: 'Próximamente en App Store',
+      storeGoogle: 'Próximamente en Google Play',
       featuresTitle: 'Qué vas a encontrar',
       f1t: 'Match', f1d: 'Conecta a tu mascota con otras cerca de ti, con filtros por raza, tamaño y zona.',
       f2t: 'Lugares pet-friendly', f2d: 'Veterinarias, parques, pet shops y más, cerca de ti y con reseñas reales.',
@@ -674,6 +710,8 @@
       subtitle: "Match, pet-friendly places, events, and a community that gets your best friend. Open it right now from your browser.",
       ctaButton: '🐾 Open Snoutt',
       ctaNote: "Opens right in your browser, no app store download needed.",
+      storeApple: 'Coming soon on the App Store',
+      storeGoogle: 'Coming soon on Google Play',
       featuresTitle: "What you'll find",
       f1t: 'Match', f1d: 'Connect your pet with others nearby, with filters for breed, size, and area.',
       f2t: 'Pet-friendly places', f2d: 'Vets, parks, pet shops and more nearby, with real reviews.',
