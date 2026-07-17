@@ -4,18 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Snoutt — La red social de mascotas</title>
-<meta name="description" content="Snoutt es la red social de mascotas en Panamá. Match, lugares pet-friendly, eventos y comunidad. Muy pronto.">
+<meta name="description" content="Snoutt es la red social de mascotas en Panamá. Match, lugares pet-friendly, eventos y comunidad. Ya disponible.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Snoutt">
 <meta property="og:title" content="Snoutt — La red social de mascotas">
-<meta property="og:description" content="Match, lugares pet-friendly, eventos y comunidad para tu mascota. Muy pronto en Panamá.">
+<meta property="og:description" content="Match, lugares pet-friendly, eventos y comunidad para tu mascota. Ya disponible en Panamá.">
 <meta property="og:image" content="https://snoutt.app/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:url" content="https://snoutt.app">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Snoutt — La red social de mascotas">
-<meta name="twitter:description" content="Match, lugares pet-friendly, eventos y comunidad para tu mascota. Muy pronto en Panamá.">
+<meta name="twitter:description" content="Match, lugares pet-friendly, eventos y comunidad para tu mascota. Ya disponible en Panamá.">
 <meta name="twitter:image" content="https://snoutt.app/og-image.png">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
@@ -24,6 +24,7 @@
   :root {
     --purple: #7C3AED;
     --purple-dark: #6D28D9;
+    --purple-light: #F3E8FF;
     --teal: #0F9B8E;
     --bg: #F9F8FC;
     --text: #1F2937;
@@ -77,8 +78,7 @@
     position: relative;
     background: linear-gradient(160deg, #6D28D9 0%, #7C3AED 45%, #0F9B8E 100%);
     color: white;
-    padding: 40px 20px 130px;
-    text-align: center;
+    padding: 40px 20px 150px;
     overflow: hidden;
   }
   .blob {
@@ -118,9 +118,18 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  .hero .badge {
+  .hero-inner {
     position: relative;
     z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+  }
+  .hero-text { text-align: center; }
+  .hero .badge {
     display: inline-block;
     background: rgba(255,255,255,0.16);
     padding: 7px 16px;
@@ -131,26 +140,20 @@
     animation: fadeUp 0.6s ease both;
   }
   .hero h1 {
-    position: relative;
-    z-index: 1;
-    font-size: clamp(28px, 5vw, 48px);
+    font-size: clamp(28px, 5vw, 44px);
     font-weight: 800;
     margin: 0 auto 16px;
-    max-width: 700px;
+    max-width: 560px;
     animation: fadeUp 0.6s ease 0.08s both;
   }
   .hero .subtitle {
-    position: relative;
-    z-index: 1;
     font-size: clamp(15px, 2vw, 18px);
     opacity: 0.92;
-    max-width: 540px;
-    margin: 0 auto 34px;
+    max-width: 500px;
+    margin: 0 auto 30px;
     animation: fadeUp 0.6s ease 0.16s both;
   }
   .app-cta {
-    position: relative;
-    z-index: 1;
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -158,87 +161,137 @@
     color: var(--purple-dark);
     text-decoration: none;
     font-weight: 800;
-    font-size: 16px;
-    padding: 16px 32px;
+    font-size: 17px;
+    padding: 17px 36px;
     border-radius: 999px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    margin-bottom: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
     animation: fadeUp 0.6s ease 0.2s both;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
   .app-cta:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.22);
   }
   .app-cta-note {
-    position: relative;
-    z-index: 1;
     font-size: 13px;
     opacity: 0.85;
-    margin: 0 0 26px;
-    animation: fadeUp 0.6s ease 0.22s both;
-  }
-  .waitlist-divider {
-    position: relative;
-    z-index: 1;
-    font-size: 12px;
-    opacity: 0.7;
-    margin: 0 0 18px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 700;
-  }
-  .waitlist-form {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    gap: 10px;
-    max-width: 440px;
-    margin: 0 auto;
-    flex-wrap: wrap;
-    justify-content: center;
+    margin: 14px 0 0;
     animation: fadeUp 0.6s ease 0.24s both;
   }
-  .waitlist-form input[type=email] {
-    flex: 1;
-    min-width: 220px;
-    padding: 15px 20px;
-    border-radius: 999px;
-    border: 2px solid transparent;
-    font-size: 15px;
-    outline: none;
-    transition: box-shadow 0.15s ease;
-  }
-  .waitlist-form input[type=email]:focus {
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.5);
-  }
-  .waitlist-form button {
-    padding: 15px 28px;
-    border-radius: 999px;
-    border: 0;
-    background: #1F2937;
-    color: white;
-    font-weight: 700;
-    font-size: 15px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: transform 0.15s ease, background 0.15s ease;
-  }
-  .waitlist-form button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    background: #111827;
-  }
-  .waitlist-form button:disabled { opacity: 0.6; cursor: default; }
-  .form-message {
+
+  /* Mockup ilustrativo del telefono: recrea la pantalla principal (Hub)
+     de la app tal cual se ve hoy -- saludo, buscador, racha, tips del
+     dia y carrusel de comunidad -- sin depender de una captura de
+     pantalla real (mismos colores/estructura que Hub.jsx). */
+  .hero-phone {
     position: relative;
     z-index: 1;
-    margin-top: 16px;
-    font-size: 14px;
-    font-weight: 600;
-    min-height: 20px;
+    animation: fadeUp 0.7s ease 0.3s both;
   }
-  .form-message.success { color: #D1FAE5; }
-  .form-message.error { color: #FEE2E2; }
+  .phone-frame {
+    width: 250px;
+    background: #14101f;
+    border-radius: 34px;
+    padding: 8px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+  }
+  .phone-screen {
+    background: var(--bg);
+    border-radius: 27px;
+    overflow: hidden;
+    height: 500px;
+    display: flex;
+    flex-direction: column;
+    font-family: inherit;
+    text-align: left;
+    color: var(--text);
+  }
+  .phone-header {
+    background: linear-gradient(135deg, #7C3AED, #6D28D9);
+    color: white;
+    padding: 14px 12px 14px;
+    flex-shrink: 0;
+  }
+  .phone-header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .phone-logo { font-size: 11px; font-weight: 800; letter-spacing: 0.2px; }
+  .phone-header-icons { display: flex; gap: 5px; align-items: center; }
+  .phone-pill {
+    background: rgba(255,255,255,0.22);
+    border-radius: 999px;
+    display: flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; font-size: 7px; font-weight: 800;
+  }
+  .phone-greet-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .phone-avatar {
+    width: 28px; height: 28px; border-radius: 999px; background: #E9C9A0;
+    display: flex; align-items: center; justify-content: center; font-size: 13px;
+    flex-shrink: 0; border: 1.5px solid rgba(255,255,255,0.6);
+  }
+  .phone-greet-text .h { font-size: 11px; font-weight: 800; line-height: 1.25; }
+  .phone-greet-text .s { font-size: 8.5px; font-weight: 500; opacity: 0.85; }
+  .phone-search {
+    background: rgba(255,255,255,0.18);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 8.5px;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 8px;
+  }
+  .phone-streak {
+    background: rgba(255,255,255,0.16);
+    border-radius: 10px;
+    padding: 7px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 8.5px; font-weight: 700;
+  }
+  .phone-streak .cta { color: #FDE68A; }
+  .phone-body { flex: 1; padding: 12px; overflow: hidden; }
+  .phone-alert-card {
+    background: white; border-radius: 12px; padding: 9px 10px;
+    display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+  }
+  .phone-alert-card .ico {
+    width: 24px; height: 24px; border-radius: 999px; background: #FEE2E2;
+    display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;
+  }
+  .phone-alert-card .label { font-size: 9.5px; font-weight: 700; flex: 1; }
+  .phone-section-title { font-size: 10px; font-weight: 800; color: var(--text); margin: 0 0 8px; }
+  .phone-tip {
+    background: white; border-radius: 12px; padding: 8px 9px;
+    display: flex; gap: 7px; align-items: flex-start; margin-bottom: 7px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+  }
+  .phone-tip .ico {
+    width: 20px; height: 20px; border-radius: 999px; display: flex;
+    align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0;
+  }
+  .phone-tip .txt .t { font-size: 8.5px; font-weight: 800; margin-bottom: 2px; }
+  .phone-tip .txt .d { font-size: 7px; color: var(--muted); line-height: 1.3; }
+  .phone-community-title { display: flex; align-items: center; justify-content: space-between; margin: 10px 0 8px; }
+  .phone-community-title .see-all { font-size: 7.5px; color: var(--purple); font-weight: 700; }
+  .phone-community { display: flex; gap: 6px; }
+  .phone-community-item { flex: 1; text-align: center; }
+  .phone-community-item .thumb { width: 100%; aspect-ratio: 1; border-radius: 8px; margin-bottom: 3px; }
+  .phone-community-item .name { font-size: 6.5px; font-weight: 700; color: var(--text); }
+  .phone-navbar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 10px 8px;
+    background: white;
+    border-top: 1px solid #F1F0F5;
+  }
+  .phone-navbar svg { width: 18px; height: 18px; }
+  .phone-navbar .nav-active { color: var(--purple); }
+  .phone-navbar .nav-inactive { color: #C4C4CE; }
+
+  @media (min-width: 900px) {
+    .hero-inner { flex-direction: row; align-items: center; justify-content: space-between; gap: 50px; text-align: left; }
+    .hero-text { text-align: left; }
+    .hero h1, .hero .subtitle { margin-left: 0; margin-right: 0; }
+    .hero-phone { flex-shrink: 0; }
+  }
 
   .wave-divider {
     position: absolute;
@@ -263,8 +316,14 @@
   }
   .feature-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: 1fr;
     gap: 24px;
+  }
+  @media (min-width: 640px) {
+    .feature-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (min-width: 860px) {
+    .feature-grid { grid-template-columns: repeat(3, 1fr); }
   }
   .feature-card {
     background: white;
@@ -278,10 +337,17 @@
     box-shadow: 0 14px 32px rgba(124,58,237,0.14);
   }
   .feature-card .icon {
-    font-size: 32px;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: var(--purple-light);
+    color: var(--purple-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin-bottom: 14px;
-    display: inline-block;
   }
+  .feature-card .icon svg { width: 24px; height: 24px; }
   .feature-card h3 { font-size: 16px; font-weight: 700; margin: 0 0 8px; }
   .feature-card p { font-size: 14px; color: var(--muted); margin: 0; }
   footer {
@@ -426,21 +492,77 @@
     <span class="paw paw-4">🐾</span>
     <span class="paw paw-5">🐾</span>
 
-    <span class="badge" data-i18n="badge"></span>
-    <h1 data-i18n="title"></h1>
-    <p class="subtitle" data-i18n="subtitle"></p>
+    <div class="hero-inner">
+      <div class="hero-text">
+        <span class="badge" data-i18n="badge"></span>
+        <h1 data-i18n="title"></h1>
+        <p class="subtitle" data-i18n="subtitle"></p>
 
-    <div>
-      <a class="app-cta" href="https://app.snoutt.app" target="_blank" rel="noopener noreferrer" data-i18n="ctaButton">🐾 Abrir Snoutt</a>
-      <p class="app-cta-note" data-i18n="ctaNote"></p>
+        <a class="app-cta" href="https://app.snoutt.app" target="_blank" rel="noopener noreferrer" data-i18n="ctaButton">🐾 Abrir Snoutt</a>
+        <p class="app-cta-note" data-i18n="ctaNote"></p>
+      </div>
+
+      <div class="hero-phone">
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-header">
+              <div class="phone-header-top">
+                <div class="phone-logo">🐾 Snoutt</div>
+                <div class="phone-header-icons">
+                  <div class="phone-pill">EN</div>
+                  <div class="phone-pill">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="9" height="9"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
+                  </div>
+                </div>
+              </div>
+              <div class="phone-greet-row">
+                <div class="phone-avatar">🐶</div>
+                <div class="phone-greet-text">
+                  <div class="h">¡Buenas tardes, Bucky!</div>
+                  <div class="s">¿Qué aventura hoy?</div>
+                </div>
+              </div>
+              <div class="phone-search">📍 Buscar lugares pet-friendly...</div>
+              <div class="phone-streak"><span>🔥 Racha de 1 días</span><span class="cta">Haz check-in hoy →</span></div>
+            </div>
+            <div class="phone-body">
+              <div class="phone-alert-card">
+                <div class="ico">⚠️</div>
+                <div class="label">Perdidos</div>
+              </div>
+
+              <p class="phone-section-title">Para hoy ⭐</p>
+              <div class="phone-tip">
+                <div class="ico" style="background:#FEF3C7;">☀️</div>
+                <div class="txt"><div class="t">Calor · 32°C</div><div class="d">No olvides llevar agua y cuidar las patitas.</div></div>
+              </div>
+              <div class="phone-tip">
+                <div class="ico" style="background:#FEE2E2;">🏃</div>
+                <div class="txt"><div class="t">Ejercicio diario</div><div class="d">Los perros necesitan paseos diarios.</div></div>
+              </div>
+
+              <div class="phone-community-title">
+                <p class="phone-section-title" style="margin:0;">Comunidad 📸</p>
+                <span class="see-all">Ver todos ›</span>
+              </div>
+              <div class="phone-community">
+                <div class="phone-community-item"><div class="thumb" style="background:#DDD6FE;"></div><div class="name">Bucky</div></div>
+                <div class="phone-community-item"><div class="thumb" style="background:#FBCFE8;"></div><div class="name">Oreo</div></div>
+                <div class="phone-community-item"><div class="thumb" style="background:#FDE68A;"></div><div class="name">Koffee</div></div>
+                <div class="phone-community-item"><div class="thumb" style="background:#BFDBFE;"></div><div class="name">Hoshi</div></div>
+              </div>
+            </div>
+            <div class="phone-navbar">
+              <svg class="nav-active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg>
+              <svg class="nav-inactive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+              <svg class="nav-inactive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+              <svg class="nav-inactive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/></svg>
+              <svg class="nav-inactive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <p class="waitlist-divider" data-i18n="waitlistDivider"></p>
-    <form class="waitlist-form" id="waitlist-form">
-      <input type="email" id="email-input" data-i18n-placeholder="emailPlaceholder" required>
-      <button type="submit" id="submit-btn" data-i18n="button"></button>
-    </form>
-    <p class="form-message" id="form-message"></p>
 
     <div class="wave-divider">
       <svg viewBox="0 0 1440 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
@@ -453,32 +575,32 @@
     <h2 data-i18n="featuresTitle"></h2>
     <div class="feature-grid">
       <div class="feature-card">
-        <div class="icon">❤️</div>
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></div>
         <h3 data-i18n="f1t"></h3>
         <p data-i18n="f1d"></p>
       </div>
       <div class="feature-card">
-        <div class="icon">📍</div>
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg></div>
         <h3 data-i18n="f2t"></h3>
         <p data-i18n="f2d"></p>
       </div>
       <div class="feature-card">
-        <div class="icon">💬</div>
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/></svg></div>
         <h3 data-i18n="f3t"></h3>
         <p data-i18n="f3d"></p>
       </div>
       <div class="feature-card">
-        <div class="icon">🎉</div>
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg></div>
         <h3 data-i18n="f4t"></h3>
         <p data-i18n="f4d"></p>
       </div>
       <div class="feature-card">
-        <div class="icon">💉</div>
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></svg></div>
         <h3 data-i18n="f5t"></h3>
         <p data-i18n="f5d"></p>
       </div>
       <div class="feature-card">
-        <div class="icon">🐾</div>
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg></div>
         <h3 data-i18n="f6t"></h3>
         <p data-i18n="f6d"></p>
       </div>
@@ -511,8 +633,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
-  const SUPABASE_URL = 'https://pvlaruqwbaxdpdndwfvh.supabase.co'
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2bGFydXF3YmF4ZHBkbmR3ZnZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExODQ3NzUsImV4cCI6MjA5Njc2MDc3NX0.jc4mg206OGW0kEMS_0OGvx9cbAkS-5UfKRfG8ob8tLc'
   const YEAR = new Date().getFullYear()
 
   const EMAILJS_PUBLIC_KEY = 'S0dDzAdrdvWS4DOgX'
@@ -522,18 +642,11 @@
 
   const translations = {
     es: {
-      badge: 'Muy pronto en Panamá 🐾',
+      badge: 'Ya disponible en Panamá 🐾',
       title: 'La red social hecha para tu mascota',
-      subtitle: 'Match, lugares pet-friendly, eventos y una comunidad que entiende a tu mejor amigo. Únete a la lista de espera y sé de los primeros en probar Snoutt.',
+      subtitle: 'Match, lugares pet-friendly, eventos y una comunidad que entiende a tu mejor amigo. Ábrela ahora mismo desde tu navegador.',
       ctaButton: '🐾 Abrir Snoutt',
       ctaNote: 'Se abre directo en tu navegador, no necesitas descargar nada de una tienda de apps.',
-      waitlistDivider: 'O déjanos tu correo para enterarte de novedades',
-      emailPlaceholder: 'tu@email.com',
-      button: 'Unirme a la lista',
-      sending: 'Enviando...',
-      success: '¡Listo! Te avisaremos apenas Snoutt esté disponible 🐾',
-      duplicate: 'Ya estás en la lista, ¡gracias!',
-      error: 'Algo salió mal, intenta de nuevo.',
       featuresTitle: 'Qué vas a encontrar',
       f1t: 'Match', f1d: 'Conecta a tu mascota con otras cerca de ti, con filtros por raza, tamaño y zona.',
       f2t: 'Lugares pet-friendly', f2d: 'Veterinarias, parques, pet shops y más, cerca de ti y con reseñas reales.',
@@ -555,18 +668,11 @@
       htmlLang: 'es',
     },
     en: {
-      badge: 'Coming soon to Panama 🐾',
+      badge: 'Now available in Panama 🐾',
       title: 'The social network made for your pet',
-      subtitle: "Match, pet-friendly places, events, and a community that gets your best friend. Join the waitlist and be among the first to try Snoutt.",
+      subtitle: "Match, pet-friendly places, events, and a community that gets your best friend. Open it right now from your browser.",
       ctaButton: '🐾 Open Snoutt',
       ctaNote: "Opens right in your browser, no app store download needed.",
-      waitlistDivider: 'Or leave your email to hear about updates',
-      emailPlaceholder: 'you@email.com',
-      button: 'Join the waitlist',
-      sending: 'Sending...',
-      success: "You're in! We'll let you know as soon as Snoutt is ready 🐾",
-      duplicate: "You're already on the list, thanks!",
-      error: 'Something went wrong, try again.',
       featuresTitle: "What you'll find",
       f1t: 'Match', f1d: 'Connect your pet with others nearby, with filters for breed, size, and area.',
       f2t: 'Pet-friendly places', f2d: 'Vets, parks, pet shops and more nearby, with real reviews.',
@@ -614,54 +720,6 @@
   })
 
   render()
-
-  const form = document.getElementById('waitlist-form')
-  const emailInput = document.getElementById('email-input')
-  const submitBtn = document.getElementById('submit-btn')
-  const messageEl = document.getElementById('form-message')
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault()
-    const email = emailInput.value.trim()
-    if (!email) return
-
-    const dict = translations[lang]
-    submitBtn.disabled = true
-    submitBtn.textContent = dict.sending
-    messageEl.textContent = ''
-    messageEl.className = 'form-message'
-
-    try {
-      const res = await fetch(SUPABASE_URL + '/rest/v1/waitlist', {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_KEY,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-        },
-        body: JSON.stringify({ email }),
-      })
-
-      if (res.ok) {
-        messageEl.textContent = dict.success
-        messageEl.className = 'form-message success'
-        emailInput.value = ''
-      } else if (res.status === 409) {
-        messageEl.textContent = dict.duplicate
-        messageEl.className = 'form-message success'
-      } else {
-        messageEl.textContent = dict.error
-        messageEl.className = 'form-message error'
-      }
-    } catch (err) {
-      messageEl.textContent = dict.error
-      messageEl.className = 'form-message error'
-    }
-
-    submitBtn.disabled = false
-    submitBtn.textContent = dict.button
-  })
 
   function openContactModal() {
     document.getElementById('contact-modal').classList.add('open')
