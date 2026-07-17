@@ -172,6 +172,7 @@
     transform: translateY(-2px);
     box-shadow: 0 12px 30px rgba(0,0,0,0.22);
   }
+  .app-cta .cta-icon { width: 22px; height: 22px; flex-shrink: 0; }
   .app-cta-note {
     font-size: 13px;
     opacity: 0.85;
@@ -522,7 +523,10 @@
         <h1 data-i18n="title"></h1>
         <p class="subtitle" data-i18n="subtitle"></p>
 
-        <a class="app-cta" href="https://app.snoutt.app" target="_blank" rel="noopener noreferrer" data-i18n="ctaButton">🐾 Abrir Snoutt</a>
+        <a class="app-cta" href="https://app.snoutt.app" target="_blank" rel="noopener noreferrer">
+          <img src="/favicon-96x96.png" alt="" class="cta-icon">
+          <span data-i18n="ctaButton">Abrir Snoutt</span>
+        </a>
         <p class="app-cta-note" data-i18n="ctaNote"></p>
 
         <div class="store-badges">
@@ -680,7 +684,7 @@
       badge: 'Ya disponible en Panamá 🐾',
       title: 'La red social hecha para tu mascota',
       subtitle: 'Match, lugares pet-friendly, eventos y una comunidad que entiende a tu mejor amigo. Ábrela ahora mismo desde tu navegador.',
-      ctaButton: '🐾 Abrir Snoutt',
+      ctaButton: 'Abrir Snoutt',
       ctaNote: 'Se abre directo en tu navegador, no necesitas descargar nada de una tienda de apps.',
       storeApple: 'Próximamente en App Store',
       storeGoogle: 'Próximamente en Google Play',
@@ -708,7 +712,7 @@
       badge: 'Now available in Panama 🐾',
       title: 'The social network made for your pet',
       subtitle: "Match, pet-friendly places, events, and a community that gets your best friend. Open it right now from your browser.",
-      ctaButton: '🐾 Open Snoutt',
+      ctaButton: 'Open Snoutt',
       ctaNote: "Opens right in your browser, no app store download needed.",
       storeApple: 'Coming soon on the App Store',
       storeGoogle: 'Coming soon on Google Play',
