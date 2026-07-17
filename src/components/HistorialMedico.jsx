@@ -177,6 +177,8 @@ export default function HistorialMedico() {
       setWeightForm({ date: new Date().toISOString().slice(0, 10), weight_kg: '' })
       setShowForm(false)
       fetchAll()
+    } else {
+      alert(t('historial.weightSaveErrorAlert'))
     }
     setSaving(false)
   }

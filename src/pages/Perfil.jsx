@@ -277,8 +277,14 @@ export default function Perfil({ onSignOut, onNavigate, initialOpenVacunas, onCo
     const { error } = await supabase.storage.from('pet-photos').upload(path, file)
     if (!error) {
       const { data } = supabase.storage.from('pet-photos').getPublicUrl(path)
-      await supabase.from('pet_photos').insert([{ user_id: user.id, pet_id: activePet.id, photo_url: data.publicUrl, order_index: petPhotos.length }])
-      fetchPetPhotos()
+      const { error: insertError } = await supabase.from('pet_photos').insert([{ user_id: user.id, pet_id: activePet.id, photo_url: data.publicUrl, order_index: petPhotos.length }])
+      if (insertError) {
+        alert(t('perfil.petPhotoErrorAlert'))
+      } else {
+        fetchPetPhotos()
+      }
+    } else {
+      alert(t('perfil.petPhotoErrorAlert'))
     }
     setUploadingPetPhoto(false)
   }

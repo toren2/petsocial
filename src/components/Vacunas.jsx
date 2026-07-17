@@ -163,6 +163,8 @@ export default function Vacunas({ hideTitle = false, petInfo = {} }) {
       })
       setShowForm(false)
       fetchVaccines()
+    } else {
+      alert(t('vacunas.saveErrorAlert'))
     }
     setSaving(false)
   }
