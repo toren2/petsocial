@@ -148,6 +148,46 @@
     margin: 0 auto 34px;
     animation: fadeUp 0.6s ease 0.16s both;
   }
+  .app-cta {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    color: var(--purple-dark);
+    text-decoration: none;
+    font-weight: 800;
+    font-size: 16px;
+    padding: 16px 32px;
+    border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    margin-bottom: 14px;
+    animation: fadeUp 0.6s ease 0.2s both;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .app-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+  }
+  .app-cta-note {
+    position: relative;
+    z-index: 1;
+    font-size: 13px;
+    opacity: 0.85;
+    margin: 0 0 26px;
+    animation: fadeUp 0.6s ease 0.22s both;
+  }
+  .waitlist-divider {
+    position: relative;
+    z-index: 1;
+    font-size: 12px;
+    opacity: 0.7;
+    margin: 0 0 18px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+  }
   .waitlist-form {
     position: relative;
     z-index: 1;
@@ -390,6 +430,12 @@
     <h1 data-i18n="title"></h1>
     <p class="subtitle" data-i18n="subtitle"></p>
 
+    <div>
+      <a class="app-cta" href="https://app.snoutt.app" target="_blank" rel="noopener noreferrer" data-i18n="ctaButton">🐾 Abrir Snoutt</a>
+      <p class="app-cta-note" data-i18n="ctaNote"></p>
+    </div>
+
+    <p class="waitlist-divider" data-i18n="waitlistDivider"></p>
     <form class="waitlist-form" id="waitlist-form">
       <input type="email" id="email-input" data-i18n-placeholder="emailPlaceholder" required>
       <button type="submit" id="submit-btn" data-i18n="button"></button>
@@ -479,6 +525,9 @@
       badge: 'Muy pronto en Panamá 🐾',
       title: 'La red social hecha para tu mascota',
       subtitle: 'Match, lugares pet-friendly, eventos y una comunidad que entiende a tu mejor amigo. Únete a la lista de espera y sé de los primeros en probar Snoutt.',
+      ctaButton: '🐾 Abrir Snoutt',
+      ctaNote: 'Se abre directo en tu navegador, no necesitas descargar nada de una tienda de apps.',
+      waitlistDivider: 'O déjanos tu correo para enterarte de novedades',
       emailPlaceholder: 'tu@email.com',
       button: 'Unirme a la lista',
       sending: 'Enviando...',
@@ -509,6 +558,9 @@
       badge: 'Coming soon to Panama 🐾',
       title: 'The social network made for your pet',
       subtitle: "Match, pet-friendly places, events, and a community that gets your best friend. Join the waitlist and be among the first to try Snoutt.",
+      ctaButton: '🐾 Open Snoutt',
+      ctaNote: "Opens right in your browser, no app store download needed.",
+      waitlistDivider: 'Or leave your email to hear about updates',
       emailPlaceholder: 'you@email.com',
       button: 'Join the waitlist',
       sending: 'Sending...',
