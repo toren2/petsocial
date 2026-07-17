@@ -42,6 +42,29 @@ function computeBaseScale(effW, effH, frame) {
   return Math.max(frame.w / effW, frame.h / effH)
 }
 
+// Decodifica el archivo a un ImageBitmap con la orientacion EXIF ya
+// corregida (imageOrientation: 'from-image'). Esto evita una clase entera
+// de bugs de fotos que salen mal encuadradas o "perdidas" fuera del
+// recuadro: los navegadores no siempre son consistentes entre lo que
+// <img>.naturalWidth/naturalHeight reportan y como rotan visualmente una
+// foto con metadata EXIF (muy comun en fotos tomadas con la camara del
+// telefono -- justo el flujo que agregamos hace poco). Al decodificar una
+// sola vez a un ImageBitmap y usar ESE bitmap tanto para la vista previa
+// (canvas) como para el recorte final exportado, la orientacion y el
+// tamano usados en todos lados son siempre exactamente los mismos.
+async function decodeBitmap(file) {
+  try {
+    return await createImageBitmap(file, { imageOrientation: 'from-image' })
+  } catch (e) {
+    // Navegadores sin soporte de la opcion (Safari viejo): probamos sin ella.
+    try {
+      return await createImageBitmap(file)
+    } catch (e2) {
+      return null
+    }
+  }
+}
+
 export default function MediaEditor({ file, forcedAspect = null, outputMaxSize = 1600, onConfirm, onCancel }) {
   const { t } = useLanguage()
   const [previewUrl, setPreviewUrl] = useState(null)
@@ -55,37 +78,38 @@ export default function MediaEditor({ file, forcedAspect = null, outputMaxSize =
   const [contrast, setContrast] = useState(0)
   const [processing, setProcessing] = useState(false)
 
-  const imgRef = useRef(null)
+  const bitmapRef = useRef(null)
+  const canvasRef = useRef(null)
   const dragRef = useRef(null)
 
   useEffect(() => {
     if (!file) return
-    const url = URL.createObjectURL(file)
-    setPreviewUrl(url)
+    let cancelled = false
     const video = file.type.startsWith('video/')
     setIsVideo(video)
     setNaturalSize(null)
+    setPreviewUrl(null)
+    bitmapRef.current = null
 
-    // Medimos el tamano natural con una imagen "fuera del DOM" en vez de
-    // depender solo del onLoad del <img> visible: en algunos navegadores
-    // moviles (sobre todo dentro de la PWA instalada) el <img> puede
-    // terminar de cargar el blob: URL antes de que React llegue a
-    // adjuntar el listener de onLoad, y esa carrera deja naturalSize en
-    // null para siempre -- lo que a su vez deja la imagen sin centrar
-    // (mal posicionada fuera del recuadro visible, viendose todo negro).
-    // Asignar el handler antes de fijar `src` evita esa carrera.
-    let cancelled = false
-    if (!video) {
-      const probe = new Image()
-      probe.onload = () => {
-        if (!cancelled) setNaturalSize({ w: probe.naturalWidth, h: probe.naturalHeight })
-      }
-      probe.src = url
+    let url = null
+    if (video) {
+      url = URL.createObjectURL(file)
+      setPreviewUrl(url)
+    } else {
+      decodeBitmap(file).then(bitmap => {
+        if (cancelled || !bitmap) return
+        bitmapRef.current = bitmap
+        setNaturalSize({ w: bitmap.width, h: bitmap.height })
+      })
     }
 
     return () => {
       cancelled = true
-      URL.revokeObjectURL(url)
+      if (url) URL.revokeObjectURL(url)
+      if (bitmapRef.current) {
+        bitmapRef.current.close?.()
+        bitmapRef.current = null
+      }
     }
   }, [file])
 
@@ -100,10 +124,30 @@ export default function MediaEditor({ file, forcedAspect = null, outputMaxSize =
   const baseScale = computeBaseScale(effW, effH, frame)
   const finalScale = baseScale * scale
 
-  function handleImgLoad() {
-    if (!imgRef.current) return
-    setNaturalSize({ w: imgRef.current.naturalWidth, h: imgRef.current.naturalHeight })
-  }
+  // Redibuja la vista previa en el canvas cada vez que cambia el encuadre,
+  // zoom, paneo, rotacion, brillo o contraste -- reemplaza el <img> +
+  // transform CSS que se usaba antes, que dependia de que naturalWidth/
+  // naturalHeight coincidieran exactamente con como el navegador rotaba
+  // visualmente la imagen (fragil con fotos de camara con EXIF, y con
+  // elementos CSS enormes con filter en navegadores moviles mas viejos).
+  useEffect(() => {
+    if (isVideo || !naturalSize || !bitmapRef.current) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    canvas.width = Math.max(1, Math.round(frame.w * dpr))
+    canvas.height = Math.max(1, Math.round(frame.h * dpr))
+    const ctx = canvas.getContext('2d')
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, frame.w, frame.h)
+    ctx.save()
+    ctx.filter = `brightness(${100 + brightness}%) contrast(${100 + contrast}%)`
+    ctx.translate(frame.w / 2 + offset.x, frame.h / 2 + offset.y)
+    ctx.rotate((rotation * Math.PI) / 180)
+    ctx.scale(finalScale, finalScale)
+    ctx.drawImage(bitmapRef.current, -naturalSize.w / 2, -naturalSize.h / 2, naturalSize.w, naturalSize.h)
+    ctx.restore()
+  }, [isVideo, naturalSize, frame, offset, rotation, finalScale, brightness, contrast])
 
   function resetTransform() {
     setScale(1)
@@ -136,7 +180,7 @@ export default function MediaEditor({ file, forcedAspect = null, outputMaxSize =
   }
 
   async function handleConfirm() {
-    if (isVideo || !naturalSize) {
+    if (isVideo || !naturalSize || !bitmapRef.current) {
       onConfirm(file)
       return
     }
@@ -154,7 +198,7 @@ export default function MediaEditor({ file, forcedAspect = null, outputMaxSize =
       const rctx = rotCanvas.getContext('2d')
       rctx.translate(rotW / 2, rotH / 2)
       rctx.rotate((rotation * Math.PI) / 180)
-      rctx.drawImage(imgRef.current, -natural.w / 2, -natural.h / 2, natural.w, natural.h)
+      rctx.drawImage(bitmapRef.current, -natural.w / 2, -natural.h / 2, natural.w, natural.h)
 
       // Paso 2: calcular el rectangulo de recorte sobre ese canvas rotado,
       // usando la misma matematica de encuadre/zoom/paneo que la vista previa.
@@ -189,7 +233,8 @@ export default function MediaEditor({ file, forcedAspect = null, outputMaxSize =
     }
   }
 
-  if (!file || !previewUrl) return null
+  const ready = !!file && (isVideo ? !!previewUrl : !!naturalSize)
+  if (!file) return null
 
   const aspectOptions = [
     ['original', t('mediaEditor.aspectOriginal')],
@@ -208,16 +253,18 @@ export default function MediaEditor({ file, forcedAspect = null, outputMaxSize =
         <span className="text-white text-sm font-semibold">{t('mediaEditor.title')}</span>
         <button
           onClick={handleConfirm}
-          disabled={processing}
+          disabled={processing || !ready}
           className="border-0 cursor-pointer rounded-full w-9 h-9 flex items-center justify-center"
-          style={{ background: processing ? '#C4B5FD' : '#7C3AED' }}
+          style={{ background: processing || !ready ? '#C4B5FD' : '#7C3AED' }}
         >
           <Check size={18} color="white" />
         </button>
       </div>
 
       <div className="flex-1 flex items-center justify-center overflow-hidden px-4">
-        {isVideo ? (
+        {!ready ? (
+          <div className="w-9 h-9 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+        ) : isVideo ? (
           <video src={previewUrl} controls className="max-w-full max-h-full rounded-2xl" />
         ) : (
           <div
@@ -228,25 +275,10 @@ export default function MediaEditor({ file, forcedAspect = null, outputMaxSize =
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
           >
-            <img
-              ref={imgRef}
-              src={previewUrl}
-              onLoad={handleImgLoad}
-              alt="preview"
-              draggable={false}
-              className="absolute select-none"
-              style={{
-                top: '50%',
-                left: '50%',
-                width: naturalSize ? naturalSize.w : 'auto',
-                height: naturalSize ? naturalSize.h : 'auto',
-                marginLeft: naturalSize ? -naturalSize.w / 2 : 0,
-                marginTop: naturalSize ? -naturalSize.h / 2 : 0,
-                transform: `translate(${offset.x}px, ${offset.y}px) rotate(${rotation}deg) scale(${finalScale})`,
-                transformOrigin: 'center center',
-                filter: `brightness(${100 + brightness}%) contrast(${100 + contrast}%)`,
-                cursor: 'grab',
-              }}
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0 select-none"
+              style={{ width: frame.w, height: frame.h, cursor: 'grab' }}
             />
           </div>
         )}
