@@ -15,6 +15,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'snoutt-icon.png', 'snoutt-logo.png'],
       manifest: {
+        id: '/',
         name: 'Snoutt',
         short_name: 'Snoutt',
         description: 'La red social de mascotas',
@@ -24,6 +25,7 @@ export default defineConfig({
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
+        categories: ['social', 'lifestyle'],
         share_target: {
           action: '/share-target',
           method: 'POST',
