@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.snoutt.app.twa",
+    "sha256_cert_fingerprints": ["D5:85:EA:BC:73:02:05:FE:A5:DD:27:F7:76:EE:1F:ED:E3:F9:B5:AF:BF:95:2E:4B:61:AF:8C:CB:EC:A5:4F:E8"]
+  }
+}]
