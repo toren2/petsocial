@@ -3,6 +3,9 @@
   "target": {
     "namespace": "android_app",
     "package_name": "app.snoutt.app.twa",
-    "sha256_cert_fingerprints": ["D5:85:EA:BC:73:02:05:FE:A5:DD:27:F7:76:EE:1F:ED:E3:F9:B5:AF:BF:95:2E:4B:61:AF:8C:CB:EC:A5:4F:E8"]
+    "sha256_cert_fingerprints": [
+      "D5:85:EA:BC:73:02:05:FE:A5:DD:27:F7:76:EE:1F:ED:E3:F9:B5:AF:BF:95:2E:4B:61:AF:8C:CB:EC:A5:4F:E8",
+      "8A:F4:8A:4C:AC:75:1D:8F:B0:C7:6B:C0:EC:58:18:21:EC:75:BD:EC:E2:A8:0A:21:87:03:F8:73:45:51:FC:EC"
+    ]
   }
 }]
