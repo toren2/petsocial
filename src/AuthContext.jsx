@@ -27,7 +27,27 @@ export function AuthProvider({ children }) {
       if (event === 'PASSWORD_RECOVERY') setIsPasswordRecovery(true)
     })
 
-    return () => subscription.unsubscribe()
+    // Cuando alguien confirma su correo (o hace login) desde el navegador
+    // del celular en vez de dentro de la app instalada, la sesion queda
+    // guardada en el mismo storage (la TWA comparte el motor de Chrome con
+    // el navegador), pero la app que quedo abierta de fondo no se entera
+    // sola. Por eso, cada vez que la app vuelve a primer plano, volvemos a
+    // pedirle la sesion a Supabase para reflejar el login sin que la
+    // persona tenga que cerrar y volver a abrir la app.
+    function handleForeground() {
+      if (document.visibilityState !== 'visible') return
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setUser(session?.user ?? null)
+      })
+    }
+    document.addEventListener('visibilitychange', handleForeground)
+    window.addEventListener('focus', handleForeground)
+
+    return () => {
+      subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', handleForeground)
+      window.removeEventListener('focus', handleForeground)
+    }
   }, [])
 
   useEffect(() => {
