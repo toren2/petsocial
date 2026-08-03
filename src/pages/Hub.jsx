@@ -228,7 +228,7 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
     fetchLostPets()
     fetchUpcomingEvents()
     fetchMyEvents()
-    fetchStreak()
+    markActivityAndFetchStreak()
     fetchProgress()
     fetchRecentPosts()
     if (navigator.geolocation) {
@@ -289,6 +289,18 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
     const { data } = await supabase.rpc('get_checkin_streak', { p_user_id: user.id })
     setStreak(data?.streak || 0)
     setCheckedInToday(!!data?.checked_in_today)
+  }
+
+  // Con solo abrir la app ya cuenta como "dia activo" para la racha (no
+  // hace falta ir a un lugar a hacer check-in). mark_daily_activity() es
+  // un upsert idempotente, asi que llamarlo varias veces no genera duplicados.
+  async function markActivityAndFetchStreak() {
+    try {
+      await supabase.rpc('mark_daily_activity')
+    } catch (err) {
+      console.log('mark_daily_activity error:', err)
+    }
+    await fetchStreak()
   }
 
   async function fetchProgress() {
@@ -358,7 +370,7 @@ export default function Hub({ onNavigate, unreadCount, onOpenNotifications }) {
       fetchLostPets(),
       fetchUpcomingEvents(),
       fetchMyEvents(),
-      fetchStreak(),
+      markActivityAndFetchStreak(),
       fetchProgress(),
       fetchRecentPosts(),
       userLocation ? fetchNearbyPlaces() : Promise.resolve(),
