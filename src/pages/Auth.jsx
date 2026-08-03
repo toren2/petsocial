@@ -4,7 +4,7 @@ import { useAuth } from '../AuthContext'
 import { useLanguage } from '../LanguageContext'
 
 export default function Auth() {
-  const { signIn, signUp, resetPasswordForEmail } = useAuth()
+  const { signIn, signUp, resetPasswordForEmail, verifySignupOtp, resendSignupConfirmation } = useAuth()
   const { t, language, setLanguage } = useLanguage()
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
@@ -14,6 +14,9 @@ export default function Auth() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resetSent, setResetSent] = useState(false)
+  const [confirmCode, setConfirmCode] = useState('')
+  const [resendMsg, setResendMsg] = useState('')
+  const [resending, setResending] = useState(false)
 
   const today = new Date()
   const maxBirthdate = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate()).toISOString().slice(0, 10)
@@ -39,11 +42,36 @@ export default function Auth() {
     }
     setLoading(true)
     setError('')
-    const { error } = mode === 'login'
-      ? await signIn(email, password)
-      : await signUp(email, password, birthdate)
-    if (error) setError(error.message)
+    if (mode === 'login') {
+      const { error } = await signIn(email, password)
+      if (error) setError(error.message)
+    } else {
+      const { data, error } = await signUp(email, password, birthdate)
+      if (error) setError(error.message)
+      // Si el proyecto exige confirmar el correo, signUp() devuelve un
+      // usuario pero sin sesion todavia. Pasamos a la pantalla del codigo
+      // de 6 digitos en vez de dejar a la persona sin feedback.
+      else if (!data?.session) setMode('confirm')
+    }
     setLoading(false)
+  }
+
+  async function handleVerifyCode() {
+    if (confirmCode.length !== 6) return
+    setLoading(true)
+    setError('')
+    const { error } = await verifySignupOtp(email, confirmCode)
+    if (error) setError(t('auth.confirmCodeInvalid'))
+    setLoading(false)
+  }
+
+  async function handleResendCode() {
+    setResending(true)
+    setResendMsg('')
+    const { error } = await resendSignupConfirmation(email)
+    if (error) setError(error.message)
+    else setResendMsg(t('auth.resendCodeSent'))
+    setResending(false)
   }
 
   async function handleResetPassword() {
@@ -66,6 +94,8 @@ export default function Auth() {
     setMode('login')
     setError('')
     setResetSent(false)
+    setConfirmCode('')
+    setResendMsg('')
   }
 
   return (
@@ -93,7 +123,61 @@ export default function Auth() {
       </div>
 
       <div className="w-full bg-white rounded-3xl p-6 flex flex-col gap-4">
-        {mode === 'forgot' ? (
+        {mode === 'confirm' ? (
+          <>
+            <h2 className="text-lg font-bold text-gray-900">{t('auth.confirmEmailTitle')}</h2>
+            <p className="text-xs text-gray-500">{t('auth.confirmEmailBody', { email })}</p>
+
+            <div>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoFocus
+                maxLength={6}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] font-bold outline-none bg-ps-bg"
+                placeholder="······"
+                value={confirmCode}
+                onChange={e => setConfirmCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onKeyDown={e => e.key === 'Enter' && handleVerifyCode()}
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-xs text-red-600">
+                {error}
+              </div>
+            )}
+            {resendMsg && !error && (
+              <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-xs text-green-700">
+                {resendMsg}
+              </div>
+            )}
+
+            <button
+              onClick={handleVerifyCode}
+              disabled={loading || confirmCode.length !== 6}
+              className="w-full py-3.5 rounded-full font-semibold text-white text-base border-0 cursor-pointer"
+              style={{ background: (loading || confirmCode.length !== 6) ? '#C4B5FD' : '#7C3AED' }}
+            >
+              {loading ? t('auth.confirmCodeVerifying') : t('auth.confirmCodeBtn')}
+            </button>
+
+            <button
+              onClick={handleResendCode}
+              disabled={resending}
+              className="text-xs font-medium text-ps-purple border-0 bg-transparent cursor-pointer text-center"
+            >
+              {resending ? t('auth.resendCodeSending') : t('auth.resendCode')}
+            </button>
+
+            <button
+              onClick={backToLogin}
+              className="text-xs font-medium text-gray-400 border-0 bg-transparent cursor-pointer text-center"
+            >
+              {t('auth.backToLogin')}
+            </button>
+          </>
+        ) : mode === 'forgot' ? (
           <>
             <h2 className="text-lg font-bold text-gray-900">{t('auth.forgotPasswordTitle')}</h2>
 

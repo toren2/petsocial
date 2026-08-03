@@ -131,6 +131,21 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut()
   }
 
+  // Confirmacion de registro por codigo de 6 digitos: el link del correo se
+  // puede "gastar" solo si algo lo pre-visita antes que la persona (Gmail,
+  // filtros de seguridad, etc.), dejando la cuenta atascada como no
+  // confirmada. El codigo escrito a mano no tiene ese problema, asi que es
+  // la via principal; el link del correo sigue funcionando como respaldo.
+  async function verifySignupOtp(email, token) {
+    const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'signup' })
+    return { data, error }
+  }
+
+  async function resendSignupConfirmation(email) {
+    const { error } = await supabase.auth.resend({ type: 'signup', email })
+    return { error }
+  }
+
   async function resetPasswordForEmail(email) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin,
@@ -150,6 +165,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, loading, signUp, signIn, signOut,
+      verifySignupOtp, resendSignupConfirmation,
       isPasswordRecovery, resetPasswordForEmail, updatePassword, clearPasswordRecovery,
       pets, activePet, activePetId, petsLoading, switchPet, addPet, refetchPets: fetchPets,
     }}>
